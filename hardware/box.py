@@ -93,7 +93,7 @@ class Box:
 
         ###############
         for dispenser in self.config_module.dispensers:
-            new_dispenser = Pellet(dispenser, self.timestamp_manager)
+            new_dispenser = Dispenser(dispenser, self.timestamp_manager)
             
             name = new_dispenser.name
             
@@ -105,7 +105,7 @@ class Box:
 
 
         ###############
-        '''for beam in self.config_module.beams:
+        for beam in self.config_module.beams:
             new_beam = Beam(beam)
             
             name = new_beam.name
@@ -113,7 +113,7 @@ class Box:
             if hasattr(self, name):
                 raise NameError(f'box already has {name} attribute, but tried to make a beam with that name. Check for duplicate names in the config file')
             
-            setattr(self, new_beam.name, new_beam)'''
+            setattr(self, new_beam.name, new_beam)
 
 
         ###############
