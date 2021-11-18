@@ -11,12 +11,13 @@ import importlib.util
 
 # Third Party Imports 
 # Local Imports
-from .lever import Lever 
+'''from .lever import Lever 
 from .door import Door 
 from .button import Button
 from .dispenser import Dispenser 
 from .beam import Beam 
-from .output import Output
+from .output import Output'''
+from components import Lever, Door, Button, Dispenser, Beam, Output
 
 
 
