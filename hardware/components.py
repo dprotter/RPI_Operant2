@@ -2,7 +2,7 @@ import time
 import RPi.GPIO as GPIO
 import queue
 from concurrent.futures import ThreadPoolExecutor
-
+import threading
 
 
 class Lever:
@@ -115,3 +115,86 @@ class Lever:
     
     def reset_lever(self):
         self.presses_reached = False
+        
+class Button():
+    
+    def __init__(self, pin, pressed_val, name):
+        self.pin = pin
+        self.pressed_val = pressed_val
+        self.name = name
+                
+        self.pressed = False
+class Button_Manager():
+    
+    def __init__(self):
+        
+        self.buttons = []
+        self.wp = threading.Thread(target = self.watch_pins, daemon = True)
+        self.wp.start()
+        self.running = True
+    
+    def watch_pins(self):
+        while self.running:
+            for pin, val, button_obj in self.buttons:
+                if GPIO.input(pin) == val:
+                    button_obj.pressed = True
+                else:
+                    button_obj.pressed = False
+            time.sleep(0.005)
+            
+    def new_button(self, pin, gpio_val, name):
+        '''make a new button and add it to the button list'''
+        self.buttons.append(Button(pin, gpio_val, name))
+class Door():
+    
+    def __init__(self, door_config_dict, door_default_dict, box):
+        
+        self.timestamp_q = box.timestamp_q
+        
+        #merge default and config file dicts, with precedence to config file dict
+        self.config_dict = door_default_dict.update(door_config_dict)
+        self.servo = self.config_dict['servo']
+        self.stop_speed = self.config_dict['stop']
+        self.close_speed = self.config_dict['close']
+        self.open_speed = self.config_dict['open']
+        self.open_time = self.config_dict['open_time']
+        self.name = self.config_dict['name']
+        self.state_switch = self.config_dict['state_switch']
+        
+        #override buttons
+        self.override_open_button = box.button_manager.new_button(self.config_dict['override_open_pin'], 0, f'{self.name}_override_open')
+        self.override_close_button = box.button_manager.new_button(self.config_dict['override_close_pin'], 0, f'{self.name}_override_close')
+
+        
+        #start the override function
+        self.override(self)
+    
+    def is_closed(self):
+        return 
+    def thread_it(func, *args, **kwargs):
+        '''simple decorator to pass function to our thread distributor via a queue. 
+        these 4 lines took about 4 hours of googling and trial and error.
+        the returned 'future' object has some useful features, such as its own task-done monitor. '''
+        def pass_to_thread(self, *args, **kwargs):
+            future = self.box.thread_executor.submit(func, *args, **kwargs)
+            self.box.worker_queue.put((future, func.__name__, self.round))
+            return future
+        return pass_to_thread
+    
+    
+    @thread_it
+    def override(self):
+        while not self.box.shutdown:
+            if self.override_open_button.pressed:
+                self.servo.throttle = self.open_speed
+                while self.override_open_button.pressed:
+                    time.sleep(0.05)
+                self.servo.throttle = self.stop_speed
+                
+                
+            if self.override_close_button.pressed:
+                self.servo.throttle = self.close_speed
+                while self.override_close_button.pressed:
+                    time.sleep(0.05)
+                self.servo.throttle = self.stop_speed
+            time.sleep(0.1)
