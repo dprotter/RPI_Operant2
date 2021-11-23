@@ -18,7 +18,7 @@ from .dispenser import Dispenser
 from .beam import Beam 
 from .output import Output'''
 from components import Lever, Door, Button, Dispenser, Beam, Output
-
+from timing import Phase, TimestampManager
 
 
 # Constants 
@@ -30,8 +30,9 @@ class Box:
     def __init__(self, timestamp_manager, config_file=None): 
         
         # timestamp queue that gets setup by ScriptManager
-        self.timestamp_manager = timestamp_manager
-
+        self.timestamp_manager = TimestampManager()
+        
+        
         # set file containing the box components we would like to get setup 
         self.config = config_file if config_file else DEFAULT_CONFIG
         self.config_name = self.config.split(sep='/')[-1].replace('.py','')
@@ -134,7 +135,15 @@ class Box:
 
         
 
+class ComponentContainer:
+    
+    def __init__(self):
+        '''do we need anything at init?'''
         
+    def get_components(self):
+        '''return'''
+        obj_dict = self.__dict__
+        return [obj_dict[key] for key in obj_dict.keys()]
     
         
 

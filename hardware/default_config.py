@@ -37,6 +37,8 @@ levers = [
          'retracted':105,
          'pin':19,
          'pullup_pulldown':'pull_up',
+         'target_name':'pellet_dispenser',
+         'target_type':'dispenser'
          },
     
         {'name':'door_1',
@@ -45,6 +47,8 @@ levers = [
          'retracted':100,
          'pin':18,
          'pullup_pulldown':'pull_up',
+         'target_name':'door_1',
+         'target_type':'door'
          },
 
         {'name':'door_2',
@@ -53,6 +57,8 @@ levers = [
          'retracted':100,
          'pin':22,
          'pullup_pulldown':'pull_up',
+         'target_name':'door_2',
+         'target_type':'door'
          }
          
          ]

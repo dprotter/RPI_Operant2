@@ -7,17 +7,27 @@ import threading
 
 class Lever:
     
-    def __init__(self, lever_config_dict, lever_default_dict, timestamp_q):
+    def __init__(self, lever_config_dict, lever_default_dict, box):
         
-        self.pin = lever_config_dict['pin'] #int
-        self.extended = lever_config_dict['extended'] #int, servo angle
-        self.retracted = lever_config_dict['retracted'] #int, servo angle
-        self.name = lever_config_dict['name'] #str
-        self.servo = lever_config_dict['servo'] #kit.servo
+        #merge default and config file dicts, with >>> precedence to >>> config file dict
+        self.config_dict = lever_default_dict.update(lever_config_dict)
         
-        #replace this with a dict expression pulling with priority from lever_config_dict and falling abck to lever_default_dict
-        self.retraction_timeout = lever_config_dict['retraction_timeout'] if 'retraction_timeout' in lever_config_dict.keys() else 2
-        self.interpress_timeout = lever_config_dict['interpress_timeout'] if 'interpress_timeout' in lever_config_dict.keys() else 0.5
+        self.box = box
+        self.pin = self.config_dict['pin'] #int
+        self.extended = self.config_dict['extended'] #int, servo angle
+        self.retracted = self.config_dict['retracted'] #int, servo angle
+        self.name = self.config_dict['name'] #str
+        self.servo = self.config_dict['servo'] #kit.servo
+        self.target_name = self.config_dict['target_name']
+        self.target_type = self.config_dict['target_type']
+        
+        self.switch = self.box.button_manager.new_button(self.pin, self.config_dict['pullup_pulldown'], self.name)
+        
+        #where should these defaults live so they dont take up unnecessary space? might also put pu_pd there
+        self.retraction_timeout = self.config_dict['retraction_timeout'] if 'retraction_timeout' in self.config_dict.keys() else 2
+        self.interpress_timeout = self.config_dict['interpress_timeout'] if 'interpress_timeout' in self.config_dict.keys() else 0.5
+        
+        self.setup_target()
         
         #threading        
         self.threads = ThreadPoolExecutor(max_workers = 6)
@@ -31,8 +41,11 @@ class Lever:
         self.press_q = queue.Queue()
         
         
-        self.timestamp_q = timestamp_q
+        self.timestamp_q = self.box.timestamp_q
         self.wiggle = 10
+        
+    def setup_target(self): 
+        self.target = self.box.get_component(self.target_type, self.target_name)
         
     def current_thread_numbers(self):
         '''return the number of current threads running, based on length of futures'''
@@ -86,11 +99,12 @@ class Lever:
     
     def watch_lever_pin(self):
         while self.end_monitor == False:
-            if not GPIO.input(self.pin):
+            if self.switch.pressed:
                 print(f'{self.name}pressed!')
                 
                 self.click_on()
-                while not GPIO.input(self.pin) and self.end_monitor == False:
+                timer = self.box.timeout(self.retraction_timeout)
+                while self.switch.pressed and timer.running:
                     '''waiting for vole to get off lever'''
                     time.sleep(0.025)
                 self.click_off()
@@ -126,28 +140,29 @@ class Button():
             self.pressed_val = 0
             GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
         elif pullup_pulldown == 'pull_down':
-            self.pressed_val = 0
+            self.pressed_val = 1
             GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
         else:
             raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pull_up" or "pull_down", but was passed {pullup_pulldown}')
          
         self.pressed = False
-class Button_Manager():
+        
+class ButtonManager():
     
     def __init__(self):
         
         self.buttons = []
-        self.wp = threading.Thread(target = self.watch_pins, daemon = True)
+        self.wp = threading.Thread(target = self.watch_buttons, daemon = True)
         self.wp.start()
         self.running = True
     
-    def watch_pins(self):
+    def watch_buttons(self):
         while self.running:
-            for pin, val, button_obj in self.buttons:
-                if GPIO.input(pin) == val:
-                    button_obj.pressed = True
+            for button in self.buttons:
+                if GPIO.input(button.pin) == button.pressed_val:
+                    button.pressed = True
                 else:
-                    button_obj.pressed = False
+                    button.pressed = False
             time.sleep(0.005)
             
     def new_button(self, pin, pu_pd, name):
