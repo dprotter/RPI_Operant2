@@ -28,3 +28,35 @@ doors = [
          'state_switch':17}
          
          ]
+
+levers = [
+    
+        {'name':'food',
+         'servo':kit.servo[14],
+         'extended':30,
+         'retracted':105,
+         'pin':19,
+         'pullup_pulldown':'pull_up',
+         },
+    
+        {'name':'door_1',
+         'servo':kit.servo[2],
+         'extended':20,
+         'retracted':100,
+         'pin':18,
+         'pullup_pulldown':'pull_up',
+         },
+
+        {'name':'door_2',
+         'servo':kit.servo[12],
+         'extended':20,
+         'retracted':100,
+         'pin':22,
+         'pullup_pulldown':'pull_up',
+         }
+         
+         ]
+          
+          
+          
+          

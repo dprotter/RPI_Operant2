@@ -118,11 +118,19 @@ class Lever:
         
 class Button():
     
-    def __init__(self, pin, pressed_val, name):
+    def __init__(self, pin, pullup_pulldown, name):
         self.pin = pin
-        self.pressed_val = pressed_val
         self.name = name
-                
+        
+        if pullup_pulldown == 'pull_up':
+            self.pressed_val = 0
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+        elif pullup_pulldown == 'pull_down':
+            self.pressed_val = 0
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+        else:
+            raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pull_up" or "pull_down", but was passed {pullup_pulldown}')
+         
         self.pressed = False
 class Button_Manager():
     
@@ -142,9 +150,9 @@ class Button_Manager():
                     button_obj.pressed = False
             time.sleep(0.005)
             
-    def new_button(self, pin, gpio_val, name):
+    def new_button(self, pin, pu_pd, name):
         '''make a new button and add it to the button list'''
-        self.buttons.append(Button(pin, gpio_val, name))
+        self.buttons.append(Button(pin, pu_pd, name))
 class Door():
     
     def __init__(self, door_config_dict, door_default_dict, box):
@@ -170,7 +178,11 @@ class Door():
         self.override(self)
     
     def is_closed(self):
-        return 
+        return GPIO.input(self.state_switch) == 0
+    
+    def is_open(self):
+        return GPIO.input(self.state_switch) == 1
+    
     def thread_it(func, *args, **kwargs):
         '''simple decorator to pass function to our thread distributor via a queue. 
         these 4 lines took about 4 hours of googling and trial and error.
