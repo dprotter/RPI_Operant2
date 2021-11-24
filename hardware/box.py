@@ -22,12 +22,12 @@ from timing import Phase, TimestampManager
 
 
 # Constants 
-DEFAULT_CONFIG = 'class_definitions/hardware_classes/operant_cage_settings_default.py'
+DEFAULT_CONFIG = 'default_config.py'
 
 
 class Box: 
 
-    def __init__(self, timestamp_manager, config_file=None): 
+    def __init__(self, config_file=None): 
         
         # timestamp queue that gets setup by ScriptManager
         self.timestamp_manager = TimestampManager()
@@ -44,38 +44,25 @@ class Box:
 
 
 
-        ###############
-        for lever in self.config_module.levers:
-            new_lever = Lever(lever, self.timestamp_manager)
-            
-            name = new_lever.name+'_lever'
-            if hasattr(self, name):
-                raise NameError(f'box already has {name} attribute, but tried to make a lever with that name. Check for duplicate names in the config file')
-            
-            self.object_list.append(new_lever)
-            setattr(self, name, new_lever)
-
-
-        ###############
-        for door in self.config_module.doors:
-
+        '''###############
+        for lever_dict in self.config_module.levers:
+            self.levers = ComponentContainer('lever')
             # get buttons connected with door 
-            button_dict = {}
-            for button in self.config_module.buttons: 
-                if button['name'] == door['name']: 
-                    new_button = Button(button, self.timestamp_manager)
-                    button_dict[new_button.function] = new_button
-            new_door = Door(door, button_dict, self.timestamp_manager)
-            
-            name = new_door.name
-            if hasattr(self, name):
-                raise NameError(f'box already has {name} attribute, but tried to make a door with that name. Check for duplicate names in the config file')
+            for lever_dict in self.config_module.levers:
+                 
+                self.doors.add_component(Lever(lever_dict))'''
 
-            self.object_list.append(new_door)
-            setattr(self, new_door.name, new_door)
-        
-        
+
         ###############
+        for door_dict in self.config_module.doors:
+            self.doors = ComponentContainer('door')
+            # get buttons connected with door 
+            for door_dict in self.config_module.doors:
+                 
+                self.doors.add_component(Door(door_dict))
+            
+        
+        '''        ###############
         for button in self.config_module.buttons: 
             
             new_button = Button(button, self.timestamp_manager)
@@ -94,16 +81,12 @@ class Box:
             setattr(door, name, new_button)
 
         ###############
-        for dispenser in self.config_module.dispensers:
-            new_dispenser = Dispenser(dispenser, self.timestamp_manager)
-            
-            name = new_dispenser.name
-            
-            if hasattr(self, name):
-                raise NameError(f'box already has {name} attribute, but tried to make a dispenser with that name. Check for duplicate names in the config file')
-            
-            self.object_list.append(new_dispenser)
-            setattr(self, name, new_dispenser)
+        for dispenser_dict in self.config_module.dispensers:
+            self.dispensers = ComponentContainer('dispenser')
+            # get buttons connected with door 
+            for dispenser_dict in self.config_module.dispensers:
+                 
+                self.doors.add_component(Dispenser(door_dict))
 
 
         ###############
@@ -131,20 +114,29 @@ class Box:
             setattr(self, new_output.name, new_output)
             
         
-        ###############
+        ###############'''
+
 
         
 
 class ComponentContainer:
     
-    def __init__(self):
+    def __init__(self, component_type):
         '''do we need anything at init?'''
+        self.type = component_type 
         
     def get_components(self):
-        '''return'''
+        '''return all contained objects'''
         obj_dict = self.__dict__
         return [obj_dict[key] for key in obj_dict.keys()]
     
+    def add_component(self, component_object):
+            name = component_object.name
+            if hasattr(self, name):
+                raise NameError(f'box already has a >{self.type}< named >{name}<, but tried to make another with that name. Check for duplicate names in the config file')
+
+            setattr(self, name, component_object)
+        
         
 
 
