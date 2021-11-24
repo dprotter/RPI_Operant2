@@ -17,12 +17,13 @@ from .button import Button
 from .dispenser import Dispenser 
 from .beam import Beam 
 from .output import Output'''
-from hardware.components import Lever, Door, Button, Dispenser, Beam, Output
+import os
+from hardware.components import Lever, Door, Button, Dispenser
 from hardware.timing import Phase, TimestampManager
 
 
 # Constants 
-DEFAULT_CONFIG = 'default_config.py'
+DEFAULT_CONFIG = os.path.join(os.getcwd(), 'hardware/default_config.py')
 
 
 class Box: 

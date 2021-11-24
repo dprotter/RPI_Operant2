@@ -130,7 +130,7 @@ class Lever:
     def reset_lever(self):
         self.presses_reached = False
         
-class Button():
+class Button:
     
     def __init__(self, pin, pullup_pulldown, name):
         self.pin = pin
@@ -147,7 +147,7 @@ class Button():
          
         self.pressed = False
         
-class ButtonManager():
+class ButtonManager:
     
     def __init__(self):
         
@@ -225,3 +225,18 @@ class Door():
                     time.sleep(0.05)
                 self.servo.throttle = self.stop_speed
             time.sleep(0.1)
+
+
+class Dispenser:
+
+    def __init__(self, dispenser_config_dict, dispenser_default_dict, box):
+        '''make a dispenser'''
+        self.timestamp_q = box.timestamp_q
+        self.config_dict = dispenser_default_dict.update(dispenser_config_dict)
+        self.servo = self.config_dict['servo']
+        self.stop_speed = self.config_dict['stop']
+        self.dispense_speed = self.config_dict['dispense']
+        self.open_time = self.config_dict['dispense_time']
+        self.name = self.config_dict['name']
+
+        
