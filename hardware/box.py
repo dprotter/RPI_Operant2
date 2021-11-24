@@ -23,7 +23,7 @@ from hardware.timing import Phase, TimestampManager
 
 
 # Constants 
-DEFAULT_CONFIG = os.path.join(os.getcwd(), 'hardware/default_config.py')
+DEFAULT_CONFIG = os.path.join(os.getcwd(), 'hardware/default.yaml')
 
 
 class Box: 
@@ -33,7 +33,6 @@ class Box:
         # timestamp queue that gets setup by ScriptManager
         self.timestamp_manager = TimestampManager()
         
-        
         # set file containing the box components we would like to get setup 
         self.config = config_file if config_file else DEFAULT_CONFIG
         self.config_name = self.config.split(sep='/')[-1].replace('.py','')
@@ -41,6 +40,11 @@ class Box:
         # get setup info from config file 
         spec = importlib.util.spec_from_file_location(self.config_name, self.config)
         self.config_module = importlib.util.module_from_spec(spec)
+        
+        self.default_config_name = self.config.split(sep='/')[-1].replace('.py','')
+        spec = importlib.util.spec_from_file_location(self.config_name, self.config)
+        self.config_module = importlib.util.module_from_spec(spec)
+        
         spec.loader.exec_module(self.config_module)
 
 
@@ -57,10 +61,12 @@ class Box:
         ###############
         for door_dict in self.config_module.doors:
             self.doors = ComponentContainer('door')
+
+
             # get buttons connected with door 
             for door_dict in self.config_module.doors:
-                 
-                self.doors.add_component(Door(door_dict))
+                
+                self.doors.add_component(Door(door_dict, self))
             
         
         '''        ###############
