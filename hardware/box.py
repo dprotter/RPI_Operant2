@@ -17,8 +17,8 @@ from .button import Button
 from .dispenser import Dispenser 
 from .beam import Beam 
 from .output import Output'''
-from components import Lever, Door, Button, Dispenser, Beam, Output
-from timing import Phase, TimestampManager
+from hardware.components import Lever, Door, Button, Dispenser, Beam, Output
+from hardware.timing import Phase, TimestampManager
 
 
 # Constants 
