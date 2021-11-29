@@ -18,12 +18,21 @@ from .dispenser import Dispenser
 from .beam import Beam 
 from .output import Output'''
 import os
-from hardware.components import Lever, Door, Button, Dispenser
+from hardware.components import Lever, Door, ButtonManager, Dispenser
 from hardware.timing import Phase, TimestampManager
-
+from collections.abc import Mapping
+import yaml
 
 # Constants 
 DEFAULT_CONFIG = os.path.join(os.getcwd(), 'hardware/default.yaml')
+
+COMPONENT_LOOKUP = {
+                    'doors':{'component_class':Door, 'label':'door'},
+                    'levers':{'component_class':Lever, 'label':'lever'},
+                    'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
+                    'dispenser':{'component_class':Dispenser, 'label':'dispenser'},
+                    }
+
 
 
 class Box: 
@@ -32,8 +41,35 @@ class Box:
         
         # timestamp queue that gets setup by ScriptManager
         self.timestamp_manager = TimestampManager()
+    
+        # load and merge config files
+        self.config_file_path = DEFAULT_CONFIG
+        self.config_dict = self.load_config(self.config_file_path)
+        if config_file:
+            self.config_dict = self.merge_config_files(config_file)
+
         
-        # set file containing the box components we would like to get setup 
+        ###############
+
+        #iterate across groups (IE doors, levers, etc etc)
+        #lookup class object (ie Door() ) and label (ie "door")
+        for component_group_name, group_dict in self.config_dict.items():
+            
+            #create a new container to put components within
+            label = COMPONENT_LOOKUP[component_group_name]['label']
+            comp_container = ComponentContainer(label)
+
+            #iterate across all components in this class and use their dicts to instantiate a new 
+            #component object
+            component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
+            for name, comp_dict in group_dict.items():
+
+                comp_container.add_component(name, 
+                                            component_class(comp_dict, 
+                                            self))
+            
+            setattr(self, component_group_name, comp_container)
+        '''# set file containing the box components we would like to get setup 
         self.config = config_file if config_file else DEFAULT_CONFIG
         self.config_name = self.config.split(sep='/')[-1].replace('.py','')
 
@@ -45,7 +81,7 @@ class Box:
         spec = importlib.util.spec_from_file_location(self.config_name, self.config)
         self.config_module = importlib.util.module_from_spec(spec)
         
-        spec.loader.exec_module(self.config_module)
+        spec.loader.exec_module(self.config_module)'''
 
 
 
@@ -123,6 +159,25 @@ class Box:
         
         ###############'''
 
+    def load_config_file(self, file):
+        '''load a config yaml file and return the resulting dict'''
+        with open(file, 'r') as f:
+            config_dict = yaml.safe_load(f)
+        return config_dict
+
+    def merge_config_files(self, new_file):
+        new_config_dict = self.load_config_file(new_file)
+        return self.heirarchical_merge_dict(self.config_dict, new_config_dict)
+        
+
+    def heirarchical_merge_dict(self, dict_default, dict_update):
+        for key, value in dict_update.items():
+            if isinstance(value, Mapping):
+                #note to self the get(key,{}) returns an empty list if the key is not found. good technique for avoiding KeyErrors
+                dict_default[key] = self.heirarchical_merge_dict(dict_default.get(key,{}), value)
+            else:
+                dict_default[key] = value
+        return dict_default
 
         
 

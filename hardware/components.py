@@ -7,21 +7,26 @@ import threading
 
 class Lever:
     
-    def __init__(self, lever_config_dict, lever_default_dict, box):
+    def __init__(self, name, lever_config_dict, box):
         
-        #merge default and config file dicts, with >>> precedence to >>> config file dict
-        self.config_dict = lever_default_dict.update(lever_config_dict)
+        
+        self.config_dict = lever_config_dict
         
         self.box = box
         self.pin = self.config_dict['pin'] #int
         self.extended = self.config_dict['extended'] #int, servo angle
         self.retracted = self.config_dict['retracted'] #int, servo angle
-        self.name = self.config_dict['name'] #str
+        self.name = name #str
         self.servo = self.config_dict['servo'] #kit.servo
         self.target_name = self.config_dict['target_name']
         self.target_type = self.config_dict['target_type']
         
-        self.switch = self.box.button_manager.new_button(self.pin, self.config_dict['pullup_pulldown'], self.name)
+        switch_dict = {
+            'pin':self.pin,
+            'pullup_pulldown':self.config_dict['pullup_pulldown'],
+        }
+
+        self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
         
         #where should these defaults live so they dont take up unnecessary space? might also put pu_pd there
         self.retraction_timeout = self.config_dict['retraction_timeout'] if 'retraction_timeout' in self.config_dict.keys() else 2
@@ -132,10 +137,11 @@ class Lever:
         
 class Button:
     
-    def __init__(self, pin, pullup_pulldown, name):
-        self.pin = pin
+    def __init__(self, button_dict, name):
+        self.pin = button_dict['pin']
         self.name = name
-        
+        pullup_pulldown = button_dict['pullup_pulldown']
+
         if pullup_pulldown == 'pull_up':
             self.pressed_val = 0
             GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
@@ -165,17 +171,18 @@ class ButtonManager:
                     button.pressed = False
             time.sleep(0.005)
             
-    def new_button(self, pin, pu_pd, name):
+    def new_button(self, name, button_dict, box):
         '''make a new button and add it to the button list'''
-        self.buttons.append(Button(pin, pu_pd, name))
+        self.buttons.append(Button(button_dict, name))
 class Door():
     
-    def __init__(self, door_config_dict, door_default_dict, box):
+    def __init__(self, door_config_dict, box):
         
         self.timestamp_q = box.timestamp_q
-        
-        #merge default and config file dicts, with precedence to config file dict
-        self.config_dict = door_default_dict.update(door_config_dict)
+
+        self.box = box 
+       
+        self.config_dict = door_config_dict
         self.servo = self.config_dict['servo']
         self.stop_speed = self.config_dict['stop']
         self.close_speed = self.config_dict['close']
@@ -185,8 +192,21 @@ class Door():
         self.state_switch = self.config_dict['state_switch']
         
         #override buttons
-        self.override_open_button = box.button_manager.new_button(self.config_dict['override_open_pin'], 0, f'{self.name}_override_open')
-        self.override_close_button = box.button_manager.new_button(self.config_dict['override_close_pin'], 0, f'{self.name}_override_close')
+        oo_button_dict = { 
+            'pin':self.config_dict['override_open_pin'],
+            'pullup_pulldown':'pull_up'
+        }
+
+        self.config_dict['override_open_pin'], 0, f'{self.name}_override_open'
+
+        self.override_open_button = self.box.button_manager.new_button(f'{self.name}_override_open', oo_button_dict, self.box)
+
+        oc_button_dict = { 
+            'pin':self.config_dict['override_open_pin'],
+            'pullup_pulldown':'pull_up'
+        }
+
+        self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', oc_button_dict, self.box)
 
         
         #start the override function
@@ -229,14 +249,15 @@ class Door():
 
 class Dispenser:
 
-    def __init__(self, dispenser_config_dict, dispenser_default_dict, box):
+    def __init__(self, name, dispenser_config_dict, box):
         '''make a dispenser'''
-        self.timestamp_q = box.timestamp_q
-        self.config_dict = dispenser_default_dict.update(dispenser_config_dict)
+        self.box = box
+        self.timestamp_q = self.box.timestamp_q
+        self.config_dict = dispenser_config_dict
         self.servo = self.config_dict['servo']
         self.stop_speed = self.config_dict['stop']
         self.dispense_speed = self.config_dict['dispense']
         self.open_time = self.config_dict['dispense_time']
-        self.name = self.config_dict['name']
+        self.name = name
 
         
