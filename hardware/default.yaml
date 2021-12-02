@@ -19,14 +19,14 @@ doors:
     state_switch: 17
 
 levers:
-  food:
-    servo: 4
-    extended: 30
-    retracted: 105
-    pin: 19
-    pullup_pulldown: pull_up
-    target_name: pellet_dispenser
-    target_type: dispenser
+  #food:
+    #servo: 4
+    #extended: 30
+    #retracted: 105
+    #pin: 19
+    #pullup_pulldown: pull_up
+    #target_name: pellet_dispenser
+    #target_type: dispenser
   door_1:
     servo: 2
     extended: 20

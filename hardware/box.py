@@ -8,7 +8,7 @@
 
 # Standard Library Imports 
 import importlib.util
-
+import RPi.GPIO as GPIO
 # Third Party Imports 
 # Local Imports
 '''from .lever import Lever 
@@ -18,10 +18,13 @@ from .dispenser import Dispenser
 from .beam import Beam 
 from .output import Output'''
 import os
-from hardware.components import Lever, Door, ButtonManager, Dispenser
+from hardware.components import Button, Lever, Door, ButtonManager, Dispenser
 from hardware.timing import Phase, TimestampManager
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 import yaml
+import queue
+import time
 
 # Constants 
 DEFAULT_CONFIG = os.path.join(os.getcwd(), 'hardware/default.yaml')
@@ -37,16 +40,24 @@ COMPONENT_LOOKUP = {
 
 class Box: 
 
-    def __init__(self, config_file=None): 
-        
+    def __init__(self, user_config_file_path=None): 
+        GPIO.setmode(GPIO.BCM)
         # timestamp queue that gets setup by ScriptManager
         self.timestamp_manager = TimestampManager()
-    
+        self.timestamp_q = self.timestamp_manager.queue
+
+        #threading        
+        self.thread_executor = ThreadPoolExecutor(max_workers = 6)
+        self.worker_queue = queue.Queue()
+
+        #the manager for creating, adding, and monitoring new binary inputs
+        self.button_manager = ButtonManager()
+
         # load and merge config files
         self.config_file_path = DEFAULT_CONFIG
-        self.config_dict = self.load_config(self.config_file_path)
-        if config_file:
-            self.config_dict = self.merge_config_files(config_file)
+        self.config_dict = self.load_config_file(self.config_file_path)
+        if user_config_file_path:
+            self.config_dict = self.merge_config_files(user_config_file_path)
 
         
         ###############
@@ -63,101 +74,11 @@ class Box:
             #component object
             component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
             for name, comp_dict in group_dict.items():
-
-                comp_container.add_component(name, 
-                                            component_class(comp_dict, 
-                                            self))
+                print(f'adding {name} to {component_class}')
+                component = component_class(name, comp_dict, self)
+                comp_container.add_component(name, component)
             
             setattr(self, component_group_name, comp_container)
-        '''# set file containing the box components we would like to get setup 
-        self.config = config_file if config_file else DEFAULT_CONFIG
-        self.config_name = self.config.split(sep='/')[-1].replace('.py','')
-
-        # get setup info from config file 
-        spec = importlib.util.spec_from_file_location(self.config_name, self.config)
-        self.config_module = importlib.util.module_from_spec(spec)
-        
-        self.default_config_name = self.config.split(sep='/')[-1].replace('.py','')
-        spec = importlib.util.spec_from_file_location(self.config_name, self.config)
-        self.config_module = importlib.util.module_from_spec(spec)
-        
-        spec.loader.exec_module(self.config_module)'''
-
-
-
-        '''###############
-        for lever_dict in self.config_module.levers:
-            self.levers = ComponentContainer('lever')
-            # get buttons connected with door 
-            for lever_dict in self.config_module.levers:
-                 
-                self.doors.add_component(Lever(lever_dict))'''
-
-
-        ###############
-        for door_dict in self.config_module.doors:
-            self.doors = ComponentContainer('door')
-
-
-            # get buttons connected with door 
-            for door_dict in self.config_module.doors:
-                
-                self.doors.add_component(Door(door_dict, self))
-            
-        
-        '''        ###############
-        for button in self.config_module.buttons: 
-            
-            new_button = Button(button, self.timestamp_manager)
-
-            door_name = new_button.door 
-            door = getattr(self, door_name) # get door object 
-
-            function = new_button.function 
-            # name = (f'{function}_{door_name}_button')
-            name = (f'{function}_button')
-
-            if hasattr(door,name): 
-                    raise NameError(f'{door_name} already contains a {name} attribute, but tried to make a button with that name. Check for duplicate names in the config file')
-
-            self.object_list.append(new_button)
-            setattr(door, name, new_button)
-
-        ###############
-        for dispenser_dict in self.config_module.dispensers:
-            self.dispensers = ComponentContainer('dispenser')
-            # get buttons connected with door 
-            for dispenser_dict in self.config_module.dispensers:
-                 
-                self.doors.add_component(Dispenser(door_dict))
-
-
-        ###############
-        for beam in self.config_module.beams:
-            new_beam = Beam(beam)
-            
-            name = new_beam.name
-            
-            if hasattr(self, name):
-                raise NameError(f'box already has {name} attribute, but tried to make a beam with that name. Check for duplicate names in the config file')
-            
-            setattr(self, new_beam.name, new_beam)
-
-
-        ###############
-        for output in self.config_module.outputs:
-            new_output = Output(output, self.timestamp_manager)
-            
-            name = new_output.name
-            
-            if hasattr(self, name):
-                raise NameError(f'box already has {name} attribute, but tried to make an output with that name. Check for duplicate names in the config file')
-            
-            self.object_list.append(new_output)
-            setattr(self, new_output.name, new_output)
-            
-        
-        ###############'''
 
     def load_config_file(self, file):
         '''load a config yaml file and return the resulting dict'''
@@ -179,20 +100,51 @@ class Box:
                 dict_default[key] = value
         return dict_default
 
-        
+    def get_component(self, component_type, component_name):
+        attr_dict = self.__dict__
+        if component_type not in attr_dict.keys():
+            if component_type + 's' in attr_dict.keys():
+                component_type = component_type + 's'
+            else:
+                raise KeyError(f'box has no component type {component_type}')
+
+        component = attr_dict[component_type].get_component(component_name)
+        return component
+
+    def wait(self, worker, func_name):
+        start = time.time()
+        if isinstance(worker, list):
+            print(f'waiting for one of the workers assigned to function "{func_name}"')
+            while not any([w.done() for w in worker]):
+                '''waiting for threads to finish'''
+                time.sleep(0.025)
+
+        else:
+            print(f'waiting for function "{func_name}"')
+            while not worker.done():
+                time.sleep(0.025)
+        done = time.time()
+        print(f'"{func_name}" complete at {done - self.start_time} in {done - start}')
+
+            
 
 class ComponentContainer:
     
     def __init__(self, component_type):
         '''do we need anything at init?'''
         self.type = component_type 
-        
+    
+    def get_component(self, name):
+        '''return all contained objects'''
+        obj_dict = self.__dict__
+        return obj_dict[name]
+
     def get_components(self):
         '''return all contained objects'''
         obj_dict = self.__dict__
         return [obj_dict[key] for key in obj_dict.keys()]
     
-    def add_component(self, component_object):
+    def add_component(self, name, component_object):
             name = component_object.name
             if hasattr(self, name):
                 raise NameError(f'box already has a >{self.type}< named >{name}<, but tried to make another with that name. Check for duplicate names in the config file')

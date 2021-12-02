@@ -3,6 +3,8 @@ import RPi.GPIO as GPIO
 import queue
 from concurrent.futures import ThreadPoolExecutor
 import threading
+from hardware.event_strings import OperantEventStrings as oes
+
 
 
 class Lever:
@@ -137,7 +139,12 @@ class Lever:
         
 class Button:
     
-    def __init__(self, button_dict, name):
+    def __init__(self, button_dict, name, box):
+
+        #may not need this, but brings it into line with other inits
+        self.box = box
+
+
         self.pin = button_dict['pin']
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
@@ -155,12 +162,14 @@ class Button:
         
 class ButtonManager:
     
-    def __init__(self):
+    def __init__(self, box):
         
+        self.box = box
         self.buttons = []
+        self.running = True
         self.wp = threading.Thread(target = self.watch_buttons, daemon = True)
         self.wp.start()
-        self.running = True
+        
     
     def watch_buttons(self):
         while self.running:
@@ -171,41 +180,49 @@ class ButtonManager:
                     button.pressed = False
             time.sleep(0.005)
             
-    def new_button(self, name, button_dict, box):
+    def new_button(self, name, button_dict, box = None):
         '''make a new button and add it to the button list'''
-        self.buttons.append(Button(button_dict, name))
+        if not box:
+            box = self.box
+        self.buttons.append(Button(button_dict, name, box))
 class Door():
     
-    def __init__(self, door_config_dict, box):
+    def __init__(self, name, door_config_dict, box):
         
-        self.timestamp_q = box.timestamp_q
-
         self.box = box 
-       
+
+        self.timestamp_q = self.box.timestamp_q
+
         self.config_dict = door_config_dict
         self.servo = self.config_dict['servo']
         self.stop_speed = self.config_dict['stop']
         self.close_speed = self.config_dict['close']
         self.open_speed = self.config_dict['open']
         self.open_time = self.config_dict['open_time']
-        self.name = self.config_dict['name']
-        self.state_switch = self.config_dict['state_switch']
+        self.name = name
+
+        #real time response attributes
         
+        ss_button_dict = { 
+            'pin':self.config_dict['state_switch'],
+            'pullup_pulldown':'pull_up'
+        }
+        self.state_switch = self.box.button_manager.new_button(f'{self.name}_state_switch', ss_button_dict)
+        self.overridden = False
+
+
         #override buttons
         oo_button_dict = { 
             'pin':self.config_dict['override_open_pin'],
             'pullup_pulldown':'pull_up'
         }
-
-        self.config_dict['override_open_pin'], 0, f'{self.name}_override_open'
-
         self.override_open_button = self.box.button_manager.new_button(f'{self.name}_override_open', oo_button_dict, self.box)
+
 
         oc_button_dict = { 
             'pin':self.config_dict['override_open_pin'],
             'pullup_pulldown':'pull_up'
         }
-
         self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', oc_button_dict, self.box)
 
         
@@ -213,37 +230,64 @@ class Door():
         self.override(self)
     
     def is_closed(self):
-        return GPIO.input(self.state_switch) == 0
+        return self.state_switch.pressed
     
     def is_open(self):
-        return GPIO.input(self.state_switch) == 1
+        return not self.state_switch.pressed
     
+
     def thread_it(func, *args, **kwargs):
         '''simple decorator to pass function to our thread distributor via a queue. 
         these 4 lines took about 4 hours of googling and trial and error.
         the returned 'future' object has some useful features, such as its own task-done monitor. '''
         def pass_to_thread(self, *args, **kwargs):
             future = self.box.thread_executor.submit(func, *args, **kwargs)
-            self.box.worker_queue.put((future, func.__name__, self.round))
+            self.box.worker_queue.put((future, func.__name__))
+            if kwargs['wait'] == True:
+                name = func.__name__
+                self.box.wait(future, name)
             return future
         return pass_to_thread
     
     
+    @thread_it
+    def open(self, wait = False):
+        '''open this door'''
+        '''ts_start = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_start, id = self.name)
+        ts_finish = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_finish, id = self.name)'''
+
+        self.servo.throttle = self.open_speed
+
+        start_time = time.time()
+        while time.time() < (start_time + self.open_time) and not self.overridden:
+            time.sleep(0.05)
+        
+        self.servo.throttle = self.stop_speed
+
+        if self.state_switch.pressed:
+            print(f'{self.name} door failed to open!!!')
+
     @thread_it
     def override(self):
         while not self.box.shutdown:
             if self.override_open_button.pressed:
                 self.servo.throttle = self.open_speed
                 while self.override_open_button.pressed:
+                    self.overridden = True
                     time.sleep(0.05)
-                self.servo.throttle = self.stop_speed
                 
+                self.servo.throttle = self.stop_speed
+                self.overridden = False
                 
             if self.override_close_button.pressed:
                 self.servo.throttle = self.close_speed
                 while self.override_close_button.pressed:
+                    self.overridden = True
                     time.sleep(0.05)
+                
                 self.servo.throttle = self.stop_speed
+                self.overridden = False
+
             time.sleep(0.1)
 
 
