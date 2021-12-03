@@ -4,7 +4,7 @@ import queue
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from hardware.event_strings import OperantEventStrings as oes
-
+import inspect
 
 
 class Lever:
@@ -236,11 +236,15 @@ class Door():
         return not self.state_switch.pressed
     
 
-    def thread_it(func, *args, **kwargs):
+    def thread_it(func):
         '''simple decorator to pass function to our thread distributor via a queue. 
         these 4 lines took about 4 hours of googling and trial and error.
         the returned 'future' object has some useful features, such as its own task-done monitor. '''
+        
+
+        
         def pass_to_thread(self, *args, **kwargs):
+            print(kwargs)
             future = self.box.thread_executor.submit(func, *args, **kwargs)
             self.box.worker_queue.put((future, func.__name__))
             if kwargs['wait'] == True:
@@ -268,7 +272,7 @@ class Door():
             print(f'{self.name} door failed to open!!!')
 
     @thread_it
-    def override(self):
+    def override(self, wait = False):
         while not self.box.shutdown:
             if self.override_open_button.pressed:
                 self.servo.throttle = self.open_speed
@@ -290,7 +294,15 @@ class Door():
 
             time.sleep(0.1)
 
+def get_default_args(func):
+    bound_args = inspect.signature(func).bind(*in_args, **in_kwargs)
+    print(dict(bound_args))
+    bound_args.apply_defaults()
+    print(dict(bound_args))
 
+    return dict(bound_args)
+
+    
 class Dispenser:
 
     def __init__(self, name, dispenser_config_dict, box):

@@ -51,7 +51,7 @@ class Box:
         self.worker_queue = queue.Queue()
 
         #the manager for creating, adding, and monitoring new binary inputs
-        self.button_manager = ButtonManager()
+        self.button_manager = ButtonManager(self)
 
         # load and merge config files
         self.config_file_path = DEFAULT_CONFIG
