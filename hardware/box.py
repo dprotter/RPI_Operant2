@@ -49,6 +49,7 @@ class Box:
         #threading        
         self.thread_executor = ThreadPoolExecutor(max_workers = 6)
         self.worker_queue = queue.Queue()
+        self.done = False
 
         #the manager for creating, adding, and monitoring new binary inputs
         self.button_manager = ButtonManager(self)
@@ -75,10 +76,19 @@ class Box:
             component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
             for name, comp_dict in group_dict.items():
                 print(f'adding {name} to {component_class}')
+                
+                #this is where we instantiate our component (IE a new Door)
                 component = component_class(name, comp_dict, self)
                 comp_container.add_component(name, component)
             
+            #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
+
+        fut = self.thread_executor.submit(self.monitor_workers, verbose = True)
+        if not fut.running:
+            if fut.exception():
+                print(fut.exception())
+        
 
     def load_config_file(self, file):
         '''load a config yaml file and return the resulting dict'''
@@ -112,7 +122,7 @@ class Box:
         return component
 
     def wait(self, worker, func_name):
-        start = time.time()
+        '''from main thread, hold the like a join() until a worker has finished'''
         if isinstance(worker, list):
             print(f'waiting for one of the workers assigned to function "{func_name}"')
             while not any([w.done() for w in worker]):
@@ -123,11 +133,62 @@ class Box:
             print(f'waiting for function "{func_name}"')
             while not worker.done():
                 time.sleep(0.025)
-        done = time.time()
-        print(f'"{func_name}" complete at {done - self.start_time} in {done - start}')
+        
 
-            
+    def monitor_workers(self, verbose = False):
+        workers = []
+        
+        
+        while not self.done:
+            if not self.worker_queue.empty():
+                #receive worker, parent function, round of initiation
+                worker_and_info = self.worker_queue.get()
+                if verbose:
+                    print(f'worker queue received worker {worker_and_info}')
+                #if we have an identically named worker, we will need to modify this tuple
+                
+                workers += [worker_and_info]
+                print('\nvvvvvvvvvvvvvvvvvv')
+                print(f'currently {len(workers)} threads running via pool executor')
+                print(workers)
+                print('\n\n^^^^^^^^^^^^^^^')
 
+            for element in workers:
+                worker, name= element
+                '''print(f'checking {element}')'''
+                
+                if not worker.running():
+                    if worker.exception():
+                        print('oh snap! one of your threads had a problem.\n\n\n')
+                        
+                        print('******-----ERROR------******')
+                        print(f"function: {name}")
+                        print(worker.exception())
+                        print('******-----ERROR------******\n\n\n')
+                        workers.remove(element)
+                    elif worker.done():
+                        if verbose:
+                            print(f'worker done {element}')
+                        workers.remove(element)
+                    else:
+                        pass
+                    #print(f'$$$$$$$$$$$$ currently {len(workers)} threads running via pool executor $$$$$$$$$$$$')
+                
+            time.sleep(0.025)
+        
+        time.sleep(1)
+        print('done and exiting')
+        while len(workers) > 0:
+            for element in workers:
+                worker, _, _ = element
+                if not worker.done():
+                    print(f'{element} still not done... you may need to force exit')
+                else:
+                    workers.remove(element)
+            time.sleep(0.25)
+
+    def shutdown(self):
+        self.done = True
 class ComponentContainer:
     
     def __init__(self, component_type):

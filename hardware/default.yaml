@@ -8,6 +8,8 @@ doors:
     override_open_pin: 24
     override_close_pin: 25
     state_switch: 4
+    servo_type: continuous
+    close_timeout: 5
   door_2:
     servo: 13
     stop: 0.03
@@ -17,6 +19,8 @@ doors:
     override_open_pin: 6
     override_close_pin: 4
     state_switch: 17
+    servo_type: continuous
+    close_timeout: 5
 
 levers:
   #food:
@@ -35,6 +39,7 @@ levers:
     pullup_pulldown: pull_up
     target_name: door_1
     target_type: door
+    servo_type: positional
   door_2:
     servo: 12
     extended: 20
@@ -43,3 +48,4 @@ levers:
     pullup_pulldown: pull_up
     target_name: door_2
     target_type: door
+    servo_type: positional

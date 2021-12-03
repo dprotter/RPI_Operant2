@@ -6,6 +6,9 @@ import threading
 from hardware.event_strings import OperantEventStrings as oes
 import inspect
 
+from adafruit_servokit import ServoKit
+SERVO_KIT = ServoKit(channels=16)
+
 
 class Lever:
     
@@ -19,7 +22,7 @@ class Lever:
         self.extended = self.config_dict['extended'] #int, servo angle
         self.retracted = self.config_dict['retracted'] #int, servo angle
         self.name = name #str
-        self.servo = self.config_dict['servo'] #kit.servo
+        self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type']) #kit.servo
         self.target_name = self.config_dict['target_name']
         self.target_type = self.config_dict['target_type']
         
@@ -144,7 +147,6 @@ class Button:
         #may not need this, but brings it into line with other inits
         self.box = box
 
-
         self.pin = button_dict['pin']
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
@@ -184,8 +186,10 @@ class ButtonManager:
         '''make a new button and add it to the button list'''
         if not box:
             box = self.box
-        self.buttons.append(Button(button_dict, name, box))
-class Door():
+        new_button_obj = Button(button_dict, name, box)
+        self.buttons.append(new_button_obj)
+        return new_button_obj
+class Door:
     
     def __init__(self, name, door_config_dict, box):
         
@@ -194,11 +198,12 @@ class Door():
         self.timestamp_q = self.box.timestamp_q
 
         self.config_dict = door_config_dict
-        self.servo = self.config_dict['servo']
+        self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type']) #kit.servo
         self.stop_speed = self.config_dict['stop']
         self.close_speed = self.config_dict['close']
         self.open_speed = self.config_dict['open']
         self.open_time = self.config_dict['open_time']
+        self.close_timeout = self.config_dict['close_timeout']
         self.name = name
 
         #real time response attributes
@@ -241,13 +246,18 @@ class Door():
         these 4 lines took about 4 hours of googling and trial and error.
         the returned 'future' object has some useful features, such as its own task-done monitor. '''
         
-
-        
         def pass_to_thread(self, *args, **kwargs):
-            print(kwargs)
-            future = self.box.thread_executor.submit(func, *args, **kwargs)
+            
+            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
+            bound_args.apply_defaults()
+            bound_args_dict = bound_args.arguments
+
+            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
+            print(f'submitting {func}')
+            future = self.box.thread_executor.submit(func,self, **new_kwargs)
             self.box.worker_queue.put((future, func.__name__))
-            if kwargs['wait'] == True:
+
+            if 'wait' in bound_args_dict.keys() and bound_args_dict['wait'] == True:
                 name = func.__name__
                 self.box.wait(future, name)
             return future
@@ -270,11 +280,36 @@ class Door():
 
         if self.state_switch.pressed:
             print(f'{self.name} door failed to open!!!')
+        else:
+            print(f'{self.name} opened!')
+
+        
+    @thread_it
+    def close(self, wait = True):
+        '''open this door'''
+        '''ts_start = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_start, id = self.name)
+        ts_finish = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_finish, id = self.name)'''
+
+        self.servo.throttle = self.close_speed
+
+        start_time = time.time()
+        #this is kind of messy, mixing attributes and functions
+        while time.time() < (start_time + self.close_timeout) and not self.overridden and not self.state_switch.pressed:
+            time.sleep(0.05)
+        
+        self.servo.throttle = self.stop_speed
+
+        if not self.state_switch.pressed:
+            print(f'{self.name} door failed to close!!!')
+        else:
+            print(f'{self.name} closed!')
 
     @thread_it
     def override(self, wait = False):
-        while not self.box.shutdown:
+        while not self.box.done:
+            
             if self.override_open_button.pressed:
+                
                 self.servo.throttle = self.open_speed
                 while self.override_open_button.pressed:
                     self.overridden = True
@@ -294,15 +329,6 @@ class Door():
 
             time.sleep(0.1)
 
-def get_default_args(func):
-    bound_args = inspect.signature(func).bind(*in_args, **in_kwargs)
-    print(dict(bound_args))
-    bound_args.apply_defaults()
-    print(dict(bound_args))
-
-    return dict(bound_args)
-
-    
 class Dispenser:
 
     def __init__(self, name, dispenser_config_dict, box):
@@ -310,10 +336,30 @@ class Dispenser:
         self.box = box
         self.timestamp_q = self.box.timestamp_q
         self.config_dict = dispenser_config_dict
-        self.servo = self.config_dict['servo']
+        self.servo_ID = self.config_dict['servo']
+        self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type']) #kit.servo
         self.stop_speed = self.config_dict['stop']
         self.dispense_speed = self.config_dict['dispense']
         self.open_time = self.config_dict['dispense_time']
         self.name = name
 
-        
+
+class Speaker:
+
+    def __init__(self, name, speaker_dict, box):
+        self.box = box
+        self.pin = speaker_dict['pin']
+        self.tone_dict = speaker_dict['tone_dict']
+
+
+def get_servo(ID, servo_type):
+    '''take a servo positional ID on the adafruit board, and the servo type, and return a servo_kit obj'''
+
+    if servo_type not in ('positional', 'continuous'):
+        raise KeyError(f'servo type was passed as {servo_type}, must be either "positional" or "continuous"')
+
+    if servo_type == 'positional':
+        return SERVO_KIT.servo[ID]
+    else:
+        return SERVO_KIT.continuous_servo[ID] 
+
