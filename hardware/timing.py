@@ -13,6 +13,10 @@ import time
 from queue import Queue 
 import sys
 
+class TimeManager():
+
+    def __init__(self):
+        ''''''
 
 class Phase(): 
     def __init__(self, timestamp_manager, name, length, print_countdown): 
