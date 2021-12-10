@@ -195,6 +195,12 @@ class ComponentContainer:
         '''do we need anything at init?'''
         self.type = component_type 
     
+    
+    def __iter__(self):
+        '''override builtin iterator function to return a list
+        of component objects to iterate over'''
+        return iter(self.get_components())
+
     def get_component(self, name):
         '''return all contained objects'''
         obj_dict = self.__dict__
@@ -203,7 +209,7 @@ class ComponentContainer:
     def get_components(self):
         '''return all contained objects'''
         obj_dict = self.__dict__
-        return [obj_dict[key] for key in obj_dict.keys()]
+        return [value for _, value in obj_dict.items() if not isinstance(value, str)]
     
     def add_component(self, name, component_object):
             name = component_object.name
