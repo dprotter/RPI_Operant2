@@ -189,6 +189,9 @@ class Box:
 
     def shutdown(self):
         self.done = True
+
+
+        
 class ComponentContainer:
     
     def __init__(self, component_type):
