@@ -66,7 +66,7 @@ while box.phases['test'].active():
             box.retract_all_levers()
 
             box.speaker.play_tone('door_open')
-            box.delay('reward_delay')
+            box.delay(box.config['reward_delay'])
             door = box.doors[lever.target]
             door.open()
         
@@ -76,7 +76,7 @@ for lever in box.levers:
 
 
 
-while not box.finished:
+while not box.finished: #box will check how many rounds it needs to complete from config file
     box.new_round()  #this will iterate round numbers
 
     
@@ -110,8 +110,8 @@ while not box.finished:
         box.delay('reward_delay')
         door.open()
     
-    box.timer.new_phase(name = 'reward_time', time = 60)
-    box.timer.wait_for_phase('reward_time')
+        box.timer.new_phase(name = 'reward_time', time = box.config['reward_time'])
+        box.timer.wait_for_phase('reward_time')
 
     door.close()
     box.timer.new_phase(name = 'ITI', time = 90)
