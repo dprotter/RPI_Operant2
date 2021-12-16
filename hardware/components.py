@@ -9,6 +9,38 @@ import inspect
 from adafruit_servokit import ServoKit
 SERVO_KIT = ServoKit(channels=16)
 
+def thread_it_test(func):
+        '''simple decorator to pass function to our thread distributor via a queue. 
+        these 4 lines took about 4 hours of googling and trial and error.
+        the returned 'future' object has some useful features, such as its own task-done monitor. '''
+        
+        def pass_to_thread(self, *args, **kwargs):
+            
+            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
+            bound_args.apply_defaults()
+            bound_args_dict = bound_args.arguments
+
+            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
+            print(f'submitting {func}')
+            future = self.box.thread_executor.submit(func,self, **new_kwargs)
+            self.box.worker_queue.put((future, func.__name__))
+
+            if 'wait' in bound_args_dict.keys() and bound_args_dict['wait'] == True:
+                name = func.__name__
+                self.box.wait(future, name)
+            return future
+        return pass_to_thread
+
+def get_servo(ID, servo_type):
+    '''take a servo positional ID on the adafruit board, and the servo type, and return a servo_kit obj'''
+
+    if servo_type not in ('positional', 'continuous'):
+        raise KeyError(f'servo type was passed as {servo_type}, must be either "positional" or "continuous"')
+
+    if servo_type == 'positional':
+        return SERVO_KIT.servo[ID]
+    else:
+        return SERVO_KIT.continuous_servo[ID] 
 
 class Lever:
     
@@ -342,7 +374,57 @@ class Dispenser:
         self.dispense_speed = self.config_dict['dispense']
         self.open_time = self.config_dict['dispense_time']
         self.name = name
+        self.pellet_state = False
 
+        sensor_dict = { 
+            'pin':self.config_dict['state_switch'],
+            'pullup_pulldown':self.config_dict['pullup_pulldown']
+        }
+        self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
+        self.overridden = False
+
+
+
+    def sensor_blocked(self):
+        return self.sensor.pushed
+
+    @thread_it_test
+    def dispense(self):
+        ''''''
+        #check if pellet was retrieved or is still in trough
+        if self.pellet_state:
+            '''timestamp put "pellet not retrieved!"'''
+            
+        elif self.sensor_blocked:
+            '''timestamp put "pellet sensor already blocked"'''
+            '''wait????'''
+        else:
+            self.servo.throttle = self.dispense_speed
+            read = 0
+            timeout = self.box.timer.new_timer(timeout = 3)
+            while timeout.active():
+                if self.sensor.pressed:
+                    read+=1
+                if read > 2:
+                    '''timestamp put "pellet dispensed"'''
+                    self.servo.throttle = self.stop_speed
+                    self.pellet_state = True
+                    pellet_latency = self.timestamp_q.new_latency(description = 'pellet_retrieved')
+                    self.monitor_pellet(pellet_latency)
+                    return None
+            '''timestamp put "pellet dispense failure"'''
+            '''output put "pellet dispense failure"'''
+    
+    @thread_it_test
+    def monitor_pellet(self, pellet_latency):
+        '''track when a pellet is retrieved'''
+        while not self.box.finished():
+            if not self.sensor_pressed:
+                pellet_latency.submit()
+                '''timestamp put latency obj'''
+                '''timestamp put pellet retrived'''
+                
+                
 
 class Speaker:
 
@@ -352,14 +434,5 @@ class Speaker:
         self.tone_dict = speaker_dict['tone_dict']
 
 
-def get_servo(ID, servo_type):
-    '''take a servo positional ID on the adafruit board, and the servo type, and return a servo_kit obj'''
 
-    if servo_type not in ('positional', 'continuous'):
-        raise KeyError(f'servo type was passed as {servo_type}, must be either "positional" or "continuous"')
-
-    if servo_type == 'positional':
-        return SERVO_KIT.servo[ID]
-    else:
-        return SERVO_KIT.continuous_servo[ID] 
 

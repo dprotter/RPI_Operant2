@@ -28,15 +28,15 @@ levers:
     #extended: 30
     #retracted: 105
     #pin: 19
-    #pullup_pulldown: pull_up
-    #target_name: pellet_dispenser
+    #pullup_pulldown: pullup
+    #target_name: pellet
     #target_type: dispenser
   door_1:
     servo: 2
     extended: 20
     retracted: 100
     pin: 18
-    pullup_pulldown: pull_up
+    pullup_pulldown: pullup
     target_name: door_1
     target_type: door
     servo_type: positional
@@ -45,7 +45,17 @@ levers:
     extended: 20
     retracted: 100
     pin: 22
-    pullup_pulldown: pull_up
+    pullup_pulldown: pullup
     target_name: door_2
     target_type: door
     servo_type: positional
+
+dispensers:
+  pellet:
+    servo: 1
+    servo_type: continuous 
+    dispense: 0.075
+    stop: 0
+    sensor_pin: 16
+    pullup_pulldown: pullup
+    dispense_timeout: 3
