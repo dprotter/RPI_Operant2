@@ -74,8 +74,7 @@ class Timestamp():
         
 class Latency(): 
     def __init__(self, timestamp_manager, event_descriptor): 
-        
-        
+
         self.start_time = time.time()
         self.timestamp_manager = timestamp_manager 
         self.event_descriptor = event_descriptor # string that describes what the event is 
@@ -86,7 +85,7 @@ class Latency():
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
         self.latency = round(t - self.start_time, 2)
-        self.timestamp = round(t - self.timestamp_manager.start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.experiment_start_time, 2)
         self.timestamp_manager.queue.put(self)
 
 class TimestampManager(): 
@@ -98,10 +97,10 @@ class TimestampManager():
         self.round_start_time = time.time() 
         self.phase = self.__first_phase()
         self.save_path = self.box.config['output_path']
-        self.start_time = None
+        self.experiment_start_time = None
 
     def start_timing(self):
-        self.start_time = time.time()
+        self.experiment_start_time = time.time()
 
     def new_timestamp(self, description):
         '''how to create a new timestamp object'''
@@ -141,7 +140,7 @@ class TimestampManager():
         if isinstance(timestamp_obj, Timestamp):
             return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase, None, timestamp_obj.round_initialized]
         
-        elif isinstance(timestamp_obj, Latency)
+        elif isinstance(timestamp_obj, Latency):
             return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase, timestamp_obj.latency, timestamp_obj.round_initialized]
         
         else:

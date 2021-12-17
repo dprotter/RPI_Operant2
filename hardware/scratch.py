@@ -76,10 +76,8 @@ for lever in box.levers:
 
 
 
-while not box.finished: #box will check how many rounds it needs to complete from config file
+while not box.finished(): #box will check how many rounds it needs to complete from config file
     box.new_round()  #this will iterate round numbers
-
-    
 
     box.levers.door_1.extend()
     box.levers.door_2.extend()
@@ -90,10 +88,9 @@ while not box.finished: #box will check how many rounds it needs to complete fro
 
 
     box.timer.new_phase(name = 'test', time = 30) #starting a new phase
-    while box.phases['test'].is_active():   #try having sleep built into 
+    while box.timer.phases['test'].is_active():   #try having sleep built into 
                                             #the is_active check to allow 
                                             #thread swapping
-
         if box.levers.door_1.presses_reached:  #will it be confusing to switch 
                                                #between attributes and methods?
 
@@ -115,12 +112,12 @@ while not box.finished: #box will check how many rounds it needs to complete fro
         box.delay('reward_delay')
         door.open()
     
-        box.timer.new_phase(name = 'reward_time', time = box.config['reward_time'])
+        box.timer.new_phase(name = 'reward_time', time = box.config['reward_time'], wait_now = True)
         box.timer.wait_for_phase('reward_time')
 
     door.close()
-    box.timer.new_phase(name = 'ITI', time = 90)
-    box.timer.wait_for_phase('ITI')
+    box.timer.new_phase(name = 'ITI', time = 90, wait_now = True)
+    
 
 [('doors', 
         {'door_1': 

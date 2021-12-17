@@ -380,6 +380,7 @@ class Dispenser:
             'pin':self.config_dict['state_switch'],
             'pullup_pulldown':self.config_dict['pullup_pulldown']
         }
+        
         self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
         self.overridden = False
 
