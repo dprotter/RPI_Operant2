@@ -9,6 +9,7 @@
 #!/usr/bin/python3
 
 # standard lib imports 
+from _typeshed import Self
 import time
 from queue import Queue 
 import sys
@@ -83,13 +84,10 @@ class Latency():
     
     def submit(self): 
         # self.timestamp = "{:.2f}".format(self.timestamp)
-         
-        self.latency = round(time.time() - self.start_time, 2)
-        else: 
-            self.timestamp = "{:.2f}".format(self.timestamp - self.round_start_time)
-        self.timestamp_manager.record_new(self)
-        #self.timestamp_manager.print_items()    
-
+        t = time.time()
+        self.latency = round(t - self.start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.start_time, 2)
+        self.timestamp_manager.queue.put(self)
 
 class TimestampManager(): 
     def __init__(self): 
@@ -107,11 +105,11 @@ class TimestampManager():
 
     def new_timestamp(self, description):
         '''how to create a new timestamp object'''
-        return Timestamp(self, description, time.time() - self.start_time)
+        return Timestamp(self, description)
 
     def new_latency(self, description):
         '''will track latency between initialization and submission'''
-        return Latency(self, description, time.time() - self.start_time)
+        return Latency(self, description)
 
     def __first_phase(self): 
         Phase(self, 'Object Instantiation & Experiment Setup', length=None, print_countdown=False )
