@@ -471,8 +471,8 @@ class Beam:
                 while self.ir_sensor_button.pressed: # wait for sensor to be unblocked. 
                      
                     if self.box.done: # check that box has not finished running in this time 
-                        ts = self.timestamp_q.new_timestamp(f'{self.name} break detected at {latency.start_time}, and box set to done before led unblocked')
-                        ts.submit() 
+                        latency.event_descriptor = (f'{self.name} break detected, and box set to done before it was unblocked')
+                        latency.submit() 
                         return
 
                     time.sleep(0.05)
