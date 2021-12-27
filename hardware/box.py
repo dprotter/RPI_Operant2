@@ -18,7 +18,7 @@ from .dispenser import Dispenser
 from .beam import Beam 
 from .output import Output'''
 import os
-from hardware.components import Button, Lever, Door, ButtonManager, Dispenser
+from hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Beam
 from hardware.timing import Phase, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -34,6 +34,7 @@ COMPONENT_LOOKUP = {
                     'levers':{'component_class':Lever, 'label':'lever'},
                     'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
                     'dispenser':{'component_class':Dispenser, 'label':'dispenser'},
+                    'beams':{'component_class':Beam, 'label':'beam'},
                     }
 
 

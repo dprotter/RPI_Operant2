@@ -59,3 +59,13 @@ dispensers:
     sensor_pin: 16
     pullup_pulldown: pullup
     dispense_timeout: 3
+  
+beams: 
+  ir_1:
+    pin: 12 
+    pullup_pulldown: pullup
+  ir_2: 
+    pin: 13
+    pullup_pulldown: pullup
+
+

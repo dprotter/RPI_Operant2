@@ -257,7 +257,7 @@ class Door:
 
 
         oc_button_dict = { 
-            'pin':self.config_dict['override_open_pin'],
+            'pin':self.config_dict['override_close_pin'], # Sarah changed 'override_open_pin' to 'override_close_pin' --> make sure change is correct before merge w/ main branch
             'pullup_pulldown':'pull_up'
         }
         self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', oc_button_dict, self.box)
@@ -377,7 +377,7 @@ class Dispenser:
         self.pellet_state = False
 
         sensor_dict = { 
-            'pin':self.config_dict['state_switch'],
+            'pin':self.config_dict['sensor_pin'], # Sarah changed 'state_switch' to 'sensor_pin' --> make sure change is correct before merge w/ main branch
             'pullup_pulldown':self.config_dict['pullup_pulldown']
         }
         
@@ -435,5 +435,53 @@ class Speaker:
         self.tone_dict = speaker_dict['tone_dict']
 
 
+class Beam: 
 
+    def __init__(self, name, beam_config_dict, box):
+        
+        self.box = box 
+
+        self.timestamp_q = self.box.timestamp_q
+
+        self.config_dict = beam_config_dict
+
+        self.name = name
+
+        self.break_count = 0
+
+        #create real time response attributes ( relies on button class )
+        ir_sensor_dict = { 
+            'pin':self.config_dict['pin'],
+            'pullup_pulldown':self.config_dict['pullup_pulldown']
+        }
+        self.ir_sensor_button = self.box.button_manager.new_button(f'{self.name}_sensor', ir_sensor_dict)
+
+
+    def monitor_beam_breaks(self): 
+
+        # Continuous Monitoring for a Beam Break 
+
+        while not self.box.done:
+
+            if self.ir_sensor_button.pressed: # Sensor blocked
+
+                latency = self.timestamp_q.new_latency(event_disciptor = f'{self.name} break')
+                self.break_count += 1 
+                
+                while self.ir_sensor_button.pressed: # wait for sensor to be unblocked. 
+                     
+                    if self.box.done: # check that box has not finished running in this time 
+                        ts = self.timestamp_q.new_timestamp(f'{self.name} break detected at {latency.start_time}, and box set to done before led unblocked')
+                        ts.submit() 
+                        return
+
+                    time.sleep(0.05)
+                
+                latency.submit() # sensor unblocked, record latency
+                time.sleep(0.05)
+            
+            
+            else: time.sleep(0.1)
+
+    
 
