@@ -1,3 +1,5 @@
 filepaths:
   save_path: '~/RPI_Operant_outputs/default_location'
-  
+
+checks:
+  save_timestamps: False

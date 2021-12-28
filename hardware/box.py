@@ -56,14 +56,14 @@ class Box:
 
         # load and merge config files
         self.config_file_path = DEFAULT_HARDWARE_CONFIG
-        self.config_dict = self.load_config_file(self.config_file_path)
+        self.config = self.load_config_file(self.config_file_path)
         if user_config_file_path:
-            self.config_dict = self.merge_config_files(user_config_file_path)
+            self.config = self.merge_config_files(user_config_file_path)
 
         self.software_config_file_path = DEFAULT_SOFTWARE_CONFIG
-        self.software_config_dict = self.load_config_file(self.software_config_file_path)
+        self.software_config = self.load_config_file(self.software_config_file_path)
         if user_software_config_file_path:
-            self.software_config_dict = self.merge_config_files(user_software_config_file_path)
+            self.software_config = self.merge_config_files(user_software_config_file_path)
 
 
         

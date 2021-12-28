@@ -106,7 +106,7 @@ class TimestampManager:
         self.round = 0 
         self.round_start_time = time.time() 
         self.phase = None
-        self.save_path = self.box.config['output_path']
+        self.save_path = self.box.software_config['output_path']
         self.experiment_start_time = None
 
     def start_timing(self):
@@ -155,21 +155,32 @@ class TimestampManager:
 
     def monitor_queue(self):
         '''monitor and write to queue. some threading here''' 
-        while not self.box.finished():
+        if self.box.software_config['checks']['save_timestamps']:
+            while not self.box.finished():
+                
+                if not  self.queue.empty():
 
-            if not  self.queue.empty():
+                    #open file here to prevent repeated opening and closing
+                    with open(self.save_path, 'a') as file:
+                        csv_writer = csv.writer(file, delimiter = ',')
+                        while not self.queue.empty():
 
-                #open file here to prevent repeated opening and closing
-                with open(self.save_path, 'a') as file:
-                    csv_writer = csv.writer(file, delimiter = ',')
+                            ts = self.queue.get()
+                            line = self.format(ts)
+                            ######add ts to screen write queue
+                            csv_writer.writerow(line)
+                            time.sleep(0.005)
+                            
+        #dont save timestamps, but do print them to the terminal
+        else:
+            while not self.box.finished():
+                if not  self.queue.empty():
+
                     while not self.queue.empty():
-
-                        ts = self.queue.get()
-                        line = self.format(ts)
-                        csv_writer.writerow(line)
+                        ######add ts to screen write queue
                         time.sleep(0.005)
 
-
+    
 class Timeout:
     '''a class used to make temporary timeout objects to streamline code.'''
     def __init__(self, length):
