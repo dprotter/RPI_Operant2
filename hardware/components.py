@@ -145,10 +145,9 @@ class Lever:
                 print(f'{self.name}pressed!')
                 
                 self.click_on()
-                timer = self.box.timeout(self.retraction_timeout)
-                while self.switch.pressed and timer.running:
-                    '''waiting for vole to get off lever'''
-                    time.sleep(0.025)
+                timeout = self.box.time_manager.new_timeout(self.retraction_timeout)
+                while self.switch.pressed and timeout.is_active():
+                    '''waiting for vole to get off lever. nothing necessary within loop'''
                 self.click_off()
                 self.lever_presses.put('pressed')
                 time.sleep(self.inter_press_timeout)

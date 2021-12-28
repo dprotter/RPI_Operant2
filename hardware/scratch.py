@@ -59,7 +59,7 @@ for lever in active_levers:
     lever.extend()
     lever.wait_for_n_presses(n = 5)
         
-while box.phases['test'].active():
+while box.current_phase.active():
     for lever in active_levers:
         if lever.presses_reached:
             

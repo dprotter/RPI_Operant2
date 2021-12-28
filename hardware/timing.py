@@ -9,13 +9,12 @@
 #!/usr/bin/python3
 
 # standard lib imports 
-from _typeshed import Self
 import time
 from queue import Queue 
 import sys
 import csv
 
-class TimeManager():
+class TimeManager:
 
     def __init__(self, box):
         ''''''
@@ -23,20 +22,24 @@ class TimeManager():
         self.box
         self.start_time = None
         self.round = 1
+        self.current_phase = None
     
     def start_timing(self):
         self.start_time = time.time()
 
-    
+    def new_timeout(self, length):
+        return Timeout(length)
 
-class Phase(): 
-    def __init__(self, timestamp_manager, name, length, print_countdown): 
+
+class Phase: 
+    def __init__(self, name, length, box): 
             # if timeframe is None, then there is no time limit on this phase. As a result, it will run until interrupt or a new phase is created
+            self.start_time = time.time()
+            self.end_time = self.start_time + length
             self.active = True 
             self.name = name 
-            self.timestamp_manager = timestamp_manager
             self.timeframe = length
-            if print_countdown: self.display_countdown_timer() 
+            
     
     def display_countdown_timer(self): 
         # print a countdown to the screen based on the remaining time left in <timeframe> 
@@ -49,9 +52,15 @@ class Phase():
             time.sleep(1)
             timeinterval -= 1
 
+    def is_active(self):
+        if time.time() >= self.end_time:
+            return False
+        else:
+            time.sleep(0.05)
+            return True
 
 
-class Timestamp(): 
+class Timestamp: 
     def __init__(self, timestamp_manager, event_descriptor, timestamp): 
         
         # self.timestamp = "{:.2f}".format(timestamp) # format time to 2 decimal points 
@@ -72,7 +81,7 @@ class Timestamp():
         self.timestamp_manager.record_new(self)
         #self.timestamp_manager.print_items()
         
-class Latency(): 
+class Latency: 
     def __init__(self, timestamp_manager, event_descriptor): 
 
         self.start_time = time.time()
@@ -88,14 +97,15 @@ class Latency():
         self.timestamp = round(t - self.timestamp_manager.experiment_start_time, 2)
         self.timestamp_manager.queue.put(self)
 
-class TimestampManager(): 
-    def __init__(self): 
+class TimestampManager: 
+    def __init__(self, box): 
         self.queue = Queue()
 
         # Round and start time are updated each new round 
+        self.box = box
         self.round = 0 
         self.round_start_time = time.time() 
-        self.phase = self.__first_phase()
+        self.phase = None
         self.save_path = self.box.config['output_path']
         self.experiment_start_time = None
 
@@ -110,11 +120,8 @@ class TimestampManager():
         '''will track latency between initialization and submission'''
         return Latency(self, description)
 
-    def __first_phase(self): 
-        Phase(self, 'Object Instantiation & Experiment Setup', length=None, print_countdown=False )
-
-    def new_phase(self, name, length=None, print_countdown=False): # creates a new phase, forgetting whatever phase we were previously in
-        self.phase = Phase(self, name, length, print_countdown)
+    def new_phase(self, name, length=None): # creates a new phase, forgetting whatever phase we were previously in
+        self.phase = Phase(self, name, length, box = self.box)
 
 
     def new_round(self, round, round_start_time): 
@@ -163,8 +170,16 @@ class TimestampManager():
                         time.sleep(0.005)
 
 
-    
-    
+class Timeout:
+    '''a class used to make temporary timeout objects to streamline code.'''
+    def __init__(self, length):
+        self.start_time = time.time()
+        self.end_time = self.start_time + length
 
-    
-    
+    def is_active(self):
+        '''when queried check if time has expired'''
+        if time.time() >= self.end_time:
+            return False
+        else:
+            time.sleep(0.05)
+            return True

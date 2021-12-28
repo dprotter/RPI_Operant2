@@ -27,8 +27,8 @@ import queue
 import time
 
 # Constants 
-DEFAULT_CONFIG = os.path.join(os.getcwd(), 'hardware/default.yaml')
-
+DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'hardware/default_hardware.yaml')
+DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'hardware/default_software.yaml')
 COMPONENT_LOOKUP = {
                     'doors':{'component_class':Door, 'label':'door'},
                     'levers':{'component_class':Lever, 'label':'lever'},
@@ -40,10 +40,10 @@ COMPONENT_LOOKUP = {
 
 class Box: 
 
-    def __init__(self, user_config_file_path=None): 
+    def __init__(self, user_config_file_path=None, user_software_config_file_path = None): 
         GPIO.setmode(GPIO.BCM)
         # timestamp queue that gets setup by ScriptManager
-        self.timestamp_manager = TimestampManager()
+        self.timestamp_manager = TimestampManager(self)
         self.timestamp_q = self.timestamp_manager.queue
 
         #threading        
@@ -55,10 +55,16 @@ class Box:
         self.button_manager = ButtonManager(self)
 
         # load and merge config files
-        self.config_file_path = DEFAULT_CONFIG
+        self.config_file_path = DEFAULT_HARDWARE_CONFIG
         self.config_dict = self.load_config_file(self.config_file_path)
         if user_config_file_path:
             self.config_dict = self.merge_config_files(user_config_file_path)
+
+        self.software_config_file_path = DEFAULT_SOFTWARE_CONFIG
+        self.software_config_dict = self.load_config_file(self.software_config_file_path)
+        if user_software_config_file_path:
+            self.software_config_dict = self.merge_config_files(user_software_config_file_path)
+
 
         
         ###############
@@ -222,5 +228,7 @@ class ComponentContainer:
             setattr(self, name, component_object)
         
         
-
-
+class ScreenOutput:
+    '''format and handle updating the output screen'''
+    def __init__(self, box):
+        self.box = box
