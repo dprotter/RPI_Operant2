@@ -13,8 +13,8 @@ doors:
   door_2:
     servo: 13
     stop: 0.03
-    close: -0.1
-    open: 0.8
+    close: 0.8
+    open: -0.2
     open_time: 1.6
     override_open_pin: 6
     override_close_pin: 4
@@ -40,6 +40,8 @@ levers:
     target_name: door_1
     target_type: door
     servo_type: positional
+    interpress_interval: 1
+  
   door_2:
     servo: 12
     extended: 20
@@ -49,6 +51,7 @@ levers:
     target_name: door_2
     target_type: door
     servo_type: positional
+    interpress_interval: 1
 
 dispensers:
   pellet:
@@ -59,3 +62,7 @@ dispensers:
     sensor_pin: 16
     pullup_pulldown: pullup
     dispense_timeout: 3
+
+speakers:
+  speaker:
+    pin: 21

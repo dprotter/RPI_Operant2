@@ -11,15 +11,10 @@ import importlib.util
 import RPi.GPIO as GPIO
 # Third Party Imports 
 # Local Imports
-'''from .lever import Lever 
-from .door import Door 
-from .button import Button
-from .dispenser import Dispenser 
-from .beam import Beam 
-from .output import Output'''
+
 import os
-from hardware.components import Button, Lever, Door, ButtonManager, Dispenser
-from hardware.timing import Phase, TimestampManager
+from hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker
+from hardware.timing import TimeManager, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 import yaml
@@ -33,7 +28,8 @@ COMPONENT_LOOKUP = {
                     'doors':{'component_class':Door, 'label':'door'},
                     'levers':{'component_class':Lever, 'label':'lever'},
                     'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
-                    'dispenser':{'component_class':Dispenser, 'label':'dispenser'},
+                    'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
+                    'speakers':{'component_class':Speaker, 'label':'speaker'}
                     }
 
 
@@ -42,41 +38,48 @@ class Box:
 
     def __init__(self, user_config_file_path=None, user_software_config_file_path = None): 
         GPIO.setmode(GPIO.BCM)
-        # timestamp queue that gets setup by ScriptManager
-        self.timestamp_manager = TimestampManager(self)
-        self.timestamp_q = self.timestamp_manager.queue
-
-        #threading        
-        self.thread_executor = ThreadPoolExecutor(max_workers = 6)
-        self.worker_queue = queue.Queue()
+        ###### load and merge config files
         self.done = False
-
-        #the manager for creating, adding, and monitoring new binary inputs
-        self.button_manager = ButtonManager(self)
-
-        # load and merge config files
         self.config_file_path = DEFAULT_HARDWARE_CONFIG
         self.config = self.load_config_file(self.config_file_path)
-        if user_config_file_path:
+        self.user_config_file_path = user_config_file_path
+        if self.user_config_file_path:
             self.config = self.merge_config_files(user_config_file_path)
 
         self.software_config_file_path = DEFAULT_SOFTWARE_CONFIG
         self.software_config = self.load_config_file(self.software_config_file_path)
-        if user_software_config_file_path:
+        self.user_software_config_file_path = user_software_config_file_path
+        if self.user_software_config_file_path:
             self.software_config = self.merge_config_files(user_software_config_file_path)
-
-
         
+        #### timestamp queue that gets setup by ScriptManager
+        self.timestamp_manager = TimestampManager(self)
+        self.timestamp_q = self.timestamp_manager.queue
+
+        #self.timing is in charge tracking start time, making new timeouts, latencies, etc
+        self.timing = TimeManager(self)
+
+        #threading        
+        self.thread_executor = ThreadPoolExecutor(max_workers = 10)
+        self.worker_queue = queue.Queue()
+        
+
+        #the manager for creating, adding, and monitoring new binary inputs
+        self.button_manager = ButtonManager(self)
+
         ###############
 
         #iterate across groups (IE doors, levers, etc etc)
         #lookup class object (ie Door() ) and label (ie "door")
-        for component_group_name, group_dict in self.config_dict.items():
+        for component_group_name, group_dict in self.config.items():
             
             #create a new container to put components within
-            label = COMPONENT_LOOKUP[component_group_name]['label']
-            comp_container = ComponentContainer(label)
-
+            if component_group_name in COMPONENT_LOOKUP.keys():
+                label = COMPONENT_LOOKUP[component_group_name]['label']
+                comp_container = ComponentContainer(label)
+            else:
+                print(f'{component_group_name} in hardware config, but Box does not yet have the ability to instantiate that class.')
+                continue
             #iterate across all components in this class and use their dicts to instantiate a new 
             #component object
             component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
@@ -90,11 +93,27 @@ class Box:
             #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
 
+        #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
+        self.speaker = self.speakers.speaker
+        #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
         fut = self.thread_executor.submit(self.monitor_workers, verbose = True)
+        
+        #startup queue monitoring
+        fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
+        self.worker_queue.put((fut2,'timestamp monitor_queue'))
         if not fut.running:
             if fut.exception():
                 print(fut.exception())
         
+        
+    def reload_hardware_config(self):
+        '''reload config file'''
+        self.config_file_path = DEFAULT_HARDWARE_CONFIG
+        self.config = self.load_config_file(self.config_file_path)
+        if self.user_config_file_path:
+            self.config = self.merge_config_files(self.user_config_file_path)
 
     def load_config_file(self, file):
         '''load a config yaml file and return the resulting dict'''
@@ -196,6 +215,9 @@ class Box:
     def shutdown(self):
         self.done = True
 
+    def finished(self):
+        time.sleep(0.05)
+        return self.done
 
         
 class ComponentContainer:

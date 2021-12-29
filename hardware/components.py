@@ -1,15 +1,20 @@
 import time
 import RPi.GPIO as GPIO
+
 import queue
 from concurrent.futures import ThreadPoolExecutor
 import threading
 from hardware.event_strings import OperantEventStrings as oes
 import inspect
+import os
+if os.system('sudo lsof -i TCP:8888'):
+    os.system('sudo pigpiod')
+import pigpio
 
 from adafruit_servokit import ServoKit
 SERVO_KIT = ServoKit(channels=16)
 
-def thread_it_test(func):
+def thread_it(func):
         '''simple decorator to pass function to our thread distributor via a queue. 
         these 4 lines took about 4 hours of googling and trial and error.
         the returned 'future' object has some useful features, such as its own task-done monitor. '''
@@ -101,10 +106,10 @@ class Lever:
                 self.futures.remove(fut)
         
     
-    def extend_lever(self):
+    def extend(self):
         '''extend a lever and timestamp it'''
         
-        ts = self.timestamp_q.new_timestamp(event_disciptor = f'{self.name} extended')
+        ts = self.box.timestamp_manager.new_timestamp(description = f'{self.name} lever extended')
         
         extend_start = max(0, self.extended-self.wiggle)
 
@@ -116,16 +121,15 @@ class Lever:
         ts.submit()
         
         
-    def retract_lever(self):
+    def retract(self):
         '''extend a lever and timestamp it'''
-        ts = self.timestamp_q.new_timestamp(event_disciptor = f'{self.name} extended')
+        ts = self.timestamp_manager.new_timestamp(description = f'{self.name} lever retracted')
         retract_start = max(180, self.retract + self.wiggle)
 
         #wait for the vole to get off the lever
-        start = time.time()
-        while not GPIO.input(self.pin) and time.time() - start < self.retraction_timeout:
+        timeout = self.box.timer.new_timeout(self.retraction_timeout)
+        while not GPIO.input(self.pin) and timeout.active():
             'hanging till lever not pressed'
-            time.sleep(0.05)
 
         #retract further than expected, then extend to final position
         self.servo.angle = retract_start
@@ -135,40 +139,52 @@ class Lever:
         ts.submit()
     
     
-    def click_on(self):
-        '''how will we implement this? will the lever have its own click? or will clicking be implemented elsewhere?'''
-    
-    
     def watch_lever_pin(self):
-        while self.end_monitor == False:
+        while self.monitoring:
             if self.switch.pressed:
                 print(f'{self.name}pressed!')
-                
-                self.click_on()
+                self.total_presses +=1
+                self.box.timestamp_manager.submit_new_timestamp(f'{self.name} lever pressed',modifiers = {'press_n':self.total_presses})
+                self.box.speaker.click_on()
                 timeout = self.box.time_manager.new_timeout(self.retraction_timeout)
                 while self.switch.pressed and timeout.is_active():
                     '''waiting for vole to get off lever. nothing necessary within loop'''
-                self.click_off()
+                self.box.speaker.click_off()
                 self.lever_presses.put('pressed')
-                time.sleep(self.inter_press_timeout)
+                
+                #wait to loop until inter-press interval is passed
+                ipi_timeout = self.box.time_manager.new_timeout(self.interpress_interval)
+                ipi_timeout.wait()
             time.sleep(0.025)
         print(f'\n:::::: done watching a pin for {self.name}:::::\n')
     
-    def wait_for_n_presses(self, presses = 1):
+    @thread_it
+    def wait_for_n_presses(self, presses = 1, reset_with_new_phase = True):
         'monitor lever and wait for n_presses before '
-        #start new thread to track presses
-            #self.monitoring = True
-            
-            #start thread to watch pin and note presses
-                #while self.monitoring:
-                    #if pressed and total < n presses:
-                        #self.presses +=1
-                        
-                
-        #if presses reached
-            #self.presses_reached = True
-    
+        self.monitoring = True
+        self.watch_lever_pin()
+        if reset_with_new_phase:
+            #get the current phase object
+            phase = self.box.current_phase
+
+            #query to see if phase is still active.
+            #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
+            while phase.active():
+                if self.total_presses >= presses:
+                    self.presses_reached = True
+                    return True
+        
+        else:
+            while self.monitoring:
+                if self.total_presses >= presses:
+                    self.presses_reached = True
+                    return True
+                time.sleep(0.05)
+
+
+
     def reset_lever(self):
+        self.monitoring = False
         self.presses_reached = False
         
 class Button:
@@ -182,14 +198,14 @@ class Button:
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
 
-        if pullup_pulldown == 'pull_up':
+        if pullup_pulldown == 'pullup':
             self.pressed_val = 0
             GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
-        elif pullup_pulldown == 'pull_down':
+        elif pullup_pulldown == 'pulldown':
             self.pressed_val = 1
             GPIO.setup(self.pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
         else:
-            raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pull_up" or "pull_down", but was passed {pullup_pulldown}')
+            raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pullup" or "pulldown", but was passed {pullup_pulldown}')
          
         self.pressed = False
         
@@ -241,7 +257,7 @@ class Door:
         
         ss_button_dict = { 
             'pin':self.config_dict['state_switch'],
-            'pullup_pulldown':'pull_up'
+            'pullup_pulldown':'pullup'
         }
         self.state_switch = self.box.button_manager.new_button(f'{self.name}_state_switch', ss_button_dict)
         self.overridden = False
@@ -250,14 +266,14 @@ class Door:
         #override buttons
         oo_button_dict = { 
             'pin':self.config_dict['override_open_pin'],
-            'pullup_pulldown':'pull_up'
+            'pullup_pulldown':'pullup'
         }
         self.override_open_button = self.box.button_manager.new_button(f'{self.name}_override_open', oo_button_dict, self.box)
 
 
         oc_button_dict = { 
             'pin':self.config_dict['override_open_pin'],
-            'pullup_pulldown':'pull_up'
+            'pullup_pulldown':'pullup'
         }
         self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', oc_button_dict, self.box)
 
@@ -271,28 +287,6 @@ class Door:
     def is_open(self):
         return not self.state_switch.pressed
     
-
-    def thread_it(func):
-        '''simple decorator to pass function to our thread distributor via a queue. 
-        these 4 lines took about 4 hours of googling and trial and error.
-        the returned 'future' object has some useful features, such as its own task-done monitor. '''
-        
-        def pass_to_thread(self, *args, **kwargs):
-            
-            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
-            bound_args.apply_defaults()
-            bound_args_dict = bound_args.arguments
-
-            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
-            print(f'submitting {func}')
-            future = self.box.thread_executor.submit(func,self, **new_kwargs)
-            self.box.worker_queue.put((future, func.__name__))
-
-            if 'wait' in bound_args_dict.keys() and bound_args_dict['wait'] == True:
-                name = func.__name__
-                self.box.wait(future, name)
-            return future
-        return pass_to_thread
     
     
     @thread_it
@@ -365,18 +359,17 @@ class Dispenser:
     def __init__(self, name, dispenser_config_dict, box):
         '''make a dispenser'''
         self.box = box
-        self.timestamp_q = self.box.timestamp_q
         self.config_dict = dispenser_config_dict
         self.servo_ID = self.config_dict['servo']
         self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type']) #kit.servo
         self.stop_speed = self.config_dict['stop']
         self.dispense_speed = self.config_dict['dispense']
-        self.open_time = self.config_dict['dispense_time']
+        self.dispense_timeout = self.config_dict['dispense_timeout']
         self.name = name
         self.pellet_state = False
 
         sensor_dict = { 
-            'pin':self.config_dict['state_switch'],
+            'pin':self.config_dict['sensor_pin'],
             'pullup_pulldown':self.config_dict['pullup_pulldown']
         }
         
@@ -388,7 +381,7 @@ class Dispenser:
     def sensor_blocked(self):
         return self.sensor.pushed
 
-    @thread_it_test
+    @thread_it
     def dispense(self):
         ''''''
         #check if pellet was retrieved or is still in trough
@@ -401,7 +394,7 @@ class Dispenser:
         else:
             self.servo.throttle = self.dispense_speed
             read = 0
-            timeout = self.box.timer.new_timer(timeout = 3)
+            timeout = self.box.timer.new_timeout(timeout = self.dispense_timeout)
             while timeout.active():
                 if self.sensor.pressed:
                     read+=1
@@ -415,7 +408,7 @@ class Dispenser:
             '''timestamp put "pellet dispense failure"'''
             '''output put "pellet dispense failure"'''
     
-    @thread_it_test
+    @thread_it
     def monitor_pellet(self, pellet_latency):
         '''track when a pellet is retrieved'''
         while not self.box.finished():
@@ -430,9 +423,44 @@ class Speaker:
 
     def __init__(self, name, speaker_dict, box):
         self.box = box
+        self.name = name
         self.pin = speaker_dict['pin']
-        self.tone_dict = speaker_dict['tone_dict']
+        self.tone_dict = self.box.software_config['speaker_tones']
+        self.pi = pigpio.pi()
+        self.click_on_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_on'].items()]
+        self.click_off_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_off'].items()]
+    @thread_it
+    def play_tone(self, tone_name):
+        '''use pigpio to play a tone, called by name from the dict imported from software config file'''
+        if not tone_name in self.tone_dict.keys():
+            raise KeyError(f'tone: {tone_name} was not defined in the softare dictionary')
+        else:
+            hz = self.tone_dict[tone_name]['hz']
+            length = self.tone_dict[tone_name]['length']
 
+            self.pi.set_PWM_frequency(self.pin, int(hz))
+            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            time.sleep(length)
+            self.pi.set_PWM_dutycycle(self.pin, 0)
 
+    @thread_it
+    def click_on(self):
+        '''play through a designated train of tones.'''
+        for hz, length in self.click_on_train:
+            self.pi.set_PWM_frequency(self.pin, int(hz))
+            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            time.sleep(length)
+        
+        self.pi.set_PWM_dutycycle(self.pin, 0)
+
+    @thread_it
+    def click_off(self):
+        '''play through a designated train of tones.'''
+        for hz, length in self.click_off_train:
+            self.pi.set_PWM_frequency(self.pin, int(hz))
+            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            time.sleep(length)
+        
+        self.pi.set_PWM_dutycycle(self.pin, 0)
 
 
