@@ -36,7 +36,7 @@ COMPONENT_LOOKUP = {
 
 class Box: 
 
-    def __init__(self, user_config_file_path=None, user_software_config_file_path = None): 
+    def __init__(self, user_config_file_path=None, user_software_config_file_path = None, start_now = False): 
         GPIO.setmode(GPIO.BCM)
         ###### load and merge config files
         self.done = False
@@ -52,13 +52,14 @@ class Box:
         if self.user_software_config_file_path:
             self.software_config = self.merge_config_files(user_software_config_file_path)
         
+        #self.timing is in charge tracking start time, making new timeouts, latencies, etc
+        self.timing = TimeManager(self)
+
         #### timestamp queue that gets setup by ScriptManager
         self.timestamp_manager = TimestampManager(self)
         self.timestamp_q = self.timestamp_manager.queue
 
-        #self.timing is in charge tracking start time, making new timeouts, latencies, etc
-        self.timing = TimeManager(self)
-
+        
         #threading        
         self.thread_executor = ThreadPoolExecutor(max_workers = 10)
         self.worker_queue = queue.Queue()
@@ -106,8 +107,10 @@ class Box:
         if not fut.running:
             if fut.exception():
                 print(fut.exception())
-        
-        
+
+        if start_now:
+            self.timing.start_timing()
+
     def reload_hardware_config(self):
         '''reload config file'''
         self.config_file_path = DEFAULT_HARDWARE_CONFIG
@@ -211,6 +214,12 @@ class Box:
                 else:
                     workers.remove(element)
             time.sleep(0.25)
+
+    def reset(self):
+        for lever in self.levers:
+            lever.retract()
+        for door in self.doors:
+            door.close()
 
     def shutdown(self):
         self.done = True

@@ -123,11 +123,11 @@ class Lever:
         
     def retract(self):
         '''extend a lever and timestamp it'''
-        ts = self.timestamp_manager.new_timestamp(description = f'{self.name} lever retracted')
+        ts = self.box.timestamp_manager.new_timestamp(description = f'{self.name} lever retracted')
         retract_start = max(180, self.retract + self.wiggle)
 
         #wait for the vole to get off the lever
-        timeout = self.box.timer.new_timeout(self.retraction_timeout)
+        timeout = self.box.timestamp_manager.new_timeout(self.retraction_timeout)
         while not GPIO.input(self.pin) and timeout.active():
             'hanging till lever not pressed'
 
@@ -394,7 +394,7 @@ class Dispenser:
         else:
             self.servo.throttle = self.dispense_speed
             read = 0
-            timeout = self.box.timer.new_timeout(timeout = self.dispense_timeout)
+            timeout = self.box.timestamp_manager.new_timeout(timeout = self.dispense_timeout)
             while timeout.active():
                 if self.sensor.pressed:
                     read+=1

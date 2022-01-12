@@ -20,25 +20,42 @@ class TimeManager:
         ''''''
         self.output_queue = Queue()
         self.box = box
-        self.start_time = None
-        self.round = 1
+        self.round = 0
         self.current_phase = None
+        self.start_time = None
+        self.round_start_time = None
     
     def start_timing(self):
+        if self.start_time:
+            raise Exception('woah! timing already started. if you want to *restart* timing, use restart_timing()')
+        else:
+            self.start_time = time.time()
+            self.round_start_time = time.time()
+
+    def restart_timing(self):
         self.start_time = time.time()
 
     def new_timeout(self, length):
         return Timeout(length)
 
+    
+    def new_phase(self, name, length=None): # creates a new phase, forgetting whatever phase we were previously in
+        self.current_phase = Phase(name, length, box = self.box)
+        return self.current_phase
+
+    def new_round(self): 
+        self.round = self.round + 1 
+        self.round_start_time = time.time()
+        self.box.timestamp_manager.submit_new_timestamp(description = 'new round')
 
 class Phase: 
     def __init__(self, name, length, box): 
             # if timeframe is None, then there is no time limit on this phase. As a result, it will run until interrupt or a new phase is created
             self.start_time = time.time()
             self.end_time = self.start_time + length
-            self.active = True 
             self.name = name 
             self.timeframe = length
+            self.is_active = True
             
     
     def display_countdown_timer(self): 
@@ -52,13 +69,19 @@ class Phase:
             time.sleep(1)
             timeinterval -= 1
 
-    def is_active(self):
-        if time.time() >= self.end_time:
-            return False
+    def active(self):
+        if self.is_active:
+        
+            if time.time() >= self.end_time:
+                return False
+            else:
+                time.sleep(0.05)
+                return True
         else:
-            time.sleep(0.05)
-            return True
+            return False
 
+    def finished(self):
+        self.is_active = False
 
 class Timestamp: 
     def __init__(self, timestamp_manager, event_descriptor, modifiers): 
@@ -66,14 +89,15 @@ class Timestamp:
         # self.timestamp = "{:.2f}".format(timestamp) # format time to 2 decimal points 
         self.timestamp_manager = timestamp_manager 
         self.event_descriptor = event_descriptor # string that describes what the event is 
-        self.round = timestamp_manager.round # round number that event occurred during 
-        self.round_start_time = timestamp_manager.round_start_time
-        self.phase = timestamp_manager.phase
-        self.round_initialized = timestamp_manager.round 
+        self.round = timestamp_manager.timing.round # round number that event occurred during 
+        self.round_start_time = timestamp_manager.timing.round_start_time
+        self.phase = timestamp_manager.timing.current_phase
+        self.round_initialized = timestamp_manager.timing.round 
+        self.modifiers = modifiers
     
     def submit(self): 
         t = time.time()
-        self.timestamp = round(t - self.timestamp_manager.experiment_start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
         self.timestamp_manager.queue.put(self)
 
 class Latency: 
@@ -82,15 +106,15 @@ class Latency:
         self.start_time = time.time()
         self.timestamp_manager = timestamp_manager 
         self.event_descriptor = event_descriptor # string that describes what the event is 
-        self.phase_initialized = timestamp_manager.phase # phase that timestamp was initialized occurred during 
-        self.round_initialized = timestamp_manager.round  # round number that timestamp was initialized occurred during 
+        self.phase_initialized = timestamp_manager.timing.current_phase # phase that timestamp was initialized occurred during 
+        self.round_initialized = timestamp_manager.timing.round  # round number that timestamp was initialized occurred during 
         self.modifire = modifiers
 
     def submit(self): 
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
         self.latency = round(t - self.start_time, 2)
-        self.timestamp = round(t - self.timestamp_manager.experiment_start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
         self.timestamp_manager.queue.put(self)
 
 class TimestampManager: 
@@ -99,11 +123,8 @@ class TimestampManager:
 
         # Round and start time are updated each new round 
         self.box = box
-        self.round = 0 
-        self.round_start_time = time.time() 
-        self.phase = None
         self.save_path = self.box.software_config['output_path']
-        self.experiment_start_time = None
+        self.timing = self.box.timing
         
 
     def start_timing(self):
@@ -120,25 +141,6 @@ class TimestampManager:
     def new_latency(self, description, modifiers = None):
         '''will track latency between initialization and submission'''
         return Latency(self, description, modifiers)
-
-    def new_phase(self, name, length=None): # creates a new phase, forgetting whatever phase we were previously in
-        self.phase = Phase(self, name, length, box = self.box)
-
-
-    def new_round(self, round, round_start_time): 
-        self.round = round 
-        self.round_start_time = round_start_time
-
-
-    def record_new(self, timestamp_obj): 
-        self.queue.put(timestamp_obj)
-
-
-    def print_items(self): 
-        print('--Timestamp Queue--')
-        for q_item in self.queue.items: 
-            print((q_item.timestamp, q_item.event))
-        print('----------------')
 
 
     def finish_writing_items(self): 
