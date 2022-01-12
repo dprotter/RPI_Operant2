@@ -73,6 +73,7 @@ class Phase:
         if self.is_active:
         
             if time.time() >= self.end_time:
+                self.is_active = False
                 return False
             else:
                 time.sleep(0.05)
@@ -177,10 +178,13 @@ class TimestampManager:
         #dont save timestamps, but do print them to the terminal
         else:
             while not self.box.finished():
-                if not  self.queue.empty():
+                if not self.queue.empty():
 
                     while not self.queue.empty():
                         ######add ts to screen write queue
+                        ts = self.queue.get()
+                        line = self.format(ts)
+                        print(line)
                         time.sleep(0.005)
 
     

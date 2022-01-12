@@ -26,7 +26,7 @@ def thread_it(func):
             bound_args_dict = bound_args.arguments
 
             new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
-            print(f'submitting {func}')
+            #print(f'submitting {func}')
             future = self.box.thread_executor.submit(func,self, **new_kwargs)
             self.box.worker_queue.put((future, func.__name__))
 
@@ -76,16 +76,14 @@ class Lever:
         
         self.setup_target()
         
-        #threading        
-        self.threads = ThreadPoolExecutor(max_workers = 6)
-        self.futures = []
         
         #attributes for tracking during runtime
         self.total_presses = 0
         self.presses_reached = False
         self.monitoring = False
         self.stop_threads = False
-        self.press_q = queue.Queue()
+        self.lever_press_queue = queue.Queue()
+        self.lever_presses = 0
         
         
         self.timestamp_q = self.box.timestamp_q
@@ -124,10 +122,10 @@ class Lever:
     def retract(self):
         '''extend a lever and timestamp it'''
         ts = self.box.timestamp_manager.new_timestamp(description = f'{self.name} lever retracted')
-        retract_start = max(180, self.retract + self.wiggle)
+        retract_start = max(180, self.retracted + self.wiggle)
 
         #wait for the vole to get off the lever
-        timeout = self.box.timestamp_manager.new_timeout(self.retraction_timeout)
+        timeout = self.box.timing.new_timeout(self.retraction_timeout)
         while not GPIO.input(self.pin) and timeout.active():
             'hanging till lever not pressed'
 
@@ -138,25 +136,24 @@ class Lever:
         
         ts.submit()
     
-    
+    @thread_it
     def watch_lever_pin(self):
         while self.monitoring:
             if self.switch.pressed:
-                print(f'{self.name}pressed!')
                 self.total_presses +=1
                 self.box.timestamp_manager.submit_new_timestamp(f'{self.name} lever pressed',modifiers = {'press_n':self.total_presses})
                 self.box.speaker.click_on()
-                timeout = self.box.time_manager.new_timeout(self.retraction_timeout)
+                timeout = self.box.timing.new_timeout(self.retraction_timeout)
                 while self.switch.pressed and timeout.is_active():
                     '''waiting for vole to get off lever. nothing necessary within loop'''
                 self.box.speaker.click_off()
-                self.lever_presses.put('pressed')
+                self.lever_press_queue.put(('pressed'))
                 
                 #wait to loop until inter-press interval is passed
-                ipi_timeout = self.box.time_manager.new_timeout(self.interpress_interval)
-                ipi_timeout.wait()
+                ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
+                ipt_timeout.wait()
             time.sleep(0.025)
-        print(f'\n:::::: done watching a pin for {self.name}:::::\n')
+        '''print(f'\n:::::: done watching a pin for {self.name}:::::\n')'''
     
     @thread_it
     def wait_for_n_presses(self, presses = 1, reset_with_new_phase = True):
@@ -164,22 +161,37 @@ class Lever:
         self.monitoring = True
         self.watch_lever_pin()
         if reset_with_new_phase:
+            print('reset with new phase')
             #get the current phase object
-            phase = self.box.current_phase
+            phase = self.box.timing.current_phase
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
             while phase.active():
-                if self.total_presses >= presses:
-                    self.presses_reached = True
-                    return True
+                if not self.lever_press_queue.empty():
+                    print(f'{self.name} was pressed')
+                    while not self.lever_press_queue.empty():
+                        _ = self.lever_press_queue.get()
+                        self.lever_presses += 1
+                        if self.lever_presses >= presses:
+                            self.presses_reached = True
+                            self.monitoring = False
+                            return True
+            print('presses not reached')
         
         else:
             while self.monitoring:
-                if self.total_presses >= presses:
-                    self.presses_reached = True
-                    return True
+                if not self.lever_press_queue.empty():
+                    while not self.lever_press_queue.empty():
+                        _ = self.lever_press_queue.get()
+                        self.lever_presses += 1
+                        if self.lever_presses >= presses:
+                            self.presses_reached = True
+                            self.monitoring = False
+                            return True
                 time.sleep(0.05)
+                
+        self.monitoring = False
 
 
 
@@ -216,12 +228,13 @@ class ButtonManager:
         self.box = box
         self.buttons = []
         self.running = True
-        self.wp = threading.Thread(target = self.watch_buttons, daemon = True)
-        self.wp.start()
-        
-    
+        '''self.wp = threading.Thread(target = self.watch_buttons, daemon = True)
+        self.wp.start()'''
+        self.watch_buttons()
+
+    @thread_it
     def watch_buttons(self):
-        while self.running:
+        while not self.box.done:
             for button in self.buttons:
                 if GPIO.input(button.pin) == button.pressed_val:
                     button.pressed = True
@@ -394,7 +407,7 @@ class Dispenser:
         else:
             self.servo.throttle = self.dispense_speed
             read = 0
-            timeout = self.box.timestamp_manager.new_timeout(timeout = self.dispense_timeout)
+            timeout = self.box.timing.new_timeout(timeout = self.dispense_timeout)
             while timeout.active():
                 if self.sensor.pressed:
                     read+=1

@@ -99,14 +99,14 @@ class Box:
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-        fut = self.thread_executor.submit(self.monitor_workers, verbose = True)
+        self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = True)
         
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
         self.worker_queue.put((fut2,'timestamp monitor_queue'))
-        if not fut.running:
-            if fut.exception():
-                print(fut.exception())
+        if not self.monitor_worker_future.running:
+            if self.monitor_worker_future.exception():
+                print(self.monitor_worker_future.exception())
 
         if start_now:
             self.timing.start_timing()
@@ -172,14 +172,15 @@ class Box:
                 #receive worker, parent function, round of initiation
                 worker_and_info = self.worker_queue.get()
                 if verbose:
-                    print(f'worker queue received worker {worker_and_info}')
+                    ''''''
+                    #print(f'worker queue received worker {worker_and_info}')
                 #if we have an identically named worker, we will need to modify this tuple
                 
                 workers += [worker_and_info]
-                print('\nvvvvvvvvvvvvvvvvvv')
+                '''print('\nvvvvvvvvvvvvvvvvvv')
                 print(f'currently {len(workers)} threads running via pool executor')
                 print(workers)
-                print('\n\n^^^^^^^^^^^^^^^')
+                print('\n\n^^^^^^^^^^^^^^^')'''
 
             for element in workers:
                 worker, name= element
@@ -196,7 +197,7 @@ class Box:
                         workers.remove(element)
                     elif worker.done():
                         if verbose:
-                            print(f'worker done {element}')
+                            '''print(f'worker done {element}')'''
                         workers.remove(element)
                     else:
                         pass
@@ -206,14 +207,18 @@ class Box:
         
         time.sleep(1)
         print('done and exiting')
+        print(f'currently {len(workers)} threads running via pool executor')
+        print(workers)
         while len(workers) > 0:
             for element in workers:
                 worker, _, _ = element
                 if not worker.done():
                     print(f'{element} still not done... you may need to force exit')
                 else:
+                    print(f'shutting down, removing {element}')
                     workers.remove(element)
             time.sleep(0.25)
+        print('worker queue empty')
 
     def reset(self):
         for lever in self.levers:
@@ -222,8 +227,17 @@ class Box:
             door.close()
 
     def shutdown(self):
+        self.timing.current_phase.finished()
         self.done = True
-
+        
+        val = 0
+        while not self.monitor_worker_future.done():
+            time.sleep(0.05)
+            val +=1
+            if val>100:
+                print('waiting for shutdown')
+                val = 0
+        print('monitor_workers complete')
     def finished(self):
         time.sleep(0.05)
         return self.done
