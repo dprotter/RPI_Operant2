@@ -193,8 +193,6 @@ class Lever:
                 
         self.monitoring = False
 
-
-
     def reset_lever(self):
         self.monitoring = False
         self.presses_reached = False
@@ -254,8 +252,6 @@ class Door:
     def __init__(self, name, door_config_dict, box):
         
         self.box = box 
-
-        self.timestamp_q = self.box.timestamp_q
 
         self.config_dict = door_config_dict
         self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type']) #kit.servo

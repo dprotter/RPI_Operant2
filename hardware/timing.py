@@ -16,10 +16,9 @@ import csv
 
 class TimeManager:
 
-    def __init__(self, box):
+    def __init__(self):
         ''''''
         self.output_queue = Queue()
-        self.box = box
         self.round = 0
         self.current_phase = None
         self.start_time = None
@@ -46,7 +45,7 @@ class TimeManager:
     def new_round(self): 
         self.round = self.round + 1 
         self.round_start_time = time.time()
-        self.box.timestamp_manager.submit_new_timestamp(description = 'new round')
+        
 
 class Phase: 
     def __init__(self, name, length, box): 
@@ -109,8 +108,8 @@ class Latency:
         self.event_descriptor = event_descriptor # string that describes what the event is 
         self.phase_initialized = timestamp_manager.timing.current_phase # phase that timestamp was initialized occurred during 
         self.round_initialized = timestamp_manager.timing.round  # round number that timestamp was initialized occurred during 
-        self.modifire = modifiers
-
+        self.modifiers = modifiers
+ 
     def submit(self): 
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
@@ -119,14 +118,19 @@ class Latency:
         self.timestamp_manager.queue.put(self)
 
 class TimestampManager: 
-    def __init__(self, box): 
+    def __init__(self, save_path, timing_obj, save_timestamps): 
         self.queue = Queue()
 
         # Round and start time are updated each new round 
-        self.box = box
-        self.save_path = self.box.software_config['output_path']
-        self.timing = self.box.timing
-        
+        self.save_path = save_path
+        self.timing = timing_obj
+        self.save_timestamps = save_timestamps
+        if self.save_timestamps:
+            with open(self.save_path, 'a') as file:
+                header = ['round','event','time','phase','latency','round timestamp initialized']
+                csv_writer = csv.writer(file, delimiter = ',')
+                csv_writer.writerow(header)
+            
 
     def start_timing(self):
         self.experiment_start_time = time.time()
@@ -135,8 +139,8 @@ class TimestampManager:
         '''how to create a new timestamp object'''
         return Timestamp(self, description, modifiers)
 
-    def submit_new_timestamp(self, description, modifiers = None):
-        '''how to create a new timestamp object'''
+    def create_and_submit_new_timestamp(self, description, modifiers = None):
+        '''create and immediately submit new timestamp'''
         Timestamp(self, description, modifiers).submit()
 
     def new_latency(self, description, modifiers = None):
@@ -155,11 +159,11 @@ class TimestampManager:
             return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase, timestamp_obj.latency, timestamp_obj.round_initialized]
         
         else:
-            print(f'timestamp error, unknown object passed to timestamp manager: {timestamp_obj}')
+            print(f'timestamp writing error, unknown object passed to timestamp manager: {timestamp_obj}')
 
     def monitor_queue(self):
         '''monitor and write to queue. some threading here''' 
-        if self.box.software_config['checks']['save_timestamps']:
+        if self.save_timestamps:
             while not self.box.finished():
                 
                 if not  self.queue.empty():

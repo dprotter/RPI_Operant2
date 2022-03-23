@@ -53,11 +53,12 @@ class Box:
             self.software_config = self.merge_config_files(user_software_config_file_path)
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
-        self.timing = TimeManager(self)
+        self.timing = TimeManager()
 
         #### timestamp queue that gets setup by ScriptManager
-        self.timestamp_manager = TimestampManager(self)
-        self.timestamp_q = self.timestamp_manager.queue
+        self.timestamp_manager = TimestampManager(save_path = self.software_config['output_path'], 
+                                                  timing_obj = self.timing, 
+                                                  save_timestamps= self.software_config['checks']['save_timestamps'])
 
         
         #threading        
@@ -110,7 +111,11 @@ class Box:
 
         if start_now:
             self.timing.start_timing()
-
+            
+    def new_round(self):
+        self.timing.new_round()
+        self.timestamp_manager.create_and_submit_new_timestamp()
+        
     def reload_hardware_config(self):
         '''reload config file'''
         self.config_file_path = DEFAULT_HARDWARE_CONFIG
