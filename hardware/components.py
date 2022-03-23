@@ -472,4 +472,23 @@ class Speaker:
         
         self.pi.set_PWM_dutycycle(self.pin, 0)
 
+class Beam:
+    
+    def __init__(self, name, beam_config_dict, box):
+        
+        
+        self.config_dict = beam_config_dict
+        
+        self.box = box
+        self.pin = self.config_dict['pin'] #int
 
+        self.name = name #str
+        
+        switch_dict = {
+            'pin':self.pin,
+            'pullup_pulldown':self.config_dict['pullup_pulldown'],
+        }
+
+        self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
+        
+        

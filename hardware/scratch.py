@@ -102,6 +102,7 @@ while not box.finished(): #box will check how many rounds it needs to complete f
 
             door = box.doors.door_2   
             box.phases['test'].finished()
+            box.beam_door_2.monitor_next_breambreak()
         
         else:
             door = None
