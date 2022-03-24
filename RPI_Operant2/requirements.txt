@@ -1,4 +1,0 @@
-pyyaml
-pandas
-RPi-GPIO
-himl
