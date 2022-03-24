@@ -1,0 +1,45 @@
+output_path: '~/RPI_Operant_outputs/default_location'
+
+checks:
+  save_timestamps: False
+
+values:
+  rounds: 15
+  delay_by_day: [0]
+  delay_default: 0
+
+
+speaker_tones:
+  round_start:
+    hz: 5000
+    length: 1
+  pellet_tone:
+    hz: 2500
+    length: 1
+  door_open:
+    hz: 10000
+    length: 1
+  door_close:
+    hz: 7000
+    length: 1
+  click_on: 
+    tone_1:
+      hz: 8000
+      length: 0.02
+    tone_2:
+      hz: 4000
+      length: 0.02
+    tone_3:
+      hz: 900
+      length: 0.02
+
+  click_off: 
+    tone_1:
+      hz: 8000
+      length: 0.02
+    tone_2:
+      hz: 4000
+      length: 0.02
+    tone_3:
+      hz: 900
+      length: 0.02

@@ -1,0 +1,68 @@
+doors:
+  door_1:
+    servo: 0
+    stop: 0.05
+    close: -0.1
+    open: 0.8
+    open_time: 1.6
+    override_open_pin: 24
+    override_close_pin: 25
+    state_switch: 4
+    servo_type: continuous
+    close_timeout: 5
+  door_2:
+    servo: 13
+    stop: 0.03
+    close: 0.8
+    open: -0.2
+    open_time: 1.6
+    override_open_pin: 6
+    override_close_pin: 4
+    state_switch: 17
+    servo_type: continuous
+    close_timeout: 5
+
+levers:
+  #food:
+    #servo: 4
+    #extended: 30
+    #retracted: 105
+    #pin: 19
+    #pullup_pulldown: pullup
+    #target_name: pellet
+    #target_type: dispenser
+  door_1:
+    servo: 2
+    extended: 20
+    retracted: 100
+    pin: 18
+    pullup_pulldown: pullup
+    target_name: door_1
+    target_type: door
+    servo_type: positional
+    interpress_interval: 1
+  
+  door_2:
+    servo: 12
+    extended: 20
+    retracted: 100
+    pin: 22
+    pullup_pulldown: pullup
+    target_name: door_2
+    target_type: door
+    servo_type: positional
+    interpress_interval: 1
+
+dispensers:
+  pellet:
+    servo: 1
+    servo_type: continuous 
+    dispense: 0.075
+    stop: 0
+    sensor_pin: 16
+    pullup_pulldown: pullup
+    dispense_timeout: 3
+
+speakers:
+  speaker:
+    pin: 21
