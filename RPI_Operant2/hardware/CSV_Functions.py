@@ -69,12 +69,15 @@ class Experiment:
             user_input = 'n'
             while user_input == 'n':
                 print(self.current_row)
-                print('this row was previously skipped. would you like to run it now? \nrun now--> y\nskip --> n')
+                print('this row was previously skipped. would you like to run it now? \nrun now--> y\nskip --> n\nskip forever --> f')
                 user_input = input().lower()
                 if user_input == 'y':
                     return
                 elif user_input == 'n':
                     print('skipping')
+                    self.iterate_row()
+                elif user_input == 'f':
+                    self.table.loc[self.table.index == self.location].finished = 'True'
                     self.iterate_row()
                 else:
                     print('input error, plese enter either y or n')

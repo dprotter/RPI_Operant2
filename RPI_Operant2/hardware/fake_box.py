@@ -8,7 +8,7 @@
 
 # Standard Library Imports 
 import importlib.util
-import RPi.GPIO as GPIO
+
 # Third Party Imports 
 # Local Imports
 
@@ -17,9 +17,9 @@ from hardware.components import Button, Lever, Door, ButtonManager, Dispenser, S
 from hardware.timing import TimeManager, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
-import yaml
 import queue
 import time
+from hardware.software_functions import merge_config_files, load_config_file
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'hardware/default_hardware.yaml')
@@ -37,20 +37,24 @@ COMPONENT_LOOKUP = {
 class Box: 
 
     def __init__(self, user_config_file_path=None, user_software_config_file_path = None, start_now = False): 
-        GPIO.setmode(GPIO.BCM)
-        ###### load and merge config files
+        
         self.done = False
-        self.config_file_path = DEFAULT_HARDWARE_CONFIG
-        self.config = self.load_config_file(self.config_file_path)
-        self.user_config_file_path = user_config_file_path
-        if self.user_config_file_path:
-            self.config = self.merge_config_files(user_config_file_path)
+        
+        
+        ###### load and merge config files
+        if user_config_file_path:
+            self.config = merge_config_files(user_config_file_path, DEFAULT_HARDWARE_CONFIG)
+        else:
+            self.config = load_config_file(DEFAULT_HARDWARE_CONFIG)
+            
+            
+        if user_software_config_file_path:
+            self.software_config = merge_config_files(user_software_config_file_path, DEFAULT_SOFTWARE_CONFIG)
+        else:
+            self.software_config = load_config_file(DEFAULT_SOFTWARE_CONFIG)
 
-        self.software_config_file_path = DEFAULT_SOFTWARE_CONFIG
-        self.software_config = self.load_config_file(self.software_config_file_path)
-        self.user_software_config_file_path = user_software_config_file_path
-        if self.user_software_config_file_path:
-            self.software_config = self.merge_config_files(user_software_config_file_path)
+        
+        
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
         self.timing = TimeManager()
@@ -116,32 +120,6 @@ class Box:
         self.timing.new_round()
         self.timestamp_manager.create_and_submit_new_timestamp()
         
-    def reload_hardware_config(self):
-        '''reload config file'''
-        self.config_file_path = DEFAULT_HARDWARE_CONFIG
-        self.config = self.load_config_file(self.config_file_path)
-        if self.user_config_file_path:
-            self.config = self.merge_config_files(self.user_config_file_path)
-
-    def load_config_file(self, file):
-        '''load a config yaml file and return the resulting dict'''
-        with open(file, 'r') as f:
-            config_dict = yaml.safe_load(f)
-        return config_dict
-
-    def merge_config_files(self, new_file):
-        new_config_dict = self.load_config_file(new_file)
-        return self.heirarchical_merge_dict(self.config_dict, new_config_dict)
-        
-
-    def heirarchical_merge_dict(self, dict_default, dict_update):
-        for key, value in dict_update.items():
-            if isinstance(value, Mapping):
-                #note to self the get(key,{}) returns an empty list if the key is not found. good technique for avoiding KeyErrors
-                dict_default[key] = self.heirarchical_merge_dict(dict_default.get(key,{}), value)
-            else:
-                dict_default[key] = value
-        return dict_default
 
     def get_component(self, component_type, component_name):
         attr_dict = self.__dict__
