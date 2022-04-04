@@ -2,6 +2,21 @@
 
 class OperantEventStrings:
 
-    open_door_start = 'open_start'
-    open_door_finish = 'open_start'
+    open_door_start = 'open_start_'
+    open_door_finish = 'open_finished_'
+    open_door_failure = 'open_failure_'
+    
+    close_door_start = 'close_start_'
+    close_door_finish = 'close_finished_'
+    close_door_failure = 'close_failure_'
+    pellet_retrieved = 'pellet_retrieved'
+    
+    lever_extended = 'lever_extended_'
+    lever_retracted = 'lever_retracted_'
+    lever_pressed = 'lever_pressed_'
+    presses_reached= 'presses_reached_'
+    
+    tone_start = 'tone_start_'
+    tone_stop = 'tone_stop_'
+    
         

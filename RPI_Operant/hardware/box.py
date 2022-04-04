@@ -8,19 +8,23 @@
 
 # Standard Library Imports 
 import importlib.util
-import RPi.GPIO as GPIO
+import sys
+if 'RPi.GPIO' in sys.modules:
+    import RPi.GPIO as GPIO
+else:
+    print('RPi.GPIO not found')
 # Third Party Imports 
 # Local Imports
 
 import os
-from hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker
-from hardware.timing import TimeManager, TimestampManager
+from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker
+from RPI_Operant.hardware.timing import TimeManager, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 import yaml
 import queue
 import time
-from hardware.software_functions import merge_config_files, load_config_file
+from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'hardware/default_hardware.yaml')
@@ -59,12 +63,13 @@ class Box:
         
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
-        self.timing = TimeManager()
+        self.timing = TimeManager(self)
 
         #### timestamp queue that gets setup by ScriptManager
         self.timestamp_manager = TimestampManager(save_path = self.software_config['output_path'], 
                                                   timing_obj = self.timing, 
-                                                  save_timestamps= self.software_config['checks']['save_timestamps'])
+                                                  save_timestamps= self.software_config['checks']['save_timestamps'],
+                                                  box = self)
 
         
         #threading        

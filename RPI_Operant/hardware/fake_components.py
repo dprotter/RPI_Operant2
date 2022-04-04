@@ -2,7 +2,7 @@ import time
 
 import queue
 
-from hardware.event_strings import OperantEventStrings as oes
+from RPI_Operant.hardware.event_strings import OperantEventStrings as oes
 import inspect
 
 
@@ -16,7 +16,6 @@ def thread_it(func):
         the returned 'future' object has some useful features, such as its own task-done monitor. '''
         
         def pass_to_thread(self, *args, **kwargs):
-            
             bound_args = inspect.signature(func).bind(self, *args, **kwargs)
             bound_args.apply_defaults()
             bound_args_dict = bound_args.arguments
@@ -94,15 +93,16 @@ class Lever:
         self.lever_press_queue = queue.Queue()
         self.lever_presses = 0
         
-        
-        self.timestamp_q = self.box.timestamp_q
         self.wiggle = 10
     
     def simulate_pressed(self):
+        print('simulating pressed')
         self.switch.pressed = True
     
     def simulate_unpressed(self):
+        print('simulating unpressed')
         self.switch.pressed = False
+        
     
     def setup_target(self): 
         self.target = self.box.get_component(self.target_type, self.target_name)
@@ -122,8 +122,8 @@ class Lever:
     def extend(self):
         '''extend a lever and timestamp it'''
         
-        ts = self.box.timestamp_manager.new_timestamp(description = f'{self.name} lever extended')
-        
+        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name)
+        lat = self.box.timestamp_manager.new_latency(description = oes.lever_pressed+self.name)
         extend_start = max(0, self.extended-self.wiggle)
 
         #first, extend past final value, then retract slightly to final value
@@ -133,16 +133,18 @@ class Lever:
         print(f'extending {self.name}')
         
         ts.submit()
+        return lat
         
         
     def retract(self):
         '''extend a lever and timestamp it'''
-        ts = self.box.timestamp_manager.new_timestamp(description = f'{self.name} lever retracted')
+        #note, make a ts object and submit later after successful retraction
+        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name)
         retract_start = max(180, self.retracted + self.wiggle)
-
+ 
         #wait for the vole to get off the lever
         timeout = self.box.timing.new_timeout(self.retraction_timeout)
-        while not GPIO.input(self.pin) and timeout.active():
+        while self.switch.pressed and timeout.active():
             'hanging till lever not pressed'
 
         #retract further than expected, then extend to final position
@@ -154,29 +156,36 @@ class Lever:
         ts.submit()
     
     @thread_it
-    def watch_lever_pin(self):
+    def watch_lever_pin(self, latency_obj):
+        self.monitoring = True
+        latency_obj = latency_obj
         while self.monitoring:
             if self.switch.pressed:
                 self.total_presses +=1
-                self.box.timestamp_manager.submit_new_timestamp(f'{self.name} lever pressed',modifiers = {'press_n':self.total_presses})
+                if latency_obj:
+                    print('submitting lat')
+                    latency_obj.submit()
+                else:
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name ,modifiers = {'press_n':self.total_presses})
+                self.lever_press_queue.put(('pressed'))
                 self.box.speaker.click_on()
                 timeout = self.box.timing.new_timeout(self.retraction_timeout)
-                while self.switch.pressed and timeout.is_active():
+                while self.switch.pressed and timeout.active():
                     '''waiting for vole to get off lever. nothing necessary within loop'''
                 self.box.speaker.click_off()
-                self.lever_press_queue.put(('pressed'))
+                
                 
                 #wait to loop until inter-press interval is passed
                 ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
                 ipt_timeout.wait()
-            time.sleep(0.025)
-        '''print(f'\n:::::: done watching a pin for {self.name}:::::\n')'''
+            time.sleep(0.015)
+        print(f'\n:::::: done watching a pin for {self.name}:::::\n')
     
     @thread_it
-    def wait_for_n_presses(self, presses = 1, reset_with_new_phase = True):
+    def wait_for_n_presses(self, n = 1, reset_with_new_phase = True, latency_obj = None):
         'monitor lever and wait for n_presses before '
-        self.monitoring = True
-        self.watch_lever_pin()
+        
+        self.watch_lever_pin(latency_obj)
         if reset_with_new_phase:
             print('reset with new phase')
             #get the current phase object
@@ -190,11 +199,20 @@ class Lever:
                     while not self.lever_press_queue.empty():
                         _ = self.lever_press_queue.get()
                         self.lever_presses += 1
-                        if self.lever_presses >= presses:
+                        if self.lever_presses >= n:
+                            if latency_obj:
+                                print('changing descriptor')
+                                latency_obj.event_descriptor = oes.presses_reached+self.name
+                                latency_obj.submit()
+                            else:
+                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name ,modifiers = {'press_n':self.lever_presses})
                             self.presses_reached = True
                             self.monitoring = False
-                            return True
-            print('presses not reached')
+                        while not self.lever_press_queue.empty():
+                            _ = self.lever_press_queue.get()
+                            
+            print('done waiting for n presses')
+            self.reset_lever()
         
         else:
             while self.monitoring:
@@ -202,10 +220,12 @@ class Lever:
                     while not self.lever_press_queue.empty():
                         _ = self.lever_press_queue.get()
                         self.lever_presses += 1
-                        if self.lever_presses >= presses:
+                        if self.lever_presses >= n:
                             self.presses_reached = True
                             self.monitoring = False
-                            return True
+                            while not self.lever_press_queue.empty():
+                                _ = self.lever_press_queue.get()
+                            
                 time.sleep(0.05)
                 
         self.monitoring = False
@@ -213,6 +233,7 @@ class Lever:
     def reset_lever(self):
         self.monitoring = False
         self.presses_reached = False
+        self.lever_presses = 0
         
 class Button:
     
@@ -312,18 +333,16 @@ class Door:
     
     def simulate_open(self):
         '''use to simulate the door entering the open state'''
-        self.state_switch.pressed = True
+        self.state_switch.pressed = False
         
     def simulate_closed(self):
         '''use to simulate the door entering the closed state'''
-        self.state_switch.pressed = False
+        self.state_switch.pressed = True
     
     @thread_it
     def open(self, wait = False):
-        '''open this door'''
-        '''ts_start = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_start, id = self.name)
-        ts_finish = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_finish, id = self.name)'''
-
+        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name)
         self.servo.throttle = self.open_speed
 
         start_time = time.time()
@@ -334,29 +353,32 @@ class Door:
 
         if self.state_switch.pressed:
             print(f'{self.name} door failed to open!!!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_failure+self.name)
         else:
             print(f'{self.name} opened!')
-
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name)
         
     @thread_it
     def close(self, wait = True):
         '''open this door'''
-        '''ts_start = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_start, id = self.name)
-        ts_finish = self.timestamp_q.new_timestamp(event_disciptor = oes.open_door_finish, id = self.name)'''
-
+        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name)
         self.servo.throttle = self.close_speed
 
         start_time = time.time()
-        #this is kind of messy, mixing attributes and functions
+        
         while time.time() < (start_time + self.close_timeout) and not self.overridden and not self.state_switch.pressed:
             time.sleep(0.05)
         
         self.servo.throttle = self.stop_speed
 
-        if not self.state_switch.pressed:
-            print(f'{self.name} door failed to close!!!')
-        else:
+        if self.state_switch.pressed:
             print(f'{self.name} closed!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name)
+            
+        else:
+            print(f'{self.name} door failed to close!!!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_failure+self.name)
 
     @thread_it
     def override(self, wait = False):
@@ -440,7 +462,7 @@ class Dispenser:
                     '''timestamp put "pellet dispensed"'''
                     self.servo.throttle = self.stop_speed
                     self.pellet_state = True
-                    pellet_latency = self.timestamp_q.new_latency(description = 'pellet_retrieved')
+                    pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
                     self.monitor_pellet(pellet_latency)
                     return None
             
@@ -457,10 +479,10 @@ class Dispenser:
 
 class Speaker:
     class FakeSpeaker:
-        def set_PWM_frequency(pin, hz):
-            print(f'speaker set to {hz} hz')
-        def set_PWM_dutycycle(pin, dc):
-            print(f'speaker set to {dc} duty cycle')
+        def set_PWM_frequency(self, pin, hz):
+            '''print(f'speaker set to {hz} hz')'''
+        def set_PWM_dutycycle(self, pin, dc):
+            '''print(f'speaker set to {dc} duty cycle')'''
             
     def __init__(self, name, speaker_dict, box):
         self.box = box
@@ -480,9 +502,11 @@ class Speaker:
             length = self.tone_dict[tone_name]['length']
 
             self.pi.set_PWM_frequency(self.pin, int(hz))
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name)
             self.pi.set_PWM_dutycycle(self.pin, 255/2)
             time.sleep(length)
             self.pi.set_PWM_dutycycle(self.pin, 0)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name)
 
     @thread_it
     def click_on(self):

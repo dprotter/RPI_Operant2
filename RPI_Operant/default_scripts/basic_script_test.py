@@ -1,4 +1,4 @@
-from hardware.box import Box
+from RPI_Operant.hardware.box import Box
 import time
 box = Box(start_now = True)
 box.timing.new_round()

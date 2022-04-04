@@ -1,18 +1,31 @@
 import time
-import RPi.GPIO as GPIO
+import sys
+if 'RPi.GPIO' in sys.modules:
+    import RPi.GPIO as GPIO
+else:
+    print('RPi.GPIO not found')
 
 import queue
 from concurrent.futures import ThreadPoolExecutor
 import threading
-from hardware.event_strings import OperantEventStrings as oes
+from RPI_Operant.hardware.event_strings import OperantEventStrings as oes
 import inspect
 import os
-if os.system('sudo lsof -i TCP:8888'):
-    os.system('sudo pigpiod')
-import pigpio
 
-from adafruit_servokit import ServoKit
-SERVO_KIT = ServoKit(channels=16)
+if 'pigpio' in sys.modules:
+    if os.system('sudo lsof -i TCP:8888'):
+        os.system('sudo pigpiod')
+        import pigpio
+else:
+    print('pigpio not found')
+
+
+if 'adafruit_servokit' in sys.modules:
+    from adafruit_servokit import ServoKit
+    SERVO_KIT = ServoKit(channels=16)
+else:
+    print('adafruit_servokit not found')
+    SERVO_KIT = None
 
 def thread_it(func):
         '''simple decorator to pass function to our thread distributor via a queue. 
@@ -144,7 +157,7 @@ class Lever:
                 self.box.timestamp_manager.submit_new_timestamp(f'{self.name} lever pressed',modifiers = {'press_n':self.total_presses})
                 self.box.speaker.click_on()
                 timeout = self.box.timing.new_timeout(self.retraction_timeout)
-                while self.switch.pressed and timeout.is_active():
+                while self.switch.pressed and timeout.active():
                     '''waiting for vole to get off lever. nothing necessary within loop'''
                 self.box.speaker.click_off()
                 self.lever_press_queue.put(('pressed'))
