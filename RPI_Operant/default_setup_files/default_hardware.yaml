@@ -65,5 +65,7 @@ dispensers:
     dispense_timeout: 3
 
 speakers:
-  speaker:
+  speaker1:
     pin: 21
+  #speaker2:
+  #  pin: 22
