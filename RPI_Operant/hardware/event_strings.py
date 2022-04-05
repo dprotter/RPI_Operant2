@@ -9,7 +9,7 @@ class OperantEventStrings:
     close_door_start = 'close_start_'
     close_door_finish = 'close_finished_'
     close_door_failure = 'close_failure_'
-    pellet_retrieved = 'pellet_retrieved'
+    
     
     lever_extended = 'lever_extended_'
     lever_retracted = 'lever_retracted_'
@@ -19,4 +19,8 @@ class OperantEventStrings:
     tone_start = 'tone_start_'
     tone_stop = 'tone_stop_'
     
+    pellet_dispensed = 'pellet_dispensed_'
+    pellet_skip = 'pellet_skipped_'
+    pellet_failure = 'pellet_dispense_failure_'
+    pellet_retrieved = 'pellet_retrieved_'
         

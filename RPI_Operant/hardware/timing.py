@@ -16,14 +16,22 @@ import csv
 import socket
 
 def format_ts(timestamp_obj):
-        if isinstance(timestamp_obj, Timestamp):
-            return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, timestamp_obj.round_initialized]
+    
+    mod_string = ''
+    if timestamp_obj.modifiers:
         
-        elif isinstance(timestamp_obj, Latency):
-            return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, timestamp_obj.latency, timestamp_obj.round_initialized]
-        
-        else:
-            print(f'timestamp writing error, unknown object passed to timestamp manager: {timestamp_obj}')
+        #access our dictionary, sorted
+        for key,val in sorted(timestamp_obj.modifiers.items(), key = lambda item: item[0]):
+            mod_string+=f'{key}:{val}|'
+            
+    if isinstance(timestamp_obj, Timestamp):
+        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, mod_string, timestamp_obj.round_initialized]
+    
+    elif isinstance(timestamp_obj, Latency):
+        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, timestamp_obj.latency, mod_string, timestamp_obj.round_initialized]
+    
+    else:
+        print(f'timestamp writing error, unknown object passed to timestamp manager: {timestamp_obj}')
 
 class TimeManager:
 
@@ -96,9 +104,9 @@ class Phase:
         self.is_active = False
 
 class Timestamp: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers): 
+    def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
         
-        # self.timestamp = "{:.2f}".format(timestamp) # format time to 2 decimal points 
+        
         self.timestamp_manager = timestamp_manager 
         self.event_descriptor = event_descriptor # string that describes what the event is 
         self.round = timestamp_manager.timing.round # round number that event occurred during 
@@ -106,10 +114,20 @@ class Timestamp:
         self.phase_initialized = timestamp_manager.timing.current_phase.name if timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name
         
         
-        self.round_initialized = timestamp_manager.timing.round 
-        self.modifiers = modifiers
+        self.round_initialized = timestamp_manager.timing.round
+        if modifiers:
+            if not isinstance(modifiers, dict):
+                print('WARNING! Latency object instantiated with non-dictionary "modifiers" argument.')
+                self.modifiers = {'unknown':modifiers} 
+            else:
+                self.modifiers = modifiers
+        else:
+            self.modifiers = {}
         
-    
+    def add_modifier(self, key, value):
+        
+        self.modifiers.update({key:value})
+        
     def submit(self): 
         t = time.time()
         self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
@@ -117,15 +135,26 @@ class Timestamp:
         self.timestamp_manager.queue.put(format_ts(self))
 
 class Latency: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers): 
+    def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
 
         self.start_time = time.time()
         self.timestamp_manager = timestamp_manager 
         self.event_descriptor = event_descriptor # string that describes what the event is 
         self.phase_initialized = timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name # phase that timestamp was initialized occurred during 
         self.round_initialized = timestamp_manager.timing.round  # round number that timestamp was initialized occurred during 
-        self.modifiers = modifiers
- 
+        if modifiers:
+            if not isinstance(modifiers, dict):
+                print('WARNING! Latency object instantiated with non-dictionary "modifiers" argument.')
+                self.modifiers = {'unknown':modifiers} 
+            else:
+                self.modifiers = modifiers
+        else:
+            self.modifiers = {}
+        
+    def add_modifier(self, key, value):
+        
+        self.modifiers.update({key:value})
+        
     def submit(self): 
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
@@ -151,7 +180,7 @@ class TimestampManager:
                 
         if self.save_timestamps:
             with open(self.save_path, 'w') as file:
-                header = ['round','event','time','phase initialized','phase submitted','latency','round timestamp initialized']
+                header = ['round','event','time','phase initialized','phase submitted','latency','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)
                 

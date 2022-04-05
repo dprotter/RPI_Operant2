@@ -8,23 +8,27 @@
 
 # Standard Library Imports 
 import importlib.util
-
+import sys
+if 'RPi.GPIO' in sys.modules:
+    import RPi.GPIO as GPIO
+else:
+    print('RPi.GPIO not found')
 # Third Party Imports 
 # Local Imports
 
 import os
-from RPI_Operant.hardware.fake_components import Button, Lever, Door, ButtonManager, Dispenser, Speaker
+from RPI_Operant.hardware.components_old import Button, Lever, Door, ButtonManager, Dispenser, Speaker
 from RPI_Operant.hardware.timing import TimeManager, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+import yaml
 import queue
 import time
-import datetime
 from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
 
 # Constants 
-DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
-DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_software.yaml')
+DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'hardware/default_hardware.yaml')
+DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'hardware/default_software.yaml')
 COMPONENT_LOOKUP = {
                     'doors':{'component_class':Door, 'label':'door'},
                     'levers':{'component_class':Lever, 'label':'lever'},
@@ -37,10 +41,11 @@ COMPONENT_LOOKUP = {
 
 class Box: 
 
-    def __init__(self, run_dict, user_config_file_path=None, user_software_config_file_path = None, start_now = False): 
+    def __init__(self, user_config_file_path=None, user_software_config_file_path = None, start_now = False): 
+        GPIO.setmode(GPIO.BCM)
         
         self.done = False
-        self.run_dict = run_dict
+        
         
         ###### load and merge config files
         if user_config_file_path:
@@ -56,16 +61,16 @@ class Box:
 
         
         
+        
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
         self.timing = TimeManager(self)
 
         #### timestamp queue that gets setup by ScriptManager
-        self.timestamp_manager = TimestampManager(timing_obj = self.timing, 
+        self.timestamp_manager = TimestampManager(save_path = self.software_config['output_path'], 
+                                                  timing_obj = self.timing, 
                                                   save_timestamps= self.software_config['checks']['save_timestamps'],
                                                   box = self)
 
-        
-        self.output_file_path_base = self.generate_output_path()
         
         #threading        
         self.thread_executor = ThreadPoolExecutor(max_workers = 10)
@@ -117,17 +122,7 @@ class Box:
 
         if start_now:
             self.timing.start_timing()
-    
-    def generate_output_path(self):
-        vole = self.run_dict['vole']
-        day = self.run_dict['day']
-        exp = self.run_dict['experiment']
-        date = datetime.datetime.now()
-        fdate = f'{date.month}_{date.day}_{date.year}___{date.hour}_{date.minute}_'
-        fname = f'{vole}_{fdate}_{exp}_day_{day}'
-        return os.path.join( self.software_config['output_path'], fname)
-    
-         
+            
     def new_round(self):
         self.timing.new_round()
         self.timestamp_manager.create_and_submit_new_timestamp()
