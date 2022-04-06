@@ -1,3 +1,4 @@
+from pydoc import describe
 import time
 import sys
 if 'RPi.GPIO' in sys.modules:
@@ -672,7 +673,88 @@ class PositionalDispenser:
         while not self.box.finished():
             if not self.sensor_pressed:
                 pellet_latency.submit()     
+
+class PortDispenser:
+
+    def __init__(self, name, dispenser_config_dict, box, simulated = False):
+        '''make a dispenser'''
+        self.box = box
+        self.config_dict = dispenser_config_dict
+        self.servo_ID = self.config_dict['servo']
+        
+        if simulated:
+            self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
+        else:
+            self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
+        self.positions = self.calculate_positions()
+        self.current_position_index = self.set_starting_index()
+        self.current_position_angle = self.positions[self.current_position_index]
+        
+        self.name = name
+        self.pellet_state = False
+
+        sensor_dict = { 
+            'pin':self.config_dict['sensor_pin'],
+            'pullup_pulldown':self.config_dict['pullup_pulldown']
+        }
+        
+        self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
+        self.overridden = False
+
+    def calculate_positions(self):
+        start = self.config_dict['start']
+        n = self.config_dict['n_spots']
+        return [start+i*(360/n) for i in range(n)]
+    
+    def get_position(self):
+        '''return the current position of the servo'''
+        position = 10
+        return position
+    
+    def set_starting_index(self):
+        '''calculate the index closest to the current position of the servo, and return that index'''
+        cur = self.get_position()
+        min_index = 0
+        
+        for i, pos in enumerate(self.positions):
+            if abs(pos-cur) < abs(self.positions[min_index]-cur):
+                min_index = i
                 
+        return min_index
+
+    def next_position(self):
+        angle = self.positions[self.current_position_index%len(self.positions)]
+        self.servo.angle = angle
+        self.current_position_angle = angle
+        
+    
+    def sensor_blocked(self):
+        return self.sensor.pushed
+
+    
+    def simulate_pellet_retrieved(self):
+        '''used in scripts to simulate a pellet being removed from the trough'''
+        self.sensor.pressed = True
+    
+    @thread_it
+    def dispense(self):
+        ''''''
+        #check if pellet was retrieved or is still in trough
+        if self.pellet_state:
+            self.box.timestamp_manager.create_and_submite_new_timestamp(description = oes.pellet_not_retrieved)
+            
+        
+        self.next_position()
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
+        latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+        self.monitor_pellet(latency)
+    
+    @thread_it
+    def monitor_pellet(self, pellet_latency):
+        '''track when a pellet is retrieved'''
+        while not self.box.finished():
+            if self.sensor_pressed:
+                pellet_latency.submit()              
 
 class Speaker:
     class FakeSpeaker:

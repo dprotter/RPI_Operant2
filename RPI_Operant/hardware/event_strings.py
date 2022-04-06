@@ -22,5 +22,6 @@ class OperantEventStrings:
     pellet_dispensed = 'pellet_dispensed_'
     pellet_skip = 'pellet_skipped_'
     pellet_failure = 'pellet_dispense_failure_'
+    pellet_not_retrieved = 'pellet_not_retrieved_'
     pellet_retrieved = 'pellet_retrieved_'
         

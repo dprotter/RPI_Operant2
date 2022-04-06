@@ -1,5 +1,7 @@
 from collections.abc import Mapping
 import yaml
+import queue
+from RPI_Operant.hardware.components import thread_it
 
 def load_config_file( file):
     '''load a config yaml file and return the resulting dict'''
@@ -22,3 +24,29 @@ def heirarchical_merge_dict(dict_default, dict_update):
         else:
             dict_default[key] = value
     return dict_default
+
+class ScreenPrinter:
+    
+    def __init__(self, box):
+        self.print_queue = queue.Queue()
+        self.display_list = ['-','-','-','-']
+        self.box = box
+        
+    
+    @thread_it
+    def print_output(self):
+        while not self.box.finished():
+            if not self.print_queue.empty():
+                self.update_display_list(self.print_queue.get())
+            print(self.display_list)
+    
+    def update_display_list(self, string):
+        self.display_list.append(string)
+        _ = self.display_list.pop(0)
+    
+    def format(self):
+        ''''''
+        output = '\n-------\n********\n'
+        for string in self.display_list:
+            output+=string+'\n'
+        output += '********\n-------\n'
