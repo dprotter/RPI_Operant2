@@ -101,6 +101,11 @@ class Lever:
         self.target_name = self.config_dict['target_name']
         self.target_type = self.config_dict['target_type']
         
+        if 'speaker_ID' in self.config_dict.keys():
+            self.speaker = self.box.speakers[self.config_dict['speaker_ID']]
+        else:
+            self.speaker = self.box.speaker
+        
         switch_dict = {
             'pin':self.pin,
             'pullup_pulldown':self.config_dict['pullup_pulldown'],
@@ -192,11 +197,11 @@ class Lever:
             if self.switch.pressed:
                 self.total_presses +=1
                 self.lever_press_queue.put(('pressed'))
-                self.box.speaker.click_on()
+                self.speaker.click_on()
                 timeout = self.box.timing.new_timeout(self.retraction_timeout)
                 while self.switch.pressed and timeout.active():
                     '''waiting for vole to get off lever. nothing necessary within loop'''
-                self.box.speaker.click_off()
+                self.speaker.click_off()
                 
                 
                 #wait to loop until inter-press interval is passed

@@ -103,7 +103,7 @@ class Box:
 
         #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
         if len(self.speakers) ==1:
-            self.speaker = self.speakers
+            self.speaker = self.speakers.get_components()[0]
         
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
