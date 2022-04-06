@@ -105,7 +105,9 @@ class Box:
             setattr(self, component_group_name, comp_container)
 
         #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
-        self.speaker = self.speakers.speaker
+        if len(self.speakers) ==1:
+            self.speaker = self.speakers.get_components()[0]
+        
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
@@ -271,6 +273,9 @@ class ComponentContainer:
                 raise NameError(f'box already has a >{self.type}< named >{name}<, but tried to make another with that name. Check for duplicate names in the config file')
 
             setattr(self, name, component_object)
+            
+    def __len__(self):
+        return len(self.get_components())
         
         
 class ScreenOutput:
