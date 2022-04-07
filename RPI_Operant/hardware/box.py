@@ -13,7 +13,7 @@ import importlib.util
 # Local Imports
 
 import os
-from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker
+from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser
 from RPI_Operant.hardware.timing import TimeManager, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -30,6 +30,7 @@ COMPONENT_LOOKUP = {
                     'levers':{'component_class':Lever, 'label':'lever'},
                     'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
                     'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
+                    'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
                     'speakers':{'component_class':Speaker, 'label':'speaker'}
                     }
 

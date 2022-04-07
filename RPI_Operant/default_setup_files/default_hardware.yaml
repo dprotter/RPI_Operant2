@@ -23,15 +23,15 @@ doors:
     close_timeout: 5
 
 levers:
-  #food:
-    #servo: 4
-    #extended: 30
-    #retracted: 105
-    #pin: 19
-    #pullup_pulldown: pullup
-    #servo_type: positional
-    #target_name: pellet
-    #target_type: dispenser
+  food:
+    servo: 4
+    extended: 30
+    retracted: 105
+    pin: 19
+    pullup_pulldown: pullup
+    servo_type: positional
+    target_name: positional_dispenser_1
+    target_type: positional_dispenser
   door_1:
     servo: 2
     extended: 20
@@ -54,10 +54,10 @@ levers:
     servo_type: positional
     interpress_interval: 0.25
 
-dispensers:
-  pellet:
+positional_dispensers:
+  positional_dispenser_1:
     servo: 1
-    servo_type: continuous 
+    servo_type: positional 
     dispense: 0.075
     stop: 0
     sensor_pin: 16
