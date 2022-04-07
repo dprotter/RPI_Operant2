@@ -13,10 +13,13 @@ import importlib.util
 # Local Imports
 
 import os
+
 from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser
+
 from RPI_Operant.hardware.timing import TimeManager, TimestampManager
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
+from RPI_Operant.hardware.software_functions import ScreenPrinter
 import queue
 import time
 import datetime
@@ -55,7 +58,7 @@ class Box:
         else:
             self.software_config = load_config_file(DEFAULT_SOFTWARE_CONFIG)
 
-        
+        self.screen = ScreenPrinter(self)
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
         self.timing = TimeManager(self)
@@ -114,6 +117,8 @@ class Box:
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
         self.worker_queue.put((fut2,'timestamp monitor_queue'))
+        fut_3 = self.thread_executor.submit(self.screen.print_output)
+        self.worker_queue.put((fut_3,'screen print_output'))
         if not self.monitor_worker_future.running:
             if self.monitor_worker_future.exception():
                 print(self.monitor_worker_future.exception())

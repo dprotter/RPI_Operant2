@@ -219,6 +219,7 @@ class TimestampManager:
                             line = self.queue.get()
                             ######add ts to screen write queue
                             csv_writer.writerow(line)
+                            self.box.screen.print_queue.put(line)
                             time.sleep(0.005)
 
         #dont save timestamps, but do print them to the terminal
