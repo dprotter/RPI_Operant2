@@ -31,7 +31,12 @@ class ScreenPrinter:
         self.print_queue = queue.Queue()
         self.display_list = ['-','-','-','-']
         self.box = box
-        
+    
+    def format_line(self, obj):
+        if 'latency' in obj.__dict__.keys():
+            return f'{obj.round},  {obj.event_descripto}, {obj.time}, lat: {obj.latency}'
+        else:
+            return f'{obj.round},  {obj.event_descripto}, {obj.time}, lat: ___'
     
     @thread_it
     def print_output(self):
@@ -40,13 +45,13 @@ class ScreenPrinter:
                 self.update_display_list(self.print_queue.get())
             print(self.display_list)
     
-    def update_display_list(self, string):
-        self.display_list.append(string)
+    def update_display_list(self, obj):
+        self.display_list.append(obj)
         _ = self.display_list.pop(0)
     
     def format(self):
         ''''''
         output = '\n-------\n********\n'
-        for string in self.display_list:
-            output+=string+'\n'
+        for obj in self.display_list:
+            output+=self.format_line(obj)+'\n'
         output += '********\n-------\n'

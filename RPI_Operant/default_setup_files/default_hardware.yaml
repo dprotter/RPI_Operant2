@@ -1,3 +1,9 @@
+speakers:
+  speaker1:
+    pin: 21
+  #speaker2:
+  #  pin: 22
+
 doors:
   door_1:
     servo: 0
@@ -10,6 +16,7 @@ doors:
     state_switch: 4
     servo_type: continuous
     close_timeout: 5
+ 
   door_2:
     servo: 13
     stop: 0.03
@@ -32,6 +39,7 @@ levers:
     servo_type: positional
     target_name: positional_dispenser_1
     target_type: positional_dispenser
+    
   door_1:
     servo: 2
     extended: 20
@@ -64,8 +72,3 @@ positional_dispensers:
     pullup_pulldown: pullup
     dispense_timeout: 3
 
-speakers:
-  speaker1:
-    pin: 21
-  #speaker2:
-  #  pin: 22

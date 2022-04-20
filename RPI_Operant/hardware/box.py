@@ -58,7 +58,7 @@ class Box:
         else:
             self.software_config = load_config_file(DEFAULT_SOFTWARE_CONFIG)
 
-        self.screen = ScreenPrinter(self)
+        
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
         self.timing = TimeManager(self)
@@ -117,7 +117,7 @@ class Box:
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
         self.worker_queue.put((fut2,'timestamp monitor_queue'))
-        fut_3 = self.thread_executor.submit(self.screen.print_output)
+        fut_3 = self.thread_executor.submit(self.timestamp_manager.screen.print_output)
         self.worker_queue.put((fut_3,'screen print_output'))
         if not self.monitor_worker_future.running:
             if self.monitor_worker_future.exception():
@@ -224,10 +224,12 @@ class Box:
         print('worker queue empty')
 
     def reset(self):
-        for lever in self.levers:
-            lever.retract()
-        for door in self.doors:
-            door.close()
+        if 'levers' in self.__dict__.keys():
+            for lever in self.levers:
+                lever.retract()
+        if 'doors' in self.__dict__.keys():
+            for door in self.doors:
+                door.close()
 
     def shutdown(self):
         self.timing.current_phase.finished()

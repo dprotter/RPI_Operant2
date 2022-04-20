@@ -14,6 +14,7 @@ from queue import Queue
 import sys
 import csv
 import socket
+from RPI_Operant.hardware.software_functions import ScreenPrinter
 
 def format_ts(timestamp_obj):
     
@@ -133,6 +134,7 @@ class Timestamp:
         self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name
         self.timestamp_manager.queue.put(format_ts(self))
+        self.timestamp_manager.screen.print_queue.put(self)
 
 class Latency: 
     def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
@@ -165,6 +167,7 @@ class Latency:
         
         
         self.timestamp_manager.queue.put(format_ts(self))
+        self.timestamp_manager.screen.print_queue.put(self)
 
 class TimestampManager: 
     def __init__(self, timing_obj, save_timestamps, box): 
@@ -173,7 +176,7 @@ class TimestampManager:
         # Round and start time are updated each new round 
         self.timing = timing_obj
         self.save_timestamps = save_timestamps
-        
+        self.screen = ScreenPrinter(self)
         
     def create_save_file(self, save_path):
         self.save_path = save_path + '.csv'
@@ -219,7 +222,7 @@ class TimestampManager:
                             line = self.queue.get()
                             ######add ts to screen write queue
                             csv_writer.writerow(line)
-                            self.box.screen.print_queue.put(line)
+                            
                             time.sleep(0.005)
 
         #dont save timestamps, but do print them to the terminal

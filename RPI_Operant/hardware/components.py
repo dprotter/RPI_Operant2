@@ -1,6 +1,8 @@
 from pydoc import describe
 import time
 import sys
+
+from scipy.fftpack import ss_diff
 if 'RPi.GPIO' in sys.modules:
     import RPi.GPIO as GPIO
 else:
@@ -80,8 +82,6 @@ class Servo_Sim:
             self.throttle = 0
         
 SERVO_SIM = Servo_Sim() 
-        
-
 
 class Lever:
     
