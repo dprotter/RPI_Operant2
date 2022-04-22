@@ -7,6 +7,8 @@ values:
   rounds: 15
   delay_by_day: [0]
   delay_default: 0
+  location: 1
+  round_length: 60
 
 
 speaker_tones:

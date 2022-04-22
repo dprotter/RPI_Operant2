@@ -64,11 +64,23 @@ class TimeManager:
         self.current_phase = Phase(name, length, box = self.box)
         return self.current_phase
 
-    def new_round(self): 
+    def new_round(self, length = None): 
         self.round = self.round + 1 
         self.round_start_time = time.time()
+        if length:
+            self.round_length = length
         
-
+    def round_finished(self):
+        if 'round_length' in self.__dict__.keys():
+            if self.start_time + self.round_length > time.time():
+                self.round_length = None
+                return True
+            else:
+                time.sleep(0.05)
+                return False
+        else:
+            print('WARNING --> CANT ask if round is finished using round_finished(), no round length provided')
+            
 class Phase: 
     def __init__(self, name, length=1000, box=None): 
             # if timeframe is None, then there is no time limit on this phase. As a result, it will run until interrupt or a new phase is created

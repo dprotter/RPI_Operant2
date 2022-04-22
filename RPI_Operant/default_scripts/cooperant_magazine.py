@@ -14,40 +14,49 @@ def run():
               start_now=True, simulated = True)
     
     time.sleep(0.5)
-    for i in range(1,3, 1):
-        box.timing.new_round()
-        phase = box.timing.new_phase(f'test_{i}', length =30)
+    
+    if box.software_config['values']['location'] == 1:
+        lever = box.levers.lever_1
+        speaker = box.speakers.speaker_1
+        dispenser = box.dispensers.port_dispenser_1
+    elif box.software_config['values']['location'] == 2:
+        lever = box.levers.lever_2
+        speaker = box.speakers.speaker_2
+        dispenser = box.dispensers.port_dispenser_2
+        
+    
+    
+    for i in range(1,box.software_config['values']['rounds']+1, 1):
+        box.timing.new_round(length = box.software_config['values']['round_length'])
+        lever_phase = box.timing.new_phase(f'lever_out', length =4)
+        press_timeout = box.timing.new_timeout(length = 2)
+        
         press_latency = box.levers.door_1.extend()
         
-        fut = box.levers.door_1.wait_for_n_presses(n=4, latency_obj = press_latency)
-        while phase.active():
-            if box.levers.door_1.presses_reached:
-                print('wowee!')
-                box.levers.door_1.retract()
-                phase.finished()
-                reward = box.timing.new_phase(name = 'social reward', length=2)
-                box.doors.door_1.open()
-                time.sleep(1)
-                box.doors.door_1.simulate_open()
+        lever.wait_for_n_presses(n=1, latency_obj = press_latency)
+        
+        while press_timeout.active():
+            if lever.presses_reached:
+                print('wowee! pressed.')
+                lever.retract()
+                lever_phase.finished()
+                speaker.play_tone(tone = 'pellet_tone')
+                dispenser.dispense()
                 
-            else:
-                val = random.random()
-                time.sleep(1*val)
-                box.levers.door_1.simulate_pressed()
-                time.sleep(0.5*val)
-                box.levers.door_1.simulate_unpressed()
-                time.sleep(1*val)
+        if not lever.presses_reached:
+            speaker.play_tone(tone = 'pellet_tone')
+            dispenser.dispense()
         
-        while reward.active():
-            '''wait'''
+        while lever_phase.active():
+            ''''''
+            
+        lever.retract()
         
-         #only setting wait = false here so that we can simulate the closing.
-        box.doors.door_1.close(wait = False) 
-        time.sleep(0.5)
-        box.doors.door_1.simulate_closed()
-        iti = box.timing.new_phase(name='ITI', length = 1)
-        while iti.active():
-            '''wait'''
+        while not box.timing.round_finished():
+            ''''''
+        
+        
+
     
     
     
