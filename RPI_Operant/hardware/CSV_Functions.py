@@ -1,6 +1,7 @@
 from datetime import datetime
 import pandas as pd
 import importlib
+import os
 '''todo
 where to check if next unfinished index exists or not
 
@@ -29,7 +30,7 @@ class Experiment:
         
         
     def get_unfinished_index(self): 
-        return self.table.loc[self.experiment_status.done != 'True'].index[self.unfinished_list_index]
+        return self.table.loc[self.table.finished != 'True'].index[self.unfinished_list_index]
 
     def iterate_row(self):
         self.unfinished_list_index +=1
@@ -38,13 +39,27 @@ class Experiment:
         
     def run_row(self):
         #dynamically reload the module with the new vole info.
-        spec = importlib.util.spec_from_file_location(self.vals["script"],
-                    f'{self.path_to_scripts}/{self.vals["script"]}.py')
-        self.module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(self.module)
-        self.module.load_setup(self.current_row.setup_path)
-        self.module.run()
+        if os.path.isfile(self.current_row['script_path'].values[0]):
+            spec = importlib.util.spec_from_file_location(self.vals["script"],
+                        f'{self.path_to_scripts}/{self.vals["script"]}.py')
+            self.module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self.module)
         
+        #check for paths to hardware or software setup files. else use default files
+        if not pd.isna(self.current_row.script_setup):
+            self.module.USER_SOFTWARE_CONFIG_PATH = self.current_row.script_setup
+        if not pd.isna(self.current_row.hardware_setup):
+            self.module.USER_CONFIG_PATH = self.current_row.hardware_setup
+        
+        self.module.RUNTIME_DICT = self.generate_runtime_dict()
+        
+        self.module.run()
+    
+    
+    def generate_runtime_dict(self):
+        keys = ['vole', 'day', 'title']
+        return {k:self.current_row[k] for k in keys if k in list(self.current_row.keys())}
+    
     def ask_to_run(self):
         
         self.print_vals()
