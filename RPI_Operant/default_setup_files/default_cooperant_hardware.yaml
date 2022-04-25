@@ -15,6 +15,7 @@ levers:
     servo_type: positional
     target_name: port_dispenser_1
     target_type: port_dispenser
+    speaker_ID: 1
 
   food_2:
     servo: 4
@@ -25,26 +26,29 @@ levers:
     servo_type: positional
     target_name: port_dispenser_2
     target_type: port_dispenser
+    speaker_ID: 2
 
 
 port_dispenser:
   port_dispenser_1:
     servo: 1
     servo_type: continuous 
-    dispense: 0.075
+    dispense_speed: 0.075
+    full_rotation_time: 5.25
     stop: 0
     sensor_pin: 16
     pullup_pulldown: pullup
-    dispense_timeout: 3
+    
 
   port_dispenser_2:
     servo: 1
     servo_type: continuous 
-    dispense: 0.075
+    dispense_speed: 0.075
+    full_rotation_time: 5.25
     stop: 0
     sensor_pin: 16
     pullup_pulldown: pullup
-    dispense_timeout: 3
+    
   
 
 

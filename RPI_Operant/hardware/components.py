@@ -691,9 +691,8 @@ class PortDispenser:
             self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
         else:
             self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
-        self.positions = self.calculate_positions()
-        self.current_position_index = self.set_starting_index()
-        self.current_position_angle = self.positions[self.current_position_index]
+        
+        self.step_time = self.calculate_step_time()
         
         self.name = name
         self.pellet_state = False
@@ -706,36 +705,16 @@ class PortDispenser:
         self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
         self.overridden = False
 
-    def calculate_positions(self):
-        start = self.config_dict['start']
-        n = self.config_dict['n_spots']
-        return [start+i*(360/n) for i in range(n)]
-    
-    def get_position(self):
-        '''return the current position of the servo'''
-        position = 10
-        return position
-    
-    def set_starting_index(self):
-        '''calculate the index closest to the current position of the servo, and return that index'''
-        cur = self.get_position()
-        min_index = 0
+    def calculate_step_time(self):
+        return self.config_dict['full_rotation_time'] / 360
         
-        for i, pos in enumerate(self.positions):
-            if abs(pos-cur) < abs(self.positions[min_index]-cur):
-                min_index = i
-                
-        return min_index
-
     def next_position(self):
-        angle = self.positions[self.current_position_index%len(self.positions)]
-        self.servo.angle = angle
-        self.current_position_angle = angle
-        
+        self.servo.throttle = self.config_dict['dispense_speed']
+        time.sleep(self.step_time)
+        self.servo.throttle = 0
     
     def sensor_blocked(self):
         return self.sensor.pushed
-
     
     def simulate_pellet_retrieved(self):
         '''used in scripts to simulate a pellet being removed from the trough'''
@@ -773,6 +752,7 @@ class Speaker:
         self.name = name
         self.pin = speaker_dict['pin']
         self.tone_dict = self.box.software_config['speaker_tones']
+        self.sim = simulated
         if simulated:
             self.pi = self.FakeSpeaker()
         else:
@@ -787,7 +767,8 @@ class Speaker:
         else:
             hz = self.tone_dict[tone_name]['hz']
             length = self.tone_dict[tone_name]['length']
-
+            if self.sim:
+                print(f'simulated speaker playing {tone_name}')
             self.pi.set_PWM_frequency(self.pin, int(hz))
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name)
             self.pi.set_PWM_dutycycle(self.pin, 255/2)

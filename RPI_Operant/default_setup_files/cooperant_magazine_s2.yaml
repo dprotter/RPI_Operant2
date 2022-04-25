@@ -4,11 +4,11 @@ checks:
   save_timestamps: False
 
 values:
-  rounds: 15
+  rounds: 5
   delay_by_day: [0]
   delay_default: 0
   location: 2
-  round_length: 60
+  round_length: 6
 
 
 speaker_tones:
