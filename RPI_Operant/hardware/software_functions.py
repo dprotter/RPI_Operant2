@@ -34,16 +34,20 @@ class ScreenPrinter:
     
     def format_line(self, obj):
         if 'latency' in obj.__dict__.keys():
-            return f'{obj.round},  {obj.event_descripto}, {obj.time}, lat: {obj.latency}'
+            return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: {obj.latency}'
         else:
-            return f'{obj.round},  {obj.event_descripto}, {obj.time}, lat: ___'
+            return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: ___'
     
     @thread_it
     def print_output(self):
-        while not self.box.finished():
+        
+        '''while not self.box.finished():
             if not self.print_queue.empty():
                 self.update_display_list(self.print_queue.get())
-            print(self.display_list)
+            print(self.display_list)'''
+        while not self.box.finished():
+            if not self.print_queue.empty():
+                print(self.format_line(self.print_queue.get()))
     
     def update_display_list(self, obj):
         self.display_list.append(obj)

@@ -13,13 +13,12 @@ import importlib.util
 # Local Imports
 
 import os
+import traceback
 
-from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser
+from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
 
 from RPI_Operant.hardware.timing import TimeManager, TimestampManager
-from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
-from RPI_Operant.hardware.software_functions import ScreenPrinter
 import queue
 import time
 import datetime
@@ -28,12 +27,15 @@ from RPI_Operant.hardware.software_functions import merge_config_files, load_con
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
 DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_software.yaml')
+DEFAULT_OUTPUT_LOCATION = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location')
+ERROR_LOG_PATH = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location/error_logs/')
 COMPONENT_LOOKUP = {
                     'doors':{'component_class':Door, 'label':'door'},
                     'levers':{'component_class':Lever, 'label':'lever'},
                     'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
                     'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
                     'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
+                    'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
                     'speakers':{'component_class':Speaker, 'label':'speaker'}
                     }
 
@@ -41,20 +43,25 @@ COMPONENT_LOOKUP = {
 
 class Box: 
 
-    def __init__(self, run_dict, user_config_file_path=None, user_software_config_file_path = None, start_now = False, simulated = False): 
+    def __init__(self, run_dict, user_hardware_config_file_path=None, 
+                 user_software_config_file_path = None, 
+                 start_now = False, simulated = False): 
+        
+        #threading        
+        self.thread_executor = ThreadPoolExecutor(max_workers = 10)
+        self.worker_queue = queue.Queue()
         
         self.done = False
         self.run_dict = run_dict
         
         ###### load and merge config files
-        if user_config_file_path:
-            self.config = merge_config_files(user_config_file_path, DEFAULT_HARDWARE_CONFIG)
+        if user_hardware_config_file_path:
+            self.config = load_config_file(user_hardware_config_file_path)
         else:
             self.config = load_config_file(DEFAULT_HARDWARE_CONFIG)
-            
-            
+        
         if user_software_config_file_path:
-            self.software_config = merge_config_files(user_software_config_file_path, DEFAULT_SOFTWARE_CONFIG)
+            self.software_config = load_config_file(user_software_config_file_path)
         else:
             self.software_config = load_config_file(DEFAULT_SOFTWARE_CONFIG)
 
@@ -68,13 +75,9 @@ class Box:
                                                   save_timestamps= self.software_config['checks']['save_timestamps'],
                                                   box = self)
 
-        
-        self.output_file_path_base = self.generate_output_path()
-        
-        #threading        
-        self.thread_executor = ThreadPoolExecutor(max_workers = 10)
-        self.worker_queue = queue.Queue()
-        
+        self.output_file_name = self.generate_output_fname()
+        self.output_file_path = self.generate_output_path()
+        self.output_error_file_path = self.generate_error_output_path()
 
         #the manager for creating, adding, and monitoring new binary inputs
         self.button_manager = ButtonManager(self, simulated = simulated)
@@ -117,8 +120,6 @@ class Box:
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
         self.worker_queue.put((fut2,'timestamp monitor_queue'))
-        fut_3 = self.thread_executor.submit(self.timestamp_manager.screen.print_output)
-        self.worker_queue.put((fut_3,'screen print_output'))
         if not self.monitor_worker_future.running:
             if self.monitor_worker_future.exception():
                 print(self.monitor_worker_future.exception())
@@ -126,16 +127,61 @@ class Box:
         if start_now:
             self.timing.start_timing()
     
-    def generate_output_path(self):
+    def generate_output_fname(self):
         vole = self.run_dict['vole']
         day = self.run_dict['day']
         exp = self.run_dict['experiment']
         date = datetime.datetime.now()
         fdate = f'{date.month}_{date.day}_{date.year}___{date.hour}_{date.minute}_'
         fname = f'{vole}_{fdate}_{exp}_day_{day}'
-        return os.path.join( self.software_config['output_path'], fname)
+        
+        return fname
+        
+        '''if self.software_config['output_path']:
+            return os.path.join(self.software_config['output_path'], fname)
+        else:
+            return os.path.join(DEFAULT_OUTPUT_LOCATION, fname)'''
     
-         
+    def generate_output_path(self):
+        if self.software_config['output_path'].lower() == 'default':
+            
+            path =  DEFAULT_OUTPUT_LOCATION
+            
+        else:
+            path = self.software_config['output_path']
+            
+        if not os.path.isdir(path):
+            print(f'cant save to path provided! {path}')
+            if self.software_config['output_path'].lower() == 'default':
+                print('already on default location')
+            else:
+                print('falling back to default save path')
+                path = DEFAULT_OUTPUT_LOCATION
+                if not os.path.isdir(path):
+                    print(f'cant save to default path! {path}')
+        return os.path.join(path, self.output_file_name)
+    
+    
+    def generate_error_output_path(self):
+        if self.software_config['output_path'].lower() == 'default':
+            
+            path =  ERROR_LOG_PATH
+            
+        else:
+            path = self.software_config['output_path']
+            
+        if not os.path.isdir(path):
+            print(f'cant save to path provided! {path}')
+            if self.software_config['output_path'].lower() == 'default':
+                print('already on default location')
+            else:
+                print('falling back to default save path')
+                path = DEFAULT_OUTPUT_LOCATION
+                if not os.path.isdir(path):
+                    print(f'cant save to default path! {path}')
+        return os.path.join(path, self.output_file_name+'errors.txt')
+    
+    
     def new_round(self):
         self.timing.new_round()
         self.timestamp_manager.create_and_submit_new_timestamp()
@@ -170,6 +216,10 @@ class Box:
         workers = []
         
         
+        print(f'error_log_path: {self.output_error_file_path}')
+        with open(self.output_error_file_path, 'w') as f:
+            print('creating log file')
+        
         while not self.done:
             if not self.worker_queue.empty():
                 #receive worker, parent function, round of initiation
@@ -194,8 +244,13 @@ class Box:
                         print('oh snap! one of your threads had a problem.\n\n\n')
                         
                         print('******-----ERROR------******')
-                        print(f"function: {name}")
-                        print(worker.exception())
+                        print(f"function: {name}\n{worker.exception()}\n")
+                        with open(self.output_error_file_path, 'a') as f:
+                            try: 
+                                worker.result()
+                            except:
+                                f.write(traceback.format_exc())
+                        
                         print('******-----ERROR------******\n\n\n')
                         workers.remove(element)
                     elif worker.done():
@@ -243,6 +298,7 @@ class Box:
                 print('waiting for shutdown')
                 val = 0
         print('monitor_workers complete')
+        
     def finished(self):
         time.sleep(0.05)
         return self.done
@@ -280,8 +336,3 @@ class ComponentContainer:
     def __len__(self):
         return len(self.get_components())
         
-        
-class ScreenOutput:
-    '''format and handle updating the output screen'''
-    def __init__(self, box):
-        self.box = box

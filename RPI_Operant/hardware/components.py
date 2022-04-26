@@ -1,8 +1,7 @@
-from pydoc import describe
+
 import time
 import sys
 
-from scipy.fftpack import ss_diff
 if 'RPi.GPIO' in sys.modules:
     import RPi.GPIO as GPIO
 else:
@@ -102,8 +101,9 @@ class Lever:
         self.target_name = self.config_dict['target_name']
         self.target_type = self.config_dict['target_type']
         
-        if 'speaker_ID' in self.config_dict.keys():
-            self.speaker = self.box.speakers[self.config_dict['speaker_ID']]
+        
+        if 'speaker_name' in self.config_dict.keys():
+            self.speaker = self.box.speakers.get_component(self.config_dict['speaker_name'])
         else:
             self.speaker = self.box.speaker
         
@@ -118,7 +118,7 @@ class Lever:
         self.retraction_timeout = self.config_dict['retraction_timeout'] if 'retraction_timeout' in self.config_dict.keys() else 2
         self.interpress_timeout = self.config_dict['interpress_timeout'] if 'interpress_timeout' in self.config_dict.keys() else 0.5
         
-        self.setup_target()
+        
         
         
         #attributes for tracking during runtime
@@ -209,10 +209,10 @@ class Lever:
                 ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
                 ipt_timeout.wait()
             time.sleep(0.015)
-        print(f'\n:::::: done watching a pin for {self.name}:::::\n')
+        #print(f'\n:::::: done watching a pin for {self.name}:::::\n')
     
     @thread_it
-    def wait_for_n_presses(self, n = 1, reset_with_new_phase = True, latency_obj = None):
+    def wait_for_n_presses(self, n = 1, reset_with_new_phase = False, latency_obj = None, reset_with_new_round = True):
         'monitor lever and wait for n_presses before '
         if latency_obj:
             latency_obj.add_modifier(key = 'presses_required', value = n)
@@ -224,7 +224,7 @@ class Lever:
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
-            while phase.active():
+            while phase.active() and not self.box.finished():
                 if not self.lever_press_queue.empty():
                     print(f'{self.name} was pressed')
                     while not self.lever_press_queue.empty():
@@ -249,12 +249,12 @@ class Lever:
                             self.monitoring = False
                         while not self.lever_press_queue.empty():
                             _ = self.lever_press_queue.get()
-                            
-            print('done waiting for n presses')
+            print('dont waiting for n-presses')
             self.reset_lever()
         
-        else:
-            while self.monitoring:
+        elif reset_with_new_round:
+            r = self.box.timing.round
+            while r == self.box.timing.round and not self.box.finished():
                 if not self.lever_press_queue.empty():
                     while not self.lever_press_queue.empty():
                         _ = self.lever_press_queue.get()
@@ -266,6 +266,20 @@ class Lever:
                                 _ = self.lever_press_queue.get()
                             
                 time.sleep(0.05)
+            print('new round resetting n presses')
+            self.reset_lever()
+        else:
+            while self.monitoring and not self.box.finished():
+                if not self.lever_press_queue.empty():
+                    while not self.lever_press_queue.empty():
+                        _ = self.lever_press_queue.get()
+                        self.lever_presses += 1
+                        if self.lever_presses >= n:
+                            self.presses_reached = True
+                            self.monitoring = False
+                            while not self.lever_press_queue.empty():
+                                _ = self.lever_press_queue.get()
+                            
                 
         self.monitoring = False
 
@@ -716,8 +730,9 @@ class PortDispenser:
     def sensor_blocked(self):
         return self.sensor.pushed
     
-    def simulate_pellet_retrieved(self):
+    def simulate_retrieved(self):
         '''used in scripts to simulate a pellet being removed from the trough'''
+        print('simulating pellet retrieved')
         self.sensor.pressed = True
     
     @thread_it
@@ -725,20 +740,25 @@ class PortDispenser:
         ''''''
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
-            self.box.timestamp_manager.create_and_submite_new_timestamp(description = oes.pellet_not_retrieved)
-            
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_not_retrieved)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_skip)
+        else:
         
-        self.next_position()
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-        latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
-        self.monitor_pellet(latency)
+            self.next_position()
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
+            latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+            self.pellet_state = True
+            self.monitor_pellet(latency)
+        return
     
     @thread_it
     def monitor_pellet(self, pellet_latency):
         '''track when a pellet is retrieved'''
         while not self.box.finished():
-            if self.sensor_pressed:
-                pellet_latency.submit()              
+            if self.sensor.pressed:
+                pellet_latency.submit()
+                self.pellet_state = False  
+                return       
 
 class Speaker:
     class FakeSpeaker:
@@ -751,7 +771,8 @@ class Speaker:
         self.box = box
         self.name = name
         self.pin = speaker_dict['pin']
-        self.tone_dict = self.box.software_config['speaker_tones']
+        print(self.box.software_config['speaker_tones'][self.name]['click_on'])
+        self.tone_dict = self.box.software_config['speaker_tones'][self.name]
         self.sim = simulated
         if simulated:
             self.pi = self.FakeSpeaker()

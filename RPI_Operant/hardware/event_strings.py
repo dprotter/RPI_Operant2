@@ -19,9 +19,9 @@ class OperantEventStrings:
     tone_start = 'tone_start_'
     tone_stop = 'tone_stop_'
     
-    pellet_dispensed = 'pellet_dispensed_'
-    pellet_skip = 'pellet_skipped_'
-    pellet_failure = 'pellet_dispense_failure_'
-    pellet_not_retrieved = 'pellet_not_retrieved_'
-    pellet_retrieved = 'pellet_retrieved_'
+    pellet_dispensed = 'pellet_dispense'
+    pellet_skip = 'pellet_skipped'
+    pellet_failure = 'pellet_dispense_failure'
+    pellet_not_retrieved = 'pellet_not_retrieved'
+    pellet_retrieved = 'pellet_retrieved'
         

@@ -51,7 +51,8 @@ class TimeManager:
         else:
             self.start_time = time.time()
             self.round_start_time = time.time()
-            self.box.timestamp_manager.create_save_file(self.box.output_file_path_base)
+            self.box.timestamp_manager.create_save_file()
+            self.box.timestamp_manager.screen.print_output()
 
     def restart_timing(self):
         self.start_time = time.time()
@@ -70,9 +71,9 @@ class TimeManager:
         if length:
             self.round_length = length
         
-    def round_finished(self):
+    def round_over(self):
         if 'round_length' in self.__dict__.keys():
-            if self.start_time + self.round_length > time.time():
+            if self.round_start_time + self.round_length < time.time():
                 self.round_length = None
                 return True
             else:
@@ -188,19 +189,17 @@ class TimestampManager:
         # Round and start time are updated each new round 
         self.timing = timing_obj
         self.save_timestamps = save_timestamps
-        self.screen = ScreenPrinter(self)
+        self.screen = ScreenPrinter(self.box)
         
-    def create_save_file(self, save_path):
-        self.save_path = save_path + '.csv'
-                
+    def create_save_file(self):
+        self.save_path = self.box.output_file_path + '.csv'
+        print(f'csv path: {self.save_path}')
         if self.save_timestamps:
             with open(self.save_path, 'w') as file:
                 header = ['round','event','time','phase initialized','phase submitted','latency','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)
                 
-    def start_timing(self):
-        self.experiment_start_time = time.time()
 
     def new_timestamp(self, description, modifiers = None):
         '''how to create a new timestamp object'''
@@ -244,8 +243,8 @@ class TimestampManager:
 
                     while not self.queue.empty():
                         ######add ts to screen write queue
-                        ts = self.queue.get()
-                        line = self.format(ts)
+                        line = self.queue.get()
+                        
                         print(line)
                         time.sleep(0.005)
 

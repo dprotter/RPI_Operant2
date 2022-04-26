@@ -1,12 +1,12 @@
 speakers:
-  speaker1:
+  speaker_1:
     pin: 21
-  speaker2:
+  speaker_2:
     pin: 22
     
 
 levers:
-  food_1:
+  lever_1:
     servo: 4
     extended: 30
     retracted: 105
@@ -15,9 +15,9 @@ levers:
     servo_type: positional
     target_name: port_dispenser_1
     target_type: port_dispenser
-    speaker_ID: 1
+    speaker_name: speaker_1
 
-  food_2:
+  lever_2:
     servo: 4
     extended: 30
     retracted: 105
@@ -26,10 +26,10 @@ levers:
     servo_type: positional
     target_name: port_dispenser_2
     target_type: port_dispenser
-    speaker_ID: 2
+    speaker_name: speaker_2
 
 
-port_dispenser:
+port_dispensers:
   port_dispenser_1:
     servo: 1
     servo_type: continuous 
@@ -39,7 +39,6 @@ port_dispenser:
     sensor_pin: 16
     pullup_pulldown: pullup
     
-
   port_dispenser_2:
     servo: 1
     servo_type: continuous 

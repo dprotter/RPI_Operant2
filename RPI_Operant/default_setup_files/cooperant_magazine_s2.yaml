@@ -1,14 +1,15 @@
-output_path: '~/RPI_Operant_outputs/default_location'
+output_path: 'default'
 
 checks:
-  save_timestamps: False
+  save_timestamps: True
 
 values:
   rounds: 5
   delay_by_day: [0]
   delay_default: 0
   location: 2
-  round_length: 6
+  round_length: 7
+  lever_out_time: 4
 
 
 speaker_tones:
@@ -25,7 +26,6 @@ speaker_tones:
     door_close:
       hz: 7000
       length: 1
-
     click_on: 
       tone_1:
         hz: 8000
@@ -36,7 +36,7 @@ speaker_tones:
       tone_3:
         hz: 900
         length: 0.02
-      click_off: 
+    click_off: 
       tone_1:
         hz: 8000
         length: 0.02
@@ -60,8 +60,6 @@ speaker_tones:
     door_close:
       hz: 7000
       length: 1
-    
-    
     click_on: 
       tone_1:
         hz: 8000

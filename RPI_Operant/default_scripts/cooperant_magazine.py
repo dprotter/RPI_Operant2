@@ -9,8 +9,8 @@ USER_SOFTWARE_CONFIG_PATH = None
 def run():
     
     box = Box(run_dict=RUNTIME_DICT, 
-              user_config_file_path='/home/dprotter/Documents/Vole Projects/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml',
-              user_software_config_file_path='/home/dprotter/Documents/Vole Projects/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine_s2.yaml',
+              user_hardware_config_file_path='/Users/davidprotter/Documents/Donaldson Lab/Don_GIT/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml',
+              user_software_config_file_path='/Users/davidprotter/Documents/Donaldson Lab/Don_GIT/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine_s2.yaml',
               start_now=True, simulated = True)
     
     time.sleep(0.5)
@@ -18,11 +18,11 @@ def run():
     if box.software_config['values']['location'] == 1:
         lever = box.levers.lever_1
         speaker = box.speakers.speaker_1
-        dispenser = box.dispensers.port_dispenser_1
+        dispenser = box.port_dispensers.port_dispenser_1
     elif box.software_config['values']['location'] == 2:
         lever = box.levers.lever_2
         speaker = box.speakers.speaker_2
-        dispenser = box.dispensers.port_dispenser_2
+        dispenser = box.port_dispensers.port_dispenser_2
         
     
     
@@ -31,9 +31,9 @@ def run():
         
         '''vvvvvvvvvvvvv simulation test stuff vvvvvvvvvvv'''
         r1 = random.random()
-        if r1 < 0.75:
+        if r1 < 0.4:
             sim_press = True
-            press_time = random.random()(box.software_config['values']['round_length'])
+            press_time = random.random()*(4)
             round_start_for_sim = time.time()
         else:
             sim_press = False
@@ -50,49 +50,55 @@ def run():
         lever_phase = box.timing.new_phase(f'lever_out', length =4)
         press_timeout = box.timing.new_timeout(length = 2)
         
-        press_latency = box.levers.door_1.extend()
-        
+        press_latency = lever.extend()
         lever.wait_for_n_presses(n=1, latency_obj = press_latency)
         
         while press_timeout.active():
             
             if sim_press:
                 if round_start_for_sim + press_time > time.time():
-                    lever.simulate_press()
+                    lever.simulate_pressed()
+                    time.sleep(0.1)
             
             if lever.presses_reached:
                 
                 lever.retract()
                 lever_phase.finished()
-                speaker.play_tone(tone = 'pellet_tone')
+                speaker.play_tone(tone_name = 'pellet_tone')
                 dispenser.dispense()
                 
+                
         if not lever.presses_reached:
-            speaker.play_tone(tone = 'pellet_tone')
+            speaker.play_tone(tone_name = 'pellet_tone')
             dispenser.dispense()
+        
+        
         
         if sim_retrieve:
             retrieve_time = 3 * random.random()
             retrieve_start = time.time()
+            
         while lever_phase.active():
             ''''''
             if sim_retrieve:
                 if retrieve_start + retrieve_time > time.time():
                     dispenser.simulate_retrieved()
                     sim_retrieve = False
-        lever.retract()
         
-        while not box.timing.round_finished():
+        phase = box.timing.new_phase(name ='ITI', length = 1000)
+        if not lever.presses_reached:
+            lever.retract()
+        
+        while not box.timing.round_over():
             ''''''
             if sim_retrieve:
                 if retrieve_start + retrieve_time > time.time():
                     dispenser.simulate_retrieved()
                     sim_retrieve = False
         
+        phase.finished()
+                    
 
-    
-    
-    
     box.shutdown()
 
 if __name__ == '__main__':
