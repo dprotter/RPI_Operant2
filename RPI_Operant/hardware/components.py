@@ -2,10 +2,11 @@
 import time
 import sys
 
-if 'RPi.GPIO' in sys.modules:
+try:
     import RPi.GPIO as GPIO
-else:
+except:
     print('RPi.GPIO not found')
+
 import queue
 import sys
 from RPI_Operant.hardware.event_strings import OperantEventStrings as oes
@@ -13,18 +14,17 @@ import inspect
 
 import os
 
-if 'pigpio' in sys.modules:
+try:
     if os.system('sudo lsof -i TCP:8888'):
         os.system('sudo pigpiod')
-        import pigpio
-else:
+    import pigpio
+except:
     print('pigpio not found')
 
-
-if 'adafruit_servokit' in sys.modules:
+try:
     from adafruit_servokit import ServoKit
     SERVO_KIT = ServoKit(channels=16)
-else:
+except:
     print('adafruit_servokit not found')
     SERVO_KIT = None
 
@@ -285,7 +285,7 @@ class Button:
         self.pin = button_dict['pin']
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
-
+        GPIO.setup(self.pin, GPIO.IN)
         if pullup_pulldown == 'pullup':
             self.pressed_val = 0
             
@@ -470,9 +470,6 @@ class Dispenser:
             self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
         else:
             self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
-        self.stop_speed = self.config_dict['stop']
-        self.dispense_speed = self.config_dict['dispense']
-        self.dispense_timeout = self.config_dict['dispense_timeout']
         self.name = name
         self.pellet_state = False
 
@@ -482,9 +479,14 @@ class Dispenser:
         }
         
         self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
-        self.overridden = False
 
 
+
+    def start_servo(self):
+        self.servo.throttle = self.config_dict['dispense']
+
+    def stop_servo(self):
+        self.servo.throttle =  self.config_dict['stop']
 
     def sensor_blocked(self):
         return self.sensor.pushed
@@ -509,15 +511,15 @@ class Dispenser:
             '''timestamp put "pellet sensor already blocked"'''
             '''wait????'''
         else:
-            self.servo.throttle = self.dispense_speed
+            self.start_servo()
             read = 0
-            timeout = self.box.timing.new_timeout(timeout = self.dispense_timeout)
+            timeout = self.box.timing.new_timeout(timeout = self.config_dict['dispense_timeout'])
             while timeout.active():
                 if self.sensor.pressed:
                     read+=1
                 if read > 2:
                     '''timestamp put "pellet dispensed"'''
-                    self.servo.throttle = self.stop_speed
+                    self.stop_servo()
                     self.pellet_state = True
                     pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
                     self.monitor_pellet(pellet_latency)
@@ -680,31 +682,14 @@ class PositionalDispenser:
             if not self.sensor_pressed:
                 pellet_latency.submit()     
 
-class PortDispenser:
+class PortDispenser(Dispenser):
 
     def __init__(self, name, dispenser_config_dict, box, simulated = False):
         '''make a dispenser'''
-        self.box = box
-        self.config_dict = dispenser_config_dict
-        self.servo_ID = self.config_dict['servo']
-        
-        if simulated:
-            self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
-        else:
-            self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
+        super().__init__(name, dispenser_config_dict, box, simulated)
         
         self.step_time = self.calculate_step_time()
-        
-        self.name = name
         self.pellet_state = False
-
-        sensor_dict = { 
-            'pin':self.config_dict['sensor_pin'],
-            'pullup_pulldown':self.config_dict['pullup_pulldown']
-        }
-        
-        self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
-        self.overridden = False
 
     def calculate_step_time(self):
         return self.config_dict['full_rotation_time'] / 360
@@ -758,7 +743,7 @@ class Speaker:
         self.box = box
         self.name = name
         self.pin = speaker_dict['pin']
-        print(self.box.software_config['speaker_tones'][self.name]['click_on'])
+        
         self.tone_dict = self.box.software_config['speaker_tones'][self.name]
         self.sim = simulated
         if simulated:

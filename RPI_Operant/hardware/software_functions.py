@@ -3,8 +3,9 @@ import yaml
 import queue
 from RPI_Operant.hardware.components import thread_it
 
-def load_config_file( file):
+def load_config_file(file):
     '''load a config yaml file and return the resulting dict'''
+    print(f'loading {file}')
     with open(file, 'r') as f:
         config_dict = yaml.safe_load(f)
     return config_dict

@@ -1,27 +1,27 @@
 speakers:
-  speaker_1:
+  speaker_1: 
     pin: 21
-  speaker_2:
+  speaker_2: 
     pin: 22
     
 
-levers:
-  lever_1:
-    servo: 4
+levers: 
+  lever_1: 
+    servo: 2
     extended: 30
     retracted: 105
-    pin: 19
+    pin: 17
     pullup_pulldown: pullup
     servo_type: positional
     target_name: port_dispenser_1
     target_type: port_dispenser
     speaker_name: speaker_1
 
-  lever_2:
-    servo: 4
+  lever_2: 
+    servo: 0
     extended: 30
     retracted: 105
-    pin: 19
+    pin: 27
     pullup_pulldown: pullup
     servo_type: positional
     target_name: port_dispenser_2
@@ -29,22 +29,22 @@ levers:
     speaker_name: speaker_2
 
 
-port_dispensers:
-  port_dispenser_1:
-    servo: 1
+port_dispensers: 
+  dispenser_1: 
+    servo: 3
     servo_type: continuous 
-    dispense_speed: 0.075
-    full_rotation_time: 5.25
-    stop: 0
+    dispense: 0.2
+    full_rotation_time: 11.7
+    stop: 0.06
     sensor_pin: 16
     pullup_pulldown: pullup
     
-  port_dispenser_2:
+  dispenser_2:
     servo: 1
     servo_type: continuous 
-    dispense_speed: 0.075
-    full_rotation_time: 5.25
-    stop: 0
+    dispense: 0.2
+    full_rotation_time: 5.6
+    stop: 0.06
     sensor_pin: 16
     pullup_pulldown: pullup
     
