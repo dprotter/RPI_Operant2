@@ -2,11 +2,7 @@ from datetime import datetime
 import pandas as pd
 import importlib
 import os
-'''todo
-where to check if next unfinished index exists or not
-
-
-'''
+from RPI_Operant.hardware.software_functions import load_config_file
 DATA_TYPES = {'vole':int, 
               'day':int, 
               'runtime':datetime, 
@@ -14,6 +10,24 @@ DATA_TYPES = {'vole':int,
               'script_path':str, 
               'setup_path':str}
 
+
+def r_mkdir(path):
+    if not os.path.isdir(path):
+        print(f'not a path: {path}')
+        head, tail = os.path.split(path)
+        success = r_mkdir(head)
+        if success:
+            try:
+                print(f'trying to make {path}')
+                os.mkdir(path)
+            except:
+                return False
+            else:
+                return True
+        else:
+            return False
+    else:
+        return True
 class Experiment:
     def __init__(self, file, output_loc = '~/default_operant_outputs') -> None:
         self.file = file
@@ -98,5 +112,20 @@ class Experiment:
                     print('input error, plese enter either y or n')
                     user_input = 'n'
                 
-                    
+
+
+    def check_output_location(self):
+        
+        config = load_config_file(self.current_row['script_setup'])
+        if not config['output_path'] == 'default':
+            
+            if not os.path.isdir(config['output_path']):
+                response = input(f'output path does not exist. Should I make:\n{config["output_path"]}"y" : recursively make dir.\n"n"fall back to default output location\n')
+                if response.lower == 'y':
+                    success = r_mkdir(config["output_path"])
+                    if not success:
+                        print('couldnt make path! falling back to default path.')
+                        
+                elif response.lower == 'n':
+                    print('ok, falling back to normal output.')
                     

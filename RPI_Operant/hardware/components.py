@@ -130,7 +130,12 @@ class Lever:
         self.lever_presses = 0
         
         self.wiggle = 10
-    
+    def simulate_lever_press(self):
+        self.simulate_pressed()
+        time.sleep(0.1)
+        self.simulate_unpressed()
+        
+        
     def simulate_pressed(self):
         print('simulating pressed')
         self.switch.pressed = True
@@ -209,7 +214,7 @@ class Lever:
                 ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
                 ipt_timeout.wait()
             time.sleep(0.015)
-        #print(f'\n:::::: done watching a pin for {self.name}:::::\n')
+        #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
     
     @thread_it
     def wait_for_n_presses(self, n = 1, reset_with_new_phase = False, latency_obj = None, reset_with_new_round = True):
@@ -225,7 +230,23 @@ class Lever:
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
             while phase.active() and not self.box.finished():
-                if not self.lever_press_queue.empty():
+                self.monitor_lever(n, latency_obj)
+            self.reset_lever()
+        
+        #reset with new rounds waits to exit until the round has changed
+        elif reset_with_new_round:
+            r = self.box.timing.round
+            while r == self.box.timing.round and not self.box.finished():
+                self.monitor_lever(n, latency_obj)
+            print('new round resetting n presses')
+            self.reset_lever()
+        else:
+            while self.monitoring and not self.box.finished():
+                self.monitor_lever(n, latency_obj)
+        self.monitoring = False
+    
+    def monitor_lever(self, n, latency_obj):
+        if not self.lever_press_queue.empty():
                     print(f'{self.name} was pressed')
                     while not self.lever_press_queue.empty():
                         _ = self.lever_press_queue.get()
@@ -249,40 +270,6 @@ class Lever:
                             self.monitoring = False
                         while not self.lever_press_queue.empty():
                             _ = self.lever_press_queue.get()
-            print('dont waiting for n-presses')
-            self.reset_lever()
-        
-        elif reset_with_new_round:
-            r = self.box.timing.round
-            while r == self.box.timing.round and not self.box.finished():
-                if not self.lever_press_queue.empty():
-                    while not self.lever_press_queue.empty():
-                        _ = self.lever_press_queue.get()
-                        self.lever_presses += 1
-                        if self.lever_presses >= n:
-                            self.presses_reached = True
-                            self.monitoring = False
-                            while not self.lever_press_queue.empty():
-                                _ = self.lever_press_queue.get()
-                            
-                time.sleep(0.05)
-            print('new round resetting n presses')
-            self.reset_lever()
-        else:
-            while self.monitoring and not self.box.finished():
-                if not self.lever_press_queue.empty():
-                    while not self.lever_press_queue.empty():
-                        _ = self.lever_press_queue.get()
-                        self.lever_presses += 1
-                        if self.lever_presses >= n:
-                            self.presses_reached = True
-                            self.monitoring = False
-                            while not self.lever_press_queue.empty():
-                                _ = self.lever_press_queue.get()
-                            
-                
-        self.monitoring = False
-
     def reset_lever(self):
         self.monitoring = False
         self.presses_reached = False

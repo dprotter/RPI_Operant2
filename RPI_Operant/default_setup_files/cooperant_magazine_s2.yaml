@@ -10,6 +10,7 @@ values:
   location: 2
   round_length: 7
   lever_out_time: 4
+  lever_out_to_dispense_time: 2
 
 
 speaker_tones:

@@ -31,10 +31,12 @@ def run():
         
         '''vvvvvvvvvvvvv simulation test stuff vvvvvvvvvvv'''
         r1 = random.random()
-        if r1 < 0.4:
+        if r1 < 0.8:
             sim_press = True
-            press_time = random.random()*(4)
+            press_time = random.random()*(2)
             round_start_for_sim = time.time()
+            
+            
         else:
             sim_press = False
         
@@ -45,20 +47,21 @@ def run():
             sim_retrieve = False
             
         
-        
         box.timing.new_round(length = box.software_config['values']['round_length'])
-        lever_phase = box.timing.new_phase(f'lever_out', length =4)
-        press_timeout = box.timing.new_timeout(length = 2)
+        lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
+        press_timeout = box.timing.new_timeout(length = box.software_config['values']['lever_out_to_dispense_time'])
         
         press_latency = lever.extend()
         lever.wait_for_n_presses(n=1, latency_obj = press_latency)
         
-        while press_timeout.active():
+        while press_timeout.active() and lever_phase.active():
             
             if sim_press:
-                if round_start_for_sim + press_time > time.time():
-                    lever.simulate_pressed()
-                    time.sleep(0.1)
+                if round_start_for_sim + press_time < time.time():
+                    lever.simulate_lever_press()
+                    time.sleep(0.05)
+                    
+                    
             
             if lever.presses_reached:
                 
@@ -92,7 +95,7 @@ def run():
         while not box.timing.round_over():
             ''''''
             if sim_retrieve:
-                if retrieve_start + retrieve_time > time.time():
+                if retrieve_start + retrieve_time < time.time():
                     dispenser.simulate_retrieved()
                     sim_retrieve = False
         
