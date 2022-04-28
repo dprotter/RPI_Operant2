@@ -29,7 +29,7 @@ def calibrate_stop(d):
 def rough_calibrate(dispenser):
     d = dispenser
     name = dispenser.name
-    print(f'press enter to start rotation on {name}. press enter to stop after 5 full rotations. enter "s" to skip this dispenser.')
+    print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
     inp = input()
     if not inp in ('s',):
         
