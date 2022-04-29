@@ -32,7 +32,7 @@ def rough_calibrate(dispenser):
     print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
     inp = input()
     if not inp in ('s',):
-        
+       
         pass_test = False
         while not pass_test:
             start = time.time()
@@ -61,10 +61,26 @@ def rough_calibrate(dispenser):
                     d.config_dict['dispense'] -= 0.01 * (7.5 - (stop_time - start))
                     print(f'new speed {d.config_dict["dispense"]}')
             else:
+                d.stop_servo()
                 pass_test = True
-    d.stop_servo()
-    print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and time = {stop_time - start}')
+            if not pass_test:
+                d.stop_servo()
+                print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
+                inp = input()
+                if inp == 's':
+                    pass_test = True
+    
+    print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and appx time = {stop_time - start}')
+    d.config_dict['full_rotation_time'] = stop_time
+def fine_calibrate(dispenser):
+    d = dispenser
+    input('please align calibration dots, then press enter')
+    start = time.time()
+    timeout = d.box.timing.new_timeout(d.config_dict['full_rotation_time'])
+    d.
+    timeout.wait()
 
+    inp = ()
 
 box = Box(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_CONFIG_PATH,
