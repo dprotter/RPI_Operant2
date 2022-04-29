@@ -9,8 +9,8 @@ USER_SOFTWARE_CONFIG_PATH = None
 def run():
     
     box = Box(run_dict=RUNTIME_DICT, 
-              user_hardware_config_file_path='/Users/davidprotter/Documents/Donaldson Lab/Don_GIT/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml',
-              user_software_config_file_path='/Users/davidprotter/Documents/Donaldson Lab/Don_GIT/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine_s2.yaml',
+              user_hardware_config_file_path='/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml',
+              user_software_config_file_path='/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine_s1.yaml',
               start_now=True, simulated = True)
     
     time.sleep(0.5)
@@ -18,34 +18,16 @@ def run():
     if box.software_config['values']['location'] == 1:
         lever = box.levers.lever_1
         speaker = box.speakers.speaker_1
-        dispenser = box.port_dispensers.port_dispenser_1
+        dispenser = box.port_dispensers.dispenser_1
     elif box.software_config['values']['location'] == 2:
         lever = box.levers.lever_2
         speaker = box.speakers.speaker_2
-        dispenser = box.port_dispensers.port_dispenser_2
+        dispenser = box.port_dispensers.dispenser_2
         
     
     
     for i in range(1,box.software_config['values']['rounds']+1, 1):
-        
-        
-        '''vvvvvvvvvvvvv simulation test stuff vvvvvvvvvvv'''
-        r1 = random.random()
-        if r1 < 0.8:
-            sim_press = True
-            press_time = random.random()*(2)
-            round_start_for_sim = time.time()
-            
-            
-        else:
-            sim_press = False
-        
-        r2 = random.random()
-        if r2 < 0.90:
-            sim_retrieve = True
-        else:
-            sim_retrieve = False
-            
+
         
         box.timing.new_round(length = box.software_config['values']['round_length'])
         lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
@@ -56,12 +38,6 @@ def run():
         
         while press_timeout.active() and lever_phase.active():
             
-            if sim_press:
-                if round_start_for_sim + press_time < time.time():
-                    lever.simulate_lever_press()
-                    time.sleep(0.05)
-                    
-                    
             
             if lever.presses_reached:
                 
@@ -75,29 +51,12 @@ def run():
             speaker.play_tone(tone_name = 'pellet_tone')
             dispenser.dispense()
         
-        
-        
-        if sim_retrieve:
-            retrieve_time = 3 * random.random()
-            retrieve_start = time.time()
-            
-        while lever_phase.active():
-            ''''''
-            if sim_retrieve:
-                if retrieve_start + retrieve_time > time.time():
-                    dispenser.simulate_retrieved()
-                    sim_retrieve = False
+        lever_phase.wait()
+        lever.retract()
         
         phase = box.timing.new_phase(name ='ITI', length = 1000)
-        if not lever.presses_reached:
-            lever.retract()
-        
-        while not box.timing.round_over():
-            ''''''
-            if sim_retrieve:
-                if retrieve_start + retrieve_time < time.time():
-                    dispenser.simulate_retrieved()
-                    sim_retrieve = False
+
+        box.timing.wait_for_round_finish()
         
         phase.finished()
                     

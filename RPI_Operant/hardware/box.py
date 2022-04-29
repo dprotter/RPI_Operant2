@@ -43,9 +43,9 @@ COMPONENT_LOOKUP = {
 
 class Box: 
 
-    def __init__(self, run_dict, user_hardware_config_file_path=None, 
+    def __init__(self, run_dict = {'vole':000, 'day':1, 'experiment':'none'}, user_hardware_config_file_path=None, 
                  user_software_config_file_path = None, 
-                 start_now = False, simulated = False): 
+                 start_now = True, simulated = False): 
         
         #threading        
         self.thread_executor = ThreadPoolExecutor(max_workers = 10)
@@ -287,7 +287,7 @@ class Box:
                 door.close()
 
     def shutdown(self):
-        if self.timing.current_phase not None:
+        if not self.timing.current_phase == None:
             self.timing.current_phase.finished()
         self.done = True
         
@@ -295,9 +295,10 @@ class Box:
         while not self.monitor_worker_future.done():
             time.sleep(0.05)
             val +=1
-            if val>100:
+            if val>500:
                 print('waiting for shutdown')
                 val = 0
+
         print('monitor_workers complete')
         
     def finished(self):
@@ -315,8 +316,11 @@ class ComponentContainer:
     def __iter__(self):
         '''override builtin iterator function to return a list
         of component objects to iterate over'''
-        return iter(self.get_components())
-
+        self.__comps = iter(self.get_components())
+        return self
+    def __next__(self):
+        return next(self.__comps)
+    
     def get_component(self, name):
         '''return all contained objects'''
         obj_dict = self.__dict__
