@@ -34,7 +34,7 @@ port_dispensers:
     servo: 3
     servo_type: continuous 
     dispense: 0.18
-    full_rotation_time: 11.7
+    full_rotation_time: 1.955
     stop: 0.06
     sensor_pin: 16
     pullup_pulldown: pullup
@@ -42,8 +42,8 @@ port_dispensers:
   dispenser_2:
     servo: 1
     servo_type: continuous 
-    dispense: 0.18
-    full_rotation_time: 5.6
+    dispense: 0.165
+    full_rotation_time: 1.94
     stop: 0.06
     sensor_pin: 16
     pullup_pulldown: pullup

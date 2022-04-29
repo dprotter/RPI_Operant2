@@ -63,24 +63,47 @@ def rough_calibrate(dispenser):
             else:
                 d.stop_servo()
                 pass_test = True
+                t = (stop_time - start)/4
+                print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and appx time = {t}')
+                d.config_dict['full_rotation_time'] = t
             if not pass_test:
                 d.stop_servo()
                 print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
                 inp = input()
                 if inp == 's':
                     pass_test = True
+                    t = (stop_time - start)/4
+                    print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and appx time = {t}')
+                    d.config_dict['full_rotation_time'] = t
     
-    print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and appx time = {stop_time - start}')
-    d.config_dict['full_rotation_time'] = stop_time
+    
+
 def fine_calibrate(dispenser):
     d = dispenser
-    input('please align calibration dots, then press enter')
-    start = time.time()
-    timeout = d.box.timing.new_timeout(d.config_dict['full_rotation_time'])
-    d.
-    timeout.wait()
+    
+    rot_time = d.config_dict['full_rotation_time']
+    pass_test = False
+    while not pass_test:
+        input(f'please align calibration dots on {d.name}, then press enter')
+        start = time.time()
+        timeout = d.box.timing.new_timeout(rot_time)
+        d.start_servo()
+        timeout.wait()
+        d.stop_servo()
 
-    inp = ()
+        inp = float(input('how far off of the center of the dispensing hole is the dot? + for too far, - for not far enough.\n(ie +0.25 for a quart of a hole too far)\n0 to exit\n'))
+
+        if inp == 0.0:
+            pass_test = True
+        else:
+            rot_time_new = rot_time / ((inp+12)/12)
+            pass_test = False
+            print(f'old time:{rot_time}, new time: {rot_time_new}')
+            rot_time = rot_time_new
+            
+    d.config_dict['full_rotation_time'] = rot_time
+    print(f'rotation time for {d.name} is {rot_time}')
+            
 
 box = Box(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_CONFIG_PATH,
@@ -95,5 +118,8 @@ calibrate_stop(d2)
 
 rough_calibrate(d1)
 rough_calibrate(d2)
+
+fine_calibrate(d1)
+fine_calibrate(d2)
 
 box.shutdown()
