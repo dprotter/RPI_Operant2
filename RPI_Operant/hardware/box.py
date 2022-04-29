@@ -287,7 +287,8 @@ class Box:
                 door.close()
 
     def shutdown(self):
-        self.timing.current_phase.finished()
+        if self.timing.current_phase not None:
+            self.timing.current_phase.finished()
         self.done = True
         
         val = 0

@@ -692,12 +692,15 @@ class PortDispenser(Dispenser):
         self.pellet_state = False
 
     def calculate_step_time(self):
-        return self.config_dict['full_rotation_time'] / 360
-        
+        return self.config_dict['full_rotation_time'] / 12
+
+    def update_step_time(self):
+        self.step_time = self.calculate_step_time()
+
     def next_position(self):
-        self.servo.throttle = self.config_dict['dispense_speed']
+        self.start_servo()
         time.sleep(self.step_time)
-        self.servo.throttle = 0
+        self.stop_servo()
     
     def sensor_blocked(self):
         return self.sensor.pushed

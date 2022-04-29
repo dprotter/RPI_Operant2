@@ -104,6 +104,17 @@ def fine_calibrate(dispenser):
     d.config_dict['full_rotation_time'] = rot_time
     print(f'rotation time for {d.name} is {rot_time}')
             
+def test_steps(dispenser):
+    d = dispenser
+    name = dispenser.name
+    print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
+    inp = input()
+    if not inp in ('s',):
+        inp = input('align calibration dots, and press enter to step through each position. enter "s" to exit')
+        
+        while not inp == 's':
+            inp = input()
+            d.next_position()
 
 box = Box(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_CONFIG_PATH,
@@ -121,5 +132,8 @@ rough_calibrate(d2)
 
 fine_calibrate(d1)
 fine_calibrate(d2)
+
+test_steps(d1)
+test_steps(d2)
 
 box.shutdown()
