@@ -23,16 +23,12 @@ if not os.path.isfile(csv_file):
     exit()
 
 
-    output = None
-
-print(f'output to: {output}')
-    
 experiment =Experiment(csv_file)
 
 resp = experiment.ask_to_run()
 
 while resp:
-    experiment.run()
+    experiment.run_module()
     next_exists = experiment.next_experiment()
     if next_exists:
         resp = experiment.ask_to_run()

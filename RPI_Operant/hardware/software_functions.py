@@ -60,3 +60,4 @@ class ScreenPrinter:
         for obj in self.display_list:
             output+=self.format_line(obj)+'\n'
         output += '********\n-------\n'
+        

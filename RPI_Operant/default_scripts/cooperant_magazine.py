@@ -2,7 +2,7 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'magazine'}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_magazine', 'side':1}
 USER_CONFIG_PATH = None
 USER_SOFTWARE_CONFIG_PATH = None
 
@@ -15,11 +15,13 @@ def run():
     
     time.sleep(0.5)
     
-    if box.software_config['values']['location'] == 1:
+    if RUNTIME_DICT['side'] == 1:
+        print('side = 1')
         lever = box.levers.lever_1
         speaker = box.speakers.speaker_1
         dispenser = box.port_dispensers.dispenser_1
-    elif box.software_config['values']['location'] == 2:
+    elif RUNTIME_DICT['side'] == 2:
+        print('side = 2')
         lever = box.levers.lever_2
         speaker = box.speakers.speaker_2
         dispenser = box.port_dispensers.dispenser_2

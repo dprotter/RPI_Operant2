@@ -2,27 +2,31 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'magazine'}
-USER_CONFIG_PATH = None
-USER_SOFTWARE_CONFIG_PATH = None
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_magazine', 'side':1}
+USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml'
+
+
+
+    
 
 def run():
-    
     box = Box(run_dict=RUNTIME_DICT, 
-              user_hardware_config_file_path='/Users/davidprotter/Documents/Donaldson Lab/Don_GIT/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml',
-              user_software_config_file_path='/Users/davidprotter/Documents/Donaldson Lab/Don_GIT/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine_s2.yaml',
+              user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
+              user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True, simulated = True)
+    
     
     time.sleep(0.5)
     
-    if box.software_config['values']['location'] == 1:
+    if RUNTIME_DICT['side'] == 1:
         lever = box.levers.lever_1
         speaker = box.speakers.speaker_1
-        dispenser = box.port_dispensers.port_dispenser_1
-    elif box.software_config['values']['location'] == 2:
+        dispenser = box.port_dispensers.dispenser_1
+    elif RUNTIME_DICT['side'] == 2:
         lever = box.levers.lever_2
         speaker = box.speakers.speaker_2
-        dispenser = box.port_dispensers.port_dispenser_2
+        dispenser = box.port_dispensers.dispenser_2
         
     
     
@@ -102,6 +106,7 @@ def run():
         phase.finished()
                     
 
+    
     box.shutdown()
 
 if __name__ == '__main__':

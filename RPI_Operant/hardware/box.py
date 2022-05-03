@@ -137,10 +137,6 @@ class Box:
         
         return fname
         
-        '''if self.software_config['output_path']:
-            return os.path.join(self.software_config['output_path'], fname)
-        else:
-            return os.path.join(DEFAULT_OUTPUT_LOCATION, fname)'''
     
     def generate_output_path(self):
         if self.software_config['output_path'].lower() == 'default':
@@ -287,6 +283,7 @@ class Box:
                 door.close()
 
     def shutdown(self):
+        
         if not self.timing.current_phase == None:
             self.timing.current_phase.finished()
         self.done = True

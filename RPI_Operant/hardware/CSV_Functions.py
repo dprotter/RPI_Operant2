@@ -3,6 +3,8 @@ import pandas as pd
 import importlib
 import os
 from RPI_Operant.hardware.software_functions import load_config_file
+import yaml
+import threading
 DATA_TYPES = {'vole':int, 
               'day':int, 
               'runtime':datetime, 
@@ -40,44 +42,76 @@ class Experiment:
         
         
         self.current_row = self.table.iloc[self.location]
+        
+        '''vvvv should probably wrap this up in its own setup function?'''
+        self.current_args = self.parse_args()
+        self.runtime_dict = self.generate_runtime_dict()
+        self.load_module()
+        '''^^^^^^^^^'''
+        
         self.check_skipped()
+        
         
         
     def get_unfinished_index(self): 
         return self.table.loc[self.table.finished != 'True'].index[self.unfinished_list_index]
 
+    def parse_args(self):
+        if pd.isna(self.current_row['args']):
+            self.current_args = {}
+        else:
+            vals = self.current_row['args'].split('|')
+            out = {}
+            for v in vals:
+                if ':' in v:
+                    k, v = v.split(':')
+                    v_interpreted = yaml.safe_load(v)
+                    out[k.lower()] = v_interpreted
+        return out
+    
+    def next_experiment(self):
+        return self.iterate_row
+    
     def iterate_row(self):
         self.unfinished_list_index +=1
+        if self.unfinished_list_index > len(self.table.loc[self.table.finished != 'True']):
+            return False
         self.location = self.get_unfinished_index()
         self.current_row = self.table.iloc[self.location]
+        self.current_args = self.parse_args()
+        self.runtime_dict = self.generate_runtime_dict()
+        return True
         
-    def run_row(self):
+    def load_module(self):
         #dynamically reload the module with the new vole info.
-        if os.path.isfile(self.current_row['script_path'].values[0]):
-            spec = importlib.util.spec_from_file_location(self.vals["script"],
-                        f'{self.path_to_scripts}/{self.vals["script"]}.py')
+        if os.path.isfile(self.current_row['script_path']):
+            print(self.current_row['script_path'])
+            spec = importlib.util.spec_from_file_location('module',self.current_row['script_path'])
             self.module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(self.module)
         
         #check for paths to hardware or software setup files. else use default files
-        if not pd.isna(self.current_row.script_setup):
+        if not pd.isna(self.current_row['script_setup']):
             self.module.USER_SOFTWARE_CONFIG_PATH = self.current_row.script_setup
-        if not pd.isna(self.current_row.hardware_setup):
-            self.module.USER_CONFIG_PATH = self.current_row.hardware_setup
+        if not pd.isna(self.current_row['hardware_setup']):
+            self.module.USER_HARDWARE_CONFIG_PATH = self.current_row.hardware_setup
         
-        self.module.RUNTIME_DICT = self.generate_runtime_dict()
-        
-        self.module.run()
+        self.module.RUNTIME_DICT.update(self.runtime_dict)
     
     
     def generate_runtime_dict(self):
+        #generate dict from keys that are important to pass along to the module
         keys = ['vole', 'day', 'title']
-        return {k:self.current_row[k] for k in keys if k in list(self.current_row.keys())}
+        d = {k:self.current_row[k] for k in keys if k in list(self.current_row.keys())}
+        
+        #update the runtime dict with any k:v pairs from the "args" column
+        d.update(self.current_args)
+        return d
     
     def ask_to_run(self):
         
-        self.print_vals()
-        print(self.current_setup_dictionary)
+        
+        print(self.module.RUNTIME_DICT)
         print('\n\n\n\nshould we run this experiment?\ny (yes)\nn (no/exit)\ns (skip to next unfinished row)')
         
         resp = input('').lower()
@@ -128,4 +162,46 @@ class Experiment:
                         
                 elif response.lower == 'n':
                     print('ok, falling back to normal output.')
-                    
+    
+    
+    def update_rounds(self, round_number):
+        self.table.loc[self.table.index ==self.location, 'rounds_completed'] = round_number
+        self.save_file()
+    
+    def save_file(self):
+
+        self.table.to_csv(self.file_temp, index = False)
+        if len(open(self.file_temp).readlines()) > 0:
+            os.popen(f'cp {self.file_temp} {self.file}')
+            os.popen(f'rm {self.file_temp}')
+        else:
+            print('\n\n\ error saving experiment status! check experiment CSV file \n\n')
+    
+    def track_script_progress(self):
+        
+        current_round = 0
+        while not self.module.box.finished():
+            if self.module.box.timing.round != current_round:
+                self.update_rounds(current_round)
+                current_round = self.module.box.timing.round
+            
+        self.update_rounds(self.module.box.timing.round)
+        self.experiment_finished()
+    
+    def experiment_finished(self):
+        
+        self.table.loc[self.table.index == self.location, 'finished'] = True
+        self.save_file()
+    
+    
+    def run_module(self):
+        csv_up = threading.Thread(target = self.track_script_progress, daemon = True)
+        csv_up.start()
+        
+        
+        date = datetime.now()
+        fdate = '%s_%s_%s__%s_%s'%(date.month, date.day, date.year, date.hour, date.minute)
+        self.table.loc[self.table.index ==self.location, 'runtime'] = fdate
+        self.save_file()
+        self.module.run()
+        self.experiment_finished()

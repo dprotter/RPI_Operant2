@@ -6,7 +6,8 @@ try:
     import RPi.GPIO as GPIO
 except:
     print('RPi.GPIO not found')
-
+    from RPI_Operant.hardware.Fake_GPIO import Fake_GPIO
+    GPIO = Fake_GPIO()
 import queue
 import sys
 from RPI_Operant.hardware.event_strings import OperantEventStrings as oes
@@ -238,7 +239,6 @@ class Lever:
             r = self.box.timing.round
             while r == self.box.timing.round and not self.box.finished():
                 self.monitor_lever(n, latency_obj)
-            print('new round resetting n presses')
             self.reset_lever()
         else:
             while self.monitoring and not self.box.finished():
@@ -812,3 +812,13 @@ class Beam:
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
         
         
+class Fake_GPIO:
+    def __init__(self):
+        self.IN = 1
+        self.OUT = 0
+    
+    def setup(self, pin, val):
+        pass
+    
+    def input(self, pin):
+        return 3
