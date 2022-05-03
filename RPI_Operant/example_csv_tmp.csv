@@ -1,4 +1,0 @@
-vole,day,title,runtime,rounds_completed,script_path,script_setup,hardware_setup,finished,args
-1,2,any string here,5_2_2022__15_19,,/home/dprotter/Documents/Vole Projects/RPI_Operant2/RPI_Operant/default_scripts/cooperant_magazine_sim.py,/home/dprotter/Documents/Vole Projects/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml,/home/dprotter/Documents/Vole Projects/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml,,side:1
-1,1,,,,~/script.py,~/setup.yaml,,,
-2,1,,,,~/script.py,~/setup.yaml,,,
