@@ -1,8 +1,8 @@
 speakers:
   speaker_1: 
-    pin: 21
+    pin: 5
   speaker_2: 
-    pin: 22
+    pin: 6
     
 
 levers: 
@@ -36,7 +36,7 @@ port_dispensers:
     dispense: 0.18
     full_rotation_time: 1.955
     stop: 0.06
-    sensor_pin: 16
+    sensor_pin: 24
     pullup_pulldown: pullup
     
   dispenser_2:
@@ -45,7 +45,7 @@ port_dispensers:
     dispense: 0.165
     full_rotation_time: 1.872
     stop: 0.06
-    sensor_pin: 16
+    sensor_pin: 25
     pullup_pulldown: pullup
     
   

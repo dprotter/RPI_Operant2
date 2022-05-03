@@ -285,11 +285,13 @@ class Button:
         self.pin = button_dict['pin']
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
-        GPIO.setup(self.pin, GPIO.IN)
+        
         if pullup_pulldown == 'pullup':
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
             self.pressed_val = 0
             
         elif pullup_pulldown == 'pulldown':
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.pressed_val = 1
             
         else:
