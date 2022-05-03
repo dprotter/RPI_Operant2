@@ -37,7 +37,6 @@ class Experiment:
         self.table = pd.read_csv(file)
         
         #start at the first location that is not finished
-        self.unfinished_list_index = 0
         self.location = self.get_unfinished_index()
         
         
@@ -54,11 +53,12 @@ class Experiment:
         
         
     def get_unfinished_index(self): 
-        return self.table.loc[self.table.finished != 'True'].index[self.unfinished_list_index]
+        print(self.table.loc[(self.table.finished != True) & (self.table.finished != 'True') &(self.table.finished != 'skipped') ])
+        return self.table.loc[(self.table.finished != True) & (self.table.finished != 'True') &(self.table.finished != 'skipped') ].index.values[0]
 
     def parse_args(self):
         if pd.isna(self.current_row['args']):
-            self.current_args = {}
+            out = {}
         else:
             vals = self.current_row['args'].split('|')
             out = {}
@@ -70,26 +70,30 @@ class Experiment:
         return out
     
     def next_experiment(self):
-        return self.iterate_row
+        return self.iterate_row()
     
     def iterate_row(self):
-        self.unfinished_list_index +=1
-        if self.unfinished_list_index > len(self.table.loc[self.table.finished != 'True']):
+        if  len(self.table.loc[self.table.finished != True]) == 0:
+            print('out of unfinished rows to run')
             return False
         self.location = self.get_unfinished_index()
         self.current_row = self.table.iloc[self.location]
         self.current_args = self.parse_args()
         self.runtime_dict = self.generate_runtime_dict()
+        self.load_module()
         return True
         
     def load_module(self):
         #dynamically reload the module with the new vole info.
         if os.path.isfile(self.current_row['script_path']):
             print(self.current_row['script_path'])
-            spec = importlib.util.spec_from_file_location('module',self.current_row['script_path'])
+            spec = importlib.util.spec_from_file_location('module', self.current_row['script_path'])
             self.module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(self.module)
-        
+            if self.module == None:
+                raise ImportError(f"couldnt import module from path:\n{self.current_row['script_path']}")
+        else:
+            raise ImportError(f"script_path does not point to a file:\n{self.current_row['script_path']}")
         #check for paths to hardware or software setup files. else use default files
         if not pd.isna(self.current_row['script_setup']):
             self.module.USER_SOFTWARE_CONFIG_PATH = self.current_row.script_setup
@@ -121,8 +125,13 @@ class Experiment:
         elif resp == 'n': 
             return False
         elif resp == 's':
-            self.table.loc[self.table.index == self.location].finished = 'skipped'
-            return self.ask_to_run()
+            self.table.loc[self.table.index == self.location, 'finished'] = 'skipped'
+            self.save_file()
+            next_exists = self.iterate_row()
+            if next_exists:
+                return self.ask_to_run()
+            else: 
+                return False
         else:
             print('\n\n\nhmmm, not a valid response, (y/n). try again.')
             return self.ask_to_run()
@@ -172,20 +181,15 @@ class Experiment:
 
         self.table.to_csv(self.file_temp, index = False)
         if len(open(self.file_temp).readlines()) > 0:
-            os.popen(f'cp {self.file_temp} {self.file}')
-            os.popen(f'rm {self.file_temp}')
+            os.popen(f'cp "{self.file_temp}" "{self.file}"')
+            os.popen(f'rm "{self.file_temp}"')
         else:
             print('\n\n\ error saving experiment status! check experiment CSV file \n\n')
     
     def track_script_progress(self):
         
-        current_round = 0
         while not self.module.box.finished():
-            if self.module.box.timing.round != current_round:
-                self.update_rounds(current_round)
-                current_round = self.module.box.timing.round
-            
-        self.update_rounds(self.module.box.timing.round)
+            ''''''
         self.experiment_finished()
     
     def experiment_finished(self):
