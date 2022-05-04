@@ -177,7 +177,7 @@ class Lever:
         ts.submit()
         return lat
         
-        
+    @thread_it
     def retract(self):
         '''extend a lever and timestamp it'''
         #note, make a ts object and submit later after successful retraction
@@ -245,6 +245,7 @@ class Lever:
                 self.monitor_lever(n, latency_obj)
         self.monitoring = False
     
+    @thread_it
     def monitor_lever(self, n, latency_obj):
         if not self.lever_press_queue.empty():
                     print(f'{self.name} was pressed')
@@ -775,7 +776,10 @@ class Speaker:
     def speaker_queue_handler(self):
         while not self.box.finished():
             if not self.tone_queue.empty():
+
                 new_tone = self.tone_queue.get()
+                #start the timer on the tone now that it has arrived. set start/stop time within tone obj
+                new_tone.start()
                 self.tone_list.insert(0, new_tone)
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name)
             
@@ -789,20 +793,21 @@ class Speaker:
                 if tone.complete():
                     pop_list.append(i)
                     
+                    
                 else:
                     
                     #if speaker is not on, turn it on and set frequency to tone hz
                     if not self.on:
-                        self.pi.set_PWM_frequency(self.pin, int(tone.hz))
+                        self.pi.set_PWM_frequency(self.pin, int(tone.get_hz()))
                         self.pi.set_PWM_dutycycle(self.pin, 255/2)
                         self.on = True
-                        print(f'setting on for {tone.name}')
+                        
                         if self.sim:
                             print(f'simulated speaker playing {tone.name}')
                         break
                     #if speaker is on but current hz doesnt match most recent tone
                     elif self.hz != int(tone.get_hz()):
-                        print(f'swapping to new tone hz for {tone.name}')
+                        
                         self.pi.set_PWM_frequency(self.pin, int(tone.get_hz()))
                         self.hz = int(tone.get_hz())
                         if self.sim:
@@ -815,9 +820,11 @@ class Speaker:
             #changes in index as tones are removed
             pop_list.reverse()
             for i in pop_list:
+                
                 t = self.tone_list.pop(i)
+                
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + t.name)
-                print(f'removing tone {t.name} from tone list')
+                
             
             #if no tone are left, turn off speaker
             if len(self.tone_list) == 0:
@@ -825,10 +832,15 @@ class Speaker:
                 self.pi.set_PWM_dutycycle(self.pin, 0)
                 self.on = False
             
+            else:
+                for tone in self.tone_list:
+                    print(f'{tone.name}')
+            
             time.sleep(0.05)
             
 
-                        
+    def turn_off(self):
+        self.pi.set_PWM_dutycycle(self.pin, 0)                  
                     
     
     @thread_it
@@ -841,38 +853,65 @@ class Speaker:
             length = self.tone_dict[tone_name]['length']
             self.tone_queue.put(Tone(hz, length, tone_name))
 
-    
-    def click_on(self):
+    """def click_on(self):
         '''play through a designated train of tones.'''
-        tt = ToneTrain()
+        tt = ToneTrain('click_on')
         for hz, length in self.click_on_train:
             tt.add_tone(Tone(hz, length, 'click_on'))
         self.tone_queue.put(tt)
+        time.sleep(tt.total_duration)
+        
         
     
     def click_on_off(self):
         '''play through a designated train of tones.'''
-        tt = ToneTrain()
+        tt = ToneTrain('click')
         for hz, length in self.click_on_train:
-            tt.add_tone(Tone(hz, length, 'click_on'))
+            tt.add_tone(Tone(hz, length, 'click_on_off'))
         for hz, length in self.click_off_train:
-            tt.add_tone(Tone(hz, length, 'click_off'))
+            tt.add_tone(Tone(hz, length, 'click_on_off'))
         self.tone_queue.put(tt)
+        time.sleep(tt.total_duration)
     
     def click_off(self):
         '''play through a designated train of tones.'''
-        tt = ToneTrain()
+        tt = ToneTrain('click_off')
         for hz, length in self.click_off_train:
             tt.add_tone(Tone(hz, length, 'click_off'))
         self.tone_queue.put(tt)
+        time.sleep(tt.total_duration)"""
+
+    @thread_it
+    def click_on(self):
+        '''play through a designated train of tones.'''
+        for hz, length in self.click_on_train:
+            self.pi.set_PWM_frequency(self.pin, int(hz))
+            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            time.sleep(length)
+        
+        self.pi.set_PWM_dutycycle(self.pin, 0)
+
+    @thread_it
+    def click_off(self):
+        '''play through a designated train of tones.'''
+        for hz, length in self.click_off_train:
+            self.pi.set_PWM_frequency(self.pin, int(hz))
+            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            time.sleep(length)
+        
+        self.pi.set_PWM_dutycycle(self.pin, 0)
 
 class Tone:
     def __init__(self, hz, duration, name):
-        self.start_time = time.time()
-        self.stop_time = time.time() + duration
+        
+        self.duration = duration
         self.hz = hz
         self.name = name
     
+    def start(self):
+        self.start_time = time.time()
+        self.stop_time = self.start_time + self.duration
+
     def get_hz(self):
         return self.hz
     
@@ -880,29 +919,44 @@ class Tone:
         return time.time() >= self.stop_time
 
 class ToneTrain(Tone):
-    def __init__(self):
+    def __init__(self, name):
         self.tone_list = []
-        
+        self.name = name
+        self.position = 0
+        self.total_duration = 0
+
+    def start(self):
+        self.tone_list[self.position].start()
+
     def add_tone(self, tone):
-        self.stop_time = tone.stop_time
         self.tone_list.append(tone)
-    
-    def check_and_trim_tone_list(self):
-        pop_list = []
-        for i, t in enumerate(self.tone_list):
-            if t.complete():
-                pop_list.append(i)
+        self.total_duration += tone.duration
         
-        pop_list.reverse()
-        for i in pop_list:
-            self.tone_list.pop(i)
+    
+    def check_tone_list(self):
+        
+        if self.tone_list[self.position].complete():
+            self.position+=1
+            if self.position < len(self.tone_list):
+                self.tone_list[self.position].start()
+                return True
+            else:
+                return False
+
             
     def get_hz(self):
-        return self.tone_list[0].get_hz()
+        tones_remain = self.check_tone_list()
+        if tones_remain:
+            return self.tone_list[position].get_hz()
+        else:
+            return 0
     
     def complete(self):
-        self.check_and_trim_tone_list()
-        return time.time() >= self.stop_time
+        if self.check_tone_list():
+            return False
+        else:
+            return True
+
 class Beam:
     
     def __init__(self, name, beam_config_dict, box):

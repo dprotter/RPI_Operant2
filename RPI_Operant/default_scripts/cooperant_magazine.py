@@ -12,9 +12,8 @@ def run():
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True)
-    
     time.sleep(0.5)
-    
+        
     if RUNTIME_DICT['side'] == 1:
         print('side = 1')
         lever = box.levers.lever_1
@@ -25,47 +24,49 @@ def run():
         lever = box.levers.lever_2
         speaker = box.speakers.speaker_2
         dispenser = box.port_dispensers.dispenser_2
-        
-    
-    
-    for i in range(1,box.software_config['values']['rounds']+1, 1):
+    try:
 
-        
-        box.timing.new_round(length = box.software_config['values']['round_length'])
-        lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
-        press_timeout = box.timing.new_timeout(length = box.software_config['values']['lever_out_to_dispense_time'])
-        
-        press_latency = lever.extend()
-        lever.wait_for_n_presses(n=1, latency_obj = press_latency)
-        
-        while press_timeout.active() and lever_phase.active():
+        for i in range(1,box.software_config['values']['rounds']+1, 1):
+
             
+            box.timing.new_round(length = box.software_config['values']['round_length'])
+            lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
+            press_timeout = box.timing.new_timeout(length = box.software_config['values']['lever_out_to_dispense_time'])
             
-            if lever.presses_reached:
+            press_latency = lever.extend()
+            lever.wait_for_n_presses(n=1, latency_obj = press_latency)
+            
+            while press_timeout.active() and lever_phase.active():
                 
-                lever.retract()
-                lever_phase.finished()
+                
+                if lever.presses_reached:
+                    
+                    lever.retract()
+                    lever_phase.finished()
+                    speaker.play_tone(tone_name = 'pellet_tone')
+                    dispenser.dispense(override_pellet_state = True)
+                    
+                    
+            if not lever.presses_reached:
                 speaker.play_tone(tone_name = 'pellet_tone')
                 dispenser.dispense(override_pellet_state = True)
                 
-                
-        if not lever.presses_reached:
-            speaker.play_tone(tone_name = 'pellet_tone')
-            dispenser.dispense(override_pellet_state = True)
             
-        
-        lever_phase.wait()
-        if not lever.presses_reached:
-            lever.retract()
-        
-        phase = box.timing.new_phase(name ='ITI', length = 1000)
+            lever_phase.wait()
+            if not lever.presses_reached:
+                lever.retract()
+            
+            phase = box.timing.new_phase(name ='ITI', length = 1000)
 
-        box.timing.wait_for_round_finish()
-        
-        phase.finished()
-                    
+            box.timing.wait_for_round_finish()
+            
+            phase.finished()
+                        
 
-    box.shutdown()
+        box.shutdown()
+    except KeyboardInterrupt:
+        speaker.turn_off()
+        box.shutdown()
 
 if __name__ == '__main__':
     run()
