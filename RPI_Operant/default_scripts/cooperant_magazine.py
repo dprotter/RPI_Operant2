@@ -46,15 +46,16 @@ def run():
                 lever.retract()
                 lever_phase.finished()
                 speaker.play_tone(tone_name = 'pellet_tone')
-                dispenser.dispense()
+                dispenser.dispense(override_pellet_state = True)
                 
                 
         if not lever.presses_reached:
             speaker.play_tone(tone_name = 'pellet_tone')
-            dispenser.dispense()
+            dispenser.dispense(override_pellet_state = True)
+            lever.retract()
         
         lever_phase.wait()
-        lever.retract()
+        
         
         phase = box.timing.new_phase(name ='ITI', length = 1000)
 

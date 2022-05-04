@@ -5,6 +5,7 @@ import os
 from RPI_Operant.hardware.software_functions import load_config_file
 import yaml
 import threading
+import time
 DATA_TYPES = {'vole':int, 
               'day':int, 
               'runtime':datetime, 
@@ -187,7 +188,7 @@ class Experiment:
             print('\n\n\ error saving experiment status! check experiment CSV file \n\n')
     
     def track_script_progress(self):
-        
+        time.sleep(1)
         while not self.module.box.finished():
             ''''''
         self.experiment_finished()

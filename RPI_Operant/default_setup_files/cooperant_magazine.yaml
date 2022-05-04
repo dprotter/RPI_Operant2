@@ -7,7 +7,7 @@ values:
   rounds: 5
   delay_by_day: [0]
   delay_default: 0
-  round_length: 7
+  round_length: 10
   lever_out_time: 4
   lever_out_to_dispense_time: 2
 
