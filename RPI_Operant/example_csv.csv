@@ -1,4 +1,4 @@
 vole,day,title,runtime,finished,rounds_completed,args,script_path,script_setup,hardware_setup
-1,1,testing time,5_3_2022__16_5,True,,side:2,/home/pi/RPI_Operant2/RPI_Operant/default_scripts/cooperant_magazine.py,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml
-1,2,,,,,,~/script.py,~/setup.yaml,
-2,1,,,,,,~/script.py,~/setup.yaml,
+1,1,testing time,5_3_2022__16_35,True,,side:2,/home/pi/RPI_Operant2/RPI_Operant/default_scripts/cooperant_magazine.py,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml
+1,1,testing time,5_3_2022__16_37,True,,side:1,/home/pi/RPI_Operant2/RPI_Operant/default_scripts/cooperant_magazine.py,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml
+1,1,testing time,5_3_2022__16_30,,,side:2,/home/pi/RPI_Operant2/RPI_Operant/default_scripts/cooperant_magazine.py,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml

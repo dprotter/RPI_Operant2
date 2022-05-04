@@ -713,20 +713,28 @@ class PortDispenser(Dispenser):
         self.sensor.pressed = True
     
     @thread_it
-    def dispense(self):
+    def dispense(self, override_pellet_state = False):
         ''''''
         #check if pellet was retrieved or is still in trough
-        if self.pellet_state:
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_not_retrieved)
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_skip)
-        else:
         
+        if override_pellet_state:
             self.next_position()
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
             latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
             self.pellet_state = True
             self.monitor_pellet(latency)
-        return
+        else:
+            if self.pellet_state:
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_not_retrieved)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_skip)
+            else:
+            
+                self.next_position()
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
+                latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                self.pellet_state = True
+                self.monitor_pellet(latency)
+            return
     
     @thread_it
     def monitor_pellet(self, pellet_latency):
