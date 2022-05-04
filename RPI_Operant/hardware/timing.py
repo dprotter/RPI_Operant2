@@ -73,7 +73,7 @@ class TimeManager:
     
     def wait_for_round_finish(self):
         while not self.round_over():
-            time.sleep(0.05)
+            time.sleep(0.1)
        
     def round_over(self):
         if 'round_length' in self.__dict__.keys():
@@ -125,7 +125,7 @@ class Phase:
         '''hold onto this thread while active. essentially a join function. other threads will continue, but
         whatever thread called this will be blocked until the time is up, no matter what.'''
         while self.active():
-            time.sleep(0.05)
+            time.sleep(0.1)
 
 class Timestamp: 
     def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 

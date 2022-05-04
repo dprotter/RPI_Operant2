@@ -188,7 +188,10 @@ class Experiment:
             print('\n\n\ error saving experiment status! check experiment CSV file \n\n')
     
     def track_script_progress(self):
-        time.sleep(1)
+        start = time.time()
+        while not 'box' in self.module.__dict__.keys() and time.time()-start < 5:
+            ''''''
+            
         while not self.module.box.finished():
             ''''''
         self.experiment_finished()

@@ -48,7 +48,7 @@ class Box:
                  start_now = True, simulated = False): 
         
         #threading        
-        self.thread_executor = ThreadPoolExecutor(max_workers = 10)
+        self.thread_executor = ThreadPoolExecutor(max_workers = 20)
         self.worker_queue = queue.Queue()
         
         self.done = False
@@ -226,10 +226,10 @@ class Box:
                 #if we have an identically named worker, we will need to modify this tuple
                 
                 workers += [worker_and_info]
-                '''print('\nvvvvvvvvvvvvvvvvvv')
+                print('\nvvvvvvvvvvvvvvvvvv')
                 print(f'currently {len(workers)} threads running via pool executor')
                 print(workers)
-                print('\n\n^^^^^^^^^^^^^^^')'''
+                print('\n\n^^^^^^^^^^^^^^^')
 
             for element in workers:
                 worker, name= element

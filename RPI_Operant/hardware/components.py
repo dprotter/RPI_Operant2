@@ -777,7 +777,7 @@ class Speaker:
             if not self.tone_queue.empty():
                 new_tone = self.tone_queue.get()
                 self.tone_list.insert(0, new_tone)
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone.name)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name)
             
             pop_list = []
             
@@ -795,11 +795,14 @@ class Speaker:
                     if not self.on:
                         self.pi.set_PWM_frequency(self.pin, int(tone.hz))
                         self.pi.set_PWM_dutycycle(self.pin, 255/2)
+                        self.on = True
+                        print(f'setting on for {tone.name}')
                         if self.sim:
                             print(f'simulated speaker playing {tone.name}')
                         break
                     #if speaker is on but current hz doesnt match most recent tone
                     elif self.hz != int(tone.get_hz()):
+                        print(f'swapping to new tone hz for {tone.name}')
                         self.pi.set_PWM_frequency(self.pin, int(tone.get_hz()))
                         self.hz = int(tone.get_hz())
                         if self.sim:
@@ -817,9 +820,14 @@ class Speaker:
                 print(f'removing tone {t.name} from tone list')
             
             #if no tone are left, turn off speaker
-            if len(self.tone_list == 0):
+            if len(self.tone_list) == 0:
+                
                 self.pi.set_PWM_dutycycle(self.pin, 0)
                 self.on = False
+            
+            time.sleep(0.05)
+            
+
                         
                     
     
@@ -831,8 +839,7 @@ class Speaker:
         else:
             hz = self.tone_dict[tone_name]['hz']
             length = self.tone_dict[tone_name]['length']
-            tone = Tone(hz, length)
-            self.tone_queue.put()
+            self.tone_queue.put(Tone(hz, length, tone_name))
 
     
     def click_on(self):
@@ -858,6 +865,7 @@ class Speaker:
         for hz, length in self.click_off_train:
             tt.add_tone(Tone(hz, length, 'click_off'))
         self.tone_queue.put(tt)
+
 class Tone:
     def __init__(self, hz, duration, name):
         self.start_time = time.time()
@@ -870,6 +878,7 @@ class Tone:
     
     def complete(self):
         return time.time() >= self.stop_time
+
 class ToneTrain(Tone):
     def __init__(self):
         self.tone_list = []
