@@ -4,7 +4,7 @@ import time
 import random
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_magazine', 'start_side':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_autotrain_1side.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_autotrain_2sides.yaml'
 
 def run():
     

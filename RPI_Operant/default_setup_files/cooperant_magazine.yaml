@@ -52,7 +52,7 @@ speaker_tones:
       hz: 5000
       length: 1
     pellet_tone:
-      hz: 2500
+      hz: 5000
       length: 1
     door_open:
       hz: 10000
