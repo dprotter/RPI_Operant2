@@ -286,7 +286,7 @@ class Box:
     def shutdown(self):
         
         if not self.timing.current_phase == None:
-            self.timing.current_phase.finished()
+            self.timing.current_phase.end_phase()
         self.done = True
         
         val = 0

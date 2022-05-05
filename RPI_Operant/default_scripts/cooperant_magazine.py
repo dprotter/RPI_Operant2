@@ -4,7 +4,7 @@ import time
 import random
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_magazine', 'side':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine_s1.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_magazine.yaml'
 
 def run():
     
@@ -53,7 +53,7 @@ def run():
                 
             
             lever_phase.wait()
-            if not lever.presses_reached:
+            if lever.is_extended:
                 lever.retract()
             
             phase = box.timing.new_phase(name ='ITI', length = 1000)

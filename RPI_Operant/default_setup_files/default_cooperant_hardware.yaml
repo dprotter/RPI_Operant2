@@ -8,8 +8,8 @@ speakers:
 levers: 
   lever_1: 
     servo: 2
-    extended: 70
-    retracted: 170
+    extended: 0
+    retracted: 100
     pin: 17
     pullup_pulldown: pullup
     servo_type: positional
