@@ -42,4 +42,6 @@ try:
 
 except KeyboardInterrupt:
     print('\n\ncleaning up')
+    for lever in box.levers():
+        lever.retract()
     box.shutdown()
