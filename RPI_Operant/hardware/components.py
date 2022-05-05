@@ -722,19 +722,19 @@ class PortDispenser(Dispenser):
         
         if override_pellet_state:
             self.next_position()
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-            latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}')
+            latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}')
             self.pellet_state = True
             self.monitor_pellet(latency)
         else:
             if self.pellet_state:
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_not_retrieved)
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_skip)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}')
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}')
             else:
             
                 self.next_position()
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-                latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}')
+                latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}')
                 self.pellet_state = True
                 self.monitor_pellet(latency)
             return
