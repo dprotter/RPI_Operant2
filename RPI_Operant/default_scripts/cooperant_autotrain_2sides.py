@@ -71,7 +71,6 @@ def run():
                 speaker = box.speakers.speaker_1
                 dispenser = box.port_dispensers.dispenser_1
             
-            box.timing.new_round(length = box.software_config['values']['round_length'])
             lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
            
             

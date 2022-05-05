@@ -296,7 +296,12 @@ class Box:
             if val>500:
                 print('waiting for shutdown')
                 val = 0
-
+        
+        for l in self.levers:
+            l.retract()
+        for speaker in self.speakers:
+            speaker.set_off()
+        
         print('monitor_workers complete')
         
     def finished(self):
