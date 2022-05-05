@@ -118,7 +118,7 @@ class Phase:
         else:
             return False
 
-    def finished(self):
+    def end_phase(self):
         self.is_active = False
         
     def wait(self):

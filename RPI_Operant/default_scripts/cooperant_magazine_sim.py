@@ -70,7 +70,7 @@ def run():
             if lever.presses_reached:
                 
                 lever.retract()
-                lever_phase.finished()
+                lever_phase.end_phase()
                 speaker.play_tone(tone_name = 'pellet_tone')
                 dispenser.dispense()
                 
@@ -103,7 +103,7 @@ def run():
                     dispenser.simulate_retrieved()
                     sim_retrieve = False
         
-        phase.finished()
+        phase.end_phase()
                     
 
     
