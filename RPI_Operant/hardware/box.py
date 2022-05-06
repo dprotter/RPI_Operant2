@@ -132,8 +132,13 @@ class Box:
         day = self.run_dict['day']
         exp = self.run_dict['experiment']
         date = datetime.datetime.now()
-        fdate = f'{date.month}_{date.day}_{date.year}___{date.hour}_{date.minute}_'
-        fname = f'{vole}_{fdate}_{exp}_day_{day}'
+        if 'vole_2' in self.run_dict.keys():
+            vole_2 = self.run_dict['vole_2']
+            fdate = f'{date.month}_{date.day}_{date.year}___{date.hour}_{date.minute}_'
+            fname = f'{vole}_{vole_2}_{fdate}_{exp}_day_{day}'
+        else:
+            fdate = f'{date.month}_{date.day}_{date.year}___{date.hour}_{date.minute}_'
+            fname = f'{vole}_{fdate}_{exp}_day_{day}'
         
         return fname
         
