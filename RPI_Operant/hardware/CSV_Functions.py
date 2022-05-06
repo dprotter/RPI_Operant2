@@ -106,7 +106,7 @@ class Experiment:
     
     def generate_runtime_dict(self):
         #generate dict from keys that are important to pass along to the module
-        keys = ['vole', 'day', 'title']
+        keys = ['vole', 'vole_2','day', 'title']
         d = {k:self.current_row[k] for k in keys if k in list(self.current_row.keys())}
         
         #update the runtime dict with any k:v pairs from the "args" column
