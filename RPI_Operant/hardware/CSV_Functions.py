@@ -187,29 +187,31 @@ class Experiment:
         else:
             print('\n\n\ error saving experiment status! check experiment CSV file \n\n')
     
-    def track_script_progress(self):
-        start = time.time()
-        while not 'box' in self.module.__dict__.keys() and time.time()-start < 5:
-            ''''''
-            
-        while not self.module.box.finished():
-            ''''''
-        self.experiment_finished()
+
     
     def experiment_finished(self):
         
         self.table.loc[self.table.index == self.location, 'finished'] = True
         self.save_file()
     
-    
+    def experiment_failed(self):
+        
+        self.table.loc[self.table.index == self.location, 'finished'] = False
+        self.save_file()
+
     def run_module(self):
-        csv_up = threading.Thread(target = self.track_script_progress, daemon = True)
-        csv_up.start()
-        
-        
+  
         date = datetime.now()
         fdate = '%s_%s_%s__%s_%s'%(date.month, date.day, date.year, date.hour, date.minute)
         self.table.loc[self.table.index ==self.location, 'runtime'] = fdate
         self.save_file()
         self.module.run()
-        self.experiment_finished()
+        start = time.time()
+        while not self.module.box.successfully_run() and start + 5 >  time.time():
+                pass
+        if self.module.box.successfully_run():
+            self.experiment_finished()
+        else:
+            self.experiment_failed()
+        
+        

@@ -6,13 +6,16 @@ RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_autotrain_2sides', 
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_autotrain_2sides.yaml'
 
+
+box = Box()
+    
 def run():
     
-    box = Box(run_dict=RUNTIME_DICT, 
+    box.setup(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True)
-    time.sleep(0.5)
+    
 
     try:
 
@@ -101,7 +104,7 @@ def run():
     except KeyboardInterrupt:
         speaker.turn_off()
         dispenser.stop_servo()
-        box.shutdown()
+        box.abort_run()
 
 if __name__ == '__main__':
     run()

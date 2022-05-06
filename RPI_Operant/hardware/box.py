@@ -42,8 +42,11 @@ COMPONENT_LOOKUP = {
 
 
 class Box: 
+    def __init__(self):
+        ''''''
+        self.setup_complete = False
 
-    def __init__(self, run_dict = {'vole':000, 'day':1, 'experiment':'none'}, user_hardware_config_file_path=None, 
+    def setup(self, run_dict = {'vole':000, 'day':1, 'experiment':'none'}, user_hardware_config_file_path=None, 
                  user_software_config_file_path = None, 
                  start_now = True, simulated = False): 
         
@@ -52,6 +55,7 @@ class Box:
         self.worker_queue = queue.Queue()
         
         self.done = False
+        self.completed = False
         self.run_dict = run_dict
         
         ###### load and merge config files
@@ -126,6 +130,7 @@ class Box:
 
         if start_now:
             self.timing.start_timing()
+        self.setup_complete = True
     
     def generate_output_fname(self):
         vole = self.run_dict['vole']
@@ -308,10 +313,37 @@ class Box:
             speaker.set_off()
         
         print('monitor_workers complete')
+        self.completed = True
         
     def finished(self):
         time.sleep(0.05)
         return self.done
+    
+    def successfully_run(self):
+        time.sleep(0.05)
+        return self.completed
+    
+    def abort_run(self):
+        
+        if not self.timing.current_phase == None:
+            self.timing.current_phase.end_phase()
+        self.done = True
+        
+        val = 0
+        while not self.monitor_worker_future.done():
+            time.sleep(0.05)
+            val +=1
+            if val>500:
+                print('waiting for shutdown')
+                val = 0
+        
+        for l in self.levers:
+            l.retract()
+        for speaker in self.speakers:
+            speaker.set_off()
+        
+        print('monitor_workers complete')
+        
 
         
 class ComponentContainer:
