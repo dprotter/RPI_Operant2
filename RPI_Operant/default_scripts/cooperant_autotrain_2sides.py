@@ -104,6 +104,7 @@ def run():
     except KeyboardInterrupt:
         speaker.turn_off()
         dispenser.stop_servo()
+        lever.retract()
         box.abort_run()
 
 if __name__ == '__main__':

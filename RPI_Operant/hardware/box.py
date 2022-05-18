@@ -149,7 +149,12 @@ class Box:
         
     
     def generate_output_path(self):
-        if self.software_config['output_path'].lower() == 'default':
+        
+        #run_dict takes precedence, then software_config yaml file
+        if 'output_path' in self.run_dict:
+            path = self.run_dict['output_path']
+            
+        elif self.software_config['output_path'].lower() == 'default':
             
             path =  DEFAULT_OUTPUT_LOCATION
             
