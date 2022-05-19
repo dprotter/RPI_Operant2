@@ -54,7 +54,6 @@ class Experiment:
         
         
     def get_unfinished_index(self): 
-        print(self.table.loc[(self.table.finished != True) & (self.table.finished != 'True') &(self.table.finished != 'skipped') ])
         return self.table.loc[(self.table.finished != True) & (self.table.finished != 'True') &(self.table.finished != 'skipped') ].index.values[0]
 
     def parse_args(self):
@@ -116,8 +115,8 @@ class Experiment:
     def ask_to_run(self):
         
         
-        print(self.module.RUNTIME_DICT)
-        print('\n\n\n\nshould we run this experiment?\ny (yes)\nn (no/exit)\ns (skip to next unfinished row)')
+        print(f'\n\n{self.module.RUNTIME_DICT}')
+        print('\n\nshould we run this experiment?\ny (yes)\nn (no/exit)\ns (skip to next unfinished row)')
         
         resp = input('').lower()
         
