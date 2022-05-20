@@ -116,7 +116,8 @@ def test_steps(dispenser):
             inp = input()
             d.next_position()
 
-box = Box(run_dict=RUNTIME_DICT, 
+box = Box()
+box.setup(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True, simulated = False)

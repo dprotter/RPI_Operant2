@@ -95,6 +95,8 @@ class Lever:
         self.extended = self.config_dict['extended'] #int, servo angle
         self.retracted = self.config_dict['retracted'] #int, servo angle
         self.name = name #str
+        self.is_extended = False #True = extended
+
         if simulated:
             self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
         else:
@@ -173,7 +175,7 @@ class Lever:
         time.sleep(0.05)
         self.servo.angle = self.extended
         print(f'extending {self.name}')
-        
+        self.is_extended = True
         ts.submit()
         return lat
         
@@ -194,7 +196,7 @@ class Lever:
         time.sleep(0.05)
         self.servo.angle = self.retracted
         print(f'retracting {self.name}')
-        
+        self.is_extended = False
         ts.submit()
     
     @thread_it
@@ -720,19 +722,19 @@ class PortDispenser(Dispenser):
         
         if override_pellet_state:
             self.next_position()
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-            latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}')
+            latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}')
             self.pellet_state = True
             self.monitor_pellet(latency)
         else:
             if self.pellet_state:
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_not_retrieved)
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_skip)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}')
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}')
             else:
             
                 self.next_position()
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-                latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}')
+                latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}')
                 self.pellet_state = True
                 self.monitor_pellet(latency)
             return
@@ -793,14 +795,13 @@ class Speaker:
                 if tone.complete():
                     pop_list.append(i)
                     
-                    
                 else:
                     
                     #if speaker is not on, turn it on and set frequency to tone hz
                     if not self.on:
-                        self.pi.set_PWM_frequency(self.pin, int(tone.get_hz()))
-                        self.pi.set_PWM_dutycycle(self.pin, 255/2)
-                        self.on = True
+                        self.set_hz(int(tone.get_hz()))
+                        self.set_on()
+                        
                         
                         if self.sim:
                             print(f'simulated speaker playing {tone.name}')
@@ -808,8 +809,8 @@ class Speaker:
                     #if speaker is on but current hz doesnt match most recent tone
                     elif self.hz != int(tone.get_hz()):
                         
-                        self.pi.set_PWM_frequency(self.pin, int(tone.get_hz()))
-                        self.hz = int(tone.get_hz())
+                        self.set_hz(int(tone.get_hz()))
+                        
                         if self.sim:
                             print(f'simulated speaker switching to {tone.name}')
                         break
@@ -829,20 +830,18 @@ class Speaker:
             #if no tone are left, turn off speaker
             if len(self.tone_list) == 0:
                 
-                self.pi.set_PWM_dutycycle(self.pin, 0)
-                self.on = False
+                self.set_off()
             
-            else:
-                for tone in self.tone_list:
-                    print(f'{tone.name}')
-            
-            time.sleep(0.05)
             
 
     def turn_off(self):
         self.pi.set_PWM_dutycycle(self.pin, 0)                  
                     
-    
+    def set_hz(self, hz):
+        self.pi.set_PWM_frequency(self.pin, int(hz))
+        self.hz = hz
+
+
     @thread_it
     def play_tone(self, tone_name):
         '''use pigpio to play a tone, called by name from the dict imported from software config file'''
@@ -885,21 +884,34 @@ class Speaker:
     def click_on(self):
         '''play through a designated train of tones.'''
         for hz, length in self.click_on_train:
-            self.pi.set_PWM_frequency(self.pin, int(hz))
-            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            self.set_hz(int(hz))
+            self.set_on()
             time.sleep(length)
         
-        self.pi.set_PWM_dutycycle(self.pin, 0)
+        
+        self.set_off()
 
     @thread_it
     def click_off(self):
         '''play through a designated train of tones.'''
+        
         for hz, length in self.click_off_train:
-            self.pi.set_PWM_frequency(self.pin, int(hz))
-            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+            self.set_hz(int(hz))
+            self.set_on()
             time.sleep(length)
         
+        self.set_off
+
+
+    def set_on(self):
+        if not self.on:
+            self.on = True
+            self.pi.set_PWM_dutycycle(self.pin, 255/2)
+
+    def set_off(self):
+        self.on = False
         self.pi.set_PWM_dutycycle(self.pin, 0)
+
 
 class Tone:
     def __init__(self, hz, duration, name):
