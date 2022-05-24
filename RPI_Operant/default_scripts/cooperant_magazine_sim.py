@@ -57,7 +57,7 @@ def run():
         
         press_latency = lever.extend()
         lever.wait_for_n_presses(n=1, latency_obj = press_latency)
-        
+        test_phase = box.timing.new_phase('format testing', length = 20)
         while press_timeout.active() and lever_phase.active():
             
             if sim_press:

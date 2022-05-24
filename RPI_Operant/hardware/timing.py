@@ -47,10 +47,18 @@ class TimeManager:
         self.countdowns = []
     
     def add_countdown(self, obj):
+        print(f'adding cd {obj.name}')
         self.countdowns += [obj]
     
     def get_countdowns(self):
+        self.check_countdowns()
         return self.countdowns
+
+    def check_countdowns(self):
+        for countdown in self.countdowns:
+            if not countdown.active():
+                print(f'removing cd {countdown.name}')
+                self.countdowns.remove(countdown)
     
     def start_timing(self):
         if self.start_time:

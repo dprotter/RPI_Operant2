@@ -53,14 +53,15 @@ class ScreenPrinter:
             else:
                 cd=self.format_phase_countdown()
                 if cd:
-                    print(cd)
+                    print(' '*20, end = '\r')
+                    print(cd, end = '\r')
                 
     def format_phase_countdown(self):
         string = ''
         if len(self.box.timing.get_countdowns())>0:
             for obj in self.box.timing.get_countdowns():
-                    string+=f'{obj.name}: {obj.get_time_remaining()}  \n'
-            return string + '  \r'
+                    string+=f'{obj.name}: {obj.get_time_remaining()}     '
+            return string 
         else:
             return None
         
