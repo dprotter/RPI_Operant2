@@ -50,6 +50,7 @@ class ScreenPrinter:
         while not self.box.finished():
             if not self.print_queue.empty():
                 print(self.format_line(self.print_queue.get()))
+                print()
             else:
                 cd=self.format_phase_countdown()
                 if cd:
