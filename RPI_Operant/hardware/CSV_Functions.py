@@ -54,7 +54,6 @@ class Experiment:
         
         
     def get_unfinished_index(self): 
-        print(self.table.loc[(self.table.finished != True) & (self.table.finished != 'True') &(self.table.finished != 'skipped') ])
         return self.table.loc[(self.table.finished != True) & (self.table.finished != 'True') &(self.table.finished != 'skipped') ].index.values[0]
 
     def parse_args(self):
@@ -106,7 +105,7 @@ class Experiment:
     
     def generate_runtime_dict(self):
         #generate dict from keys that are important to pass along to the module
-        keys = ['vole', 'day', 'title']
+        keys = ['vole', 'vole_2','day', 'title', 'output_path']
         d = {k:self.current_row[k] for k in keys if k in list(self.current_row.keys())}
         
         #update the runtime dict with any k:v pairs from the "args" column
@@ -116,8 +115,8 @@ class Experiment:
     def ask_to_run(self):
         
         
-        print(self.module.RUNTIME_DICT)
-        print('\n\n\n\nshould we run this experiment?\ny (yes)\nn (no/exit)\ns (skip to next unfinished row)')
+        print(f'\n\n{self.module.RUNTIME_DICT}')
+        print('\n\nshould we run this experiment?\ny (yes)\nn (no/exit)\ns (skip to next unfinished row)')
         
         resp = input('').lower()
         
@@ -187,29 +186,31 @@ class Experiment:
         else:
             print('\n\n\ error saving experiment status! check experiment CSV file \n\n')
     
-    def track_script_progress(self):
-        start = time.time()
-        while not 'box' in self.module.__dict__.keys() and time.time()-start < 5:
-            ''''''
-            
-        while not self.module.box.finished():
-            ''''''
-        self.experiment_finished()
+
     
     def experiment_finished(self):
         
         self.table.loc[self.table.index == self.location, 'finished'] = True
         self.save_file()
     
-    
+    def experiment_failed(self):
+        
+        self.table.loc[self.table.index == self.location, 'finished'] = False
+        self.save_file()
+
     def run_module(self):
-        csv_up = threading.Thread(target = self.track_script_progress, daemon = True)
-        csv_up.start()
-        
-        
+  
         date = datetime.now()
         fdate = '%s_%s_%s__%s_%s'%(date.month, date.day, date.year, date.hour, date.minute)
         self.table.loc[self.table.index ==self.location, 'runtime'] = fdate
         self.save_file()
         self.module.run()
-        self.experiment_finished()
+        start = time.time()
+        while not self.module.box.successfully_run() and start + 5 >  time.time():
+                pass
+        if self.module.box.successfully_run():
+            self.experiment_finished()
+        else:
+            self.experiment_failed()
+        
+        
