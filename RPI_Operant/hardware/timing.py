@@ -89,7 +89,10 @@ class TimeManager:
     def wait_for_round_finish(self):
         while not self.round_over():
             time.sleep(0.1)
-       
+            
+    def round_time_remaining(self):
+        return (self.round_start_time + self.round_length) - time.time()
+    
     def round_over(self):
         if 'round_length' in self.__dict__.keys():
             if self.round_start_time + self.round_length < time.time():

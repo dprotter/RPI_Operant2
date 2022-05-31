@@ -51,7 +51,7 @@ def run():
             if not lever.presses_reached:
                 lever.retract()
                 
-            phase = box.timing.new_phase(name ='ITI', length = 1000)
+            phase = box.timing.new_phase(name ='ITI', length = box.timing.round_time_remaining())
 
             box.timing.wait_for_round_finish()
             
