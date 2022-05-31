@@ -32,6 +32,7 @@ class ScreenPrinter:
         self.print_queue = queue.Queue()
         self.display_list = ['-','-','-','-']
         self.box = box
+        
     
     def format_line(self, obj):
         if 'latency' in obj.__dict__.keys():
@@ -49,7 +50,22 @@ class ScreenPrinter:
         while not self.box.finished():
             if not self.print_queue.empty():
                 print(self.format_line(self.print_queue.get()))
-    
+                print()
+            else:
+                cd=self.format_phase_countdown()
+                if cd:
+                    print(' '*20, end = '\r')
+                    print(cd, end = '\r')
+                
+    def format_phase_countdown(self):
+        string = ''
+        if len(self.box.timing.get_countdowns())>0:
+            for obj in self.box.timing.get_countdowns():
+                    string+=f'{obj.name}: {obj.get_time_remaining()}     '
+            return string 
+        else:
+            return None
+        
     def update_display_list(self, obj):
         self.display_list.append(obj)
         _ = self.display_list.pop(0)
