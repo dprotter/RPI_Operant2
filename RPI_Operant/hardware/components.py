@@ -166,15 +166,15 @@ class Lever:
     def extend(self):
         '''extend a lever and timestamp it'''
         
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name)
-        lat = self.box.timestamp_manager.new_latency(description = oes.lever_pressed+self.name)
+        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, modifiers = {'ID':self.name})
+        lat = self.box.timestamp_manager.new_latency(description = oes.lever_pressed+self.name, modifiers = {'ID':self.name})
         extend_start = max(0, self.extended-self.wiggle)
 
         #first, extend past final value, then retract slightly to final value
         self.servo.angle = extend_start
         time.sleep(0.05)
         self.servo.angle = self.extended
-        print(f'extending {self.name}')
+        
         self.is_extended = True
         ts.submit()
         return lat
@@ -183,7 +183,7 @@ class Lever:
     def retract(self):
         '''extend a lever and timestamp it'''
         #note, make a ts object and submit later after successful retraction
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name)
+        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name})
         retract_start = max(180, self.retracted + self.wiggle)
  
         #wait for the vole to get off the lever
@@ -259,7 +259,7 @@ class Lever:
                             latency_obj.add_modifier(key = 'n_presses', value = self.lever_presses)
                             latency_obj.submit()
                         else:
-                            self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name ,modifiers = {'total_presses':self.total_presses})
+                            self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name ,modifiers = {'total_presses':self.total_presses, 'ID':self.name})
                             
                         if self.lever_presses >= n:
                             if latency_obj:
@@ -268,7 +268,7 @@ class Lever:
                                 latency_obj.add_modifier(key = 'n_presses', value = self.lever_presses)
                                 latency_obj.submit()
                             else:
-                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name ,modifiers ={'n_press':self.lever_presses})
+                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name ,modifiers ={'n_press':self.lever_presses, 'ID':self.name})
                             self.presses_reached = True
                             self.monitoring = False
                         while not self.lever_press_queue.empty():
@@ -401,7 +401,7 @@ class Door:
     @thread_it
     def open(self, wait = False):
         
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name)
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, modifiers = {'ID':self.name})
         self.servo.throttle = self.open_speed
 
         start_time = time.time()
@@ -412,16 +412,16 @@ class Door:
 
         if self.state_switch.pressed:
             print(f'{self.name} door failed to open!!!')
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_failure+self.name)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_failure+self.name, modifiers = {'ID':self.name})
         else:
             print(f'{self.name} opened!')
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name, modifiers = {'ID':self.name})
         
     @thread_it
     def close(self, wait = True):
         '''open this door'''
         
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name)
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name, modifiers = {'ID':self.name})
         self.servo.throttle = self.close_speed
 
         start_time = time.time()
@@ -433,11 +433,11 @@ class Door:
 
         if self.state_switch.pressed:
             print(f'{self.name} closed!')
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, modifiers = {'ID':self.name})
             
         else:
             print(f'{self.name} door failed to close!!!')
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_failure+self.name)
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_failure+self.name, modifiers = {'ID':self.name})
 
     @thread_it
     def override(self, wait = False):
@@ -526,7 +526,7 @@ class Dispenser:
                     '''timestamp put "pellet dispensed"'''
                     self.stop_servo()
                     self.pellet_state = True
-                    pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                    pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, modifiers = {'ID':self.name})
                     self.monitor_pellet(pellet_latency)
                     return None
             
@@ -621,7 +621,7 @@ class PositionalDispenser:
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
             print('previous item not retrieved')
-            self.box.timestamp_manager.create_and_submite_new_timestamp(description = oes.pellet_skip)
+            self.box.timestamp_manager.create_and_submite_new_timestamp(description = oes.pellet_skip, modifiers = {'ID':self.name})
             
         elif self.sensor_blocked:
             '''timestamp put "pellet sensor already blocked"'''
@@ -640,8 +640,8 @@ class PositionalDispenser:
                         '''timestamp put "pellet dispensed"'''
                         self.servo.throttle = self.stop_speed
                         self.pellet_state = True
-                        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-                        pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed, modifiers = {'ID':self.name})
+                        pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, modifiers = {'ID':self.name})
                         self.monitor_pellet(pellet_latency)
                         return None
                     
@@ -656,8 +656,8 @@ class PositionalDispenser:
                         '''timestamp put "pellet dispensed"'''
                         self.servo.throttle = self.stop_speed
                         self.pellet_state = True
-                        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-                        pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed, modifiers = {'ID':self.name})
+                        pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, modifiers = {'ID':self.name})
                         self.monitor_pellet(pellet_latency)
                         return None
                 
@@ -672,8 +672,8 @@ class PositionalDispenser:
                         '''timestamp put "pellet dispensed"'''
                         self.servo.throttle = self.stop_speed
                         self.pellet_state = True
-                        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed)
-                        pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved)
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed, modifiers = {'ID':self.name})
+                        pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, modifiers = {'ID':self.name})
                         self.monitor_pellet(pellet_latency)
                         return None
                 #here, if not luck, we will step to the next position
@@ -722,19 +722,19 @@ class PortDispenser(Dispenser):
         
         if override_pellet_state:
             self.next_position()
-            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}')
-            latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}', modifiers = {'ID':self.name})
+            latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}', modifiers = {'ID':self.name})
             self.pellet_state = True
             self.monitor_pellet(latency)
         else:
             if self.pellet_state:
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}')
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}')
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}', modifiers = {'ID':self.name})
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}', modifiers = {'ID':self.name})
             else:
             
                 self.next_position()
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}')
-                latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}')
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}', modifiers = {'ID':self.name})
+                latency = self.box.timestamp_manager.new_latency(description = f'{oes.pellet_retrieved}_{self.name}', modifiers = {'ID':self.name})
                 self.pellet_state = True
                 self.monitor_pellet(latency)
             return
@@ -783,7 +783,7 @@ class Speaker:
                 #start the timer on the tone now that it has arrived. set start/stop time within tone obj
                 new_tone.start()
                 self.tone_list.insert(0, new_tone)
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name, modifiers = {'ID':self.name})
             
             pop_list = []
             
@@ -824,7 +824,7 @@ class Speaker:
                 
                 t = self.tone_list.pop(i)
                 
-                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + t.name)
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + t.name, modifiers = {'ID':self.name})
                 
             
             #if no tone are left, turn off speaker

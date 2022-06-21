@@ -92,7 +92,7 @@ def run():
                     dispenser.simulate_retrieved()
                     sim_retrieve = False
         
-        phase = box.timing.new_phase(name ='ITI', length = 1000)
+        phase = box.timing.new_phase(name ='ITI', length = box.timing.round_time_remaining())
         if not lever.presses_reached:
             lever.retract()
         
