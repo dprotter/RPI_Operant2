@@ -107,6 +107,9 @@ class Experiment:
         #generate dict from keys that are important to pass along to the module
         keys = ['vole', 'vole_2','day', 'title', 'output_path']
         d = {k:self.current_row[k] for k in keys if k in list(self.current_row.keys())}
+        print(f'provided output path is {d["output_path"]}')
+        if pd.isna(d["output_path"]):
+            d.pop('output_path')
         
         #update the runtime dict with any k:v pairs from the "args" column
         d.update(self.current_args)

@@ -2,7 +2,7 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_autotrain_2sides', 'start_side':1}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_2sides', 'start_side':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_autotrain_2sides.yaml'
 
@@ -52,10 +52,8 @@ def run():
 
             if not lever.presses_reached:
                 lever.retract()
-                speaker.play_tone(tone_name = 'pellet_tone')
-                dispenser.dispense()
                 
-            phase = box.timing.new_phase(name =f'{side_name}_ITI', length = box.timing.round_time_remaining())
+            phase = box.timing.new_phase(name =f'{side_name}_ITI', length = 1000)
             
             
             
@@ -91,10 +89,8 @@ def run():
 
             if not lever.presses_reached:
                 lever.retract()
-                speaker.play_tone(tone_name = 'pellet_tone')
-                dispenser.dispense()
                 
-            phase = box.timing.new_phase(name =f'{side_name}_ITI', length = 1000)
+            phase = box.timing.new_phase(name =f'{side_name}_ITI', length = box.timing.round_time_remaining())
 
             box.timing.wait_for_round_finish()
             phase.end_phase()

@@ -44,6 +44,21 @@ class TimeManager:
         self.start_time = None
         self.round_start_time = None
         self.box = box
+        self.countdowns = []
+    
+    def add_countdown(self, obj):
+        print(f'adding cd {obj.name}')
+        self.countdowns += [obj]
+    
+    def get_countdowns(self):
+        self.check_countdowns()
+        return self.countdowns
+
+    def check_countdowns(self):
+        for countdown in self.countdowns:
+            if not countdown.active():
+                print(f'removing cd {countdown.name}')
+                self.countdowns.remove(countdown)
     
     def start_timing(self):
         if self.start_time:
@@ -74,7 +89,10 @@ class TimeManager:
     def wait_for_round_finish(self):
         while not self.round_over():
             time.sleep(0.1)
-       
+            
+    def round_time_remaining(self):
+        return (self.round_start_time + self.round_length) - time.time()
+    
     def round_over(self):
         if 'round_length' in self.__dict__.keys():
             if self.round_start_time + self.round_length < time.time():
@@ -87,25 +105,20 @@ class TimeManager:
             print('WARNING --> CANT ask if round is finished using round_finished(), no round length provided')
             
 class Phase: 
-    def __init__(self, name, length=1000, box=None): 
+    def __init__(self, name, length=1000, box=None, countdown = True): 
             # if timeframe is None, then there is no time limit on this phase. As a result, it will run until interrupt or a new phase is created
             self.start_time = time.time()
             self.end_time = self.start_time + length
             self.name = name 
             self.timeframe = length
             self.is_active = True
-            
+            if countdown:
+                if box:
+                    box.timing.add_countdown(self)
     
-    def display_countdown_timer(self): 
-        # print a countdown to the screen based on the remaining time left in <timeframe> 
-        print("\r")
-        timeinterval = self.timeframe
-        while timeinterval:
-            mins, secs = divmod(timeinterval, 60)
-            timer = '{:02d}:{:02d}'.format(mins, secs)
-            sys.stdout.write(f"\r{timer} until end of Phase: {self.name}  ")
-            time.sleep(1)
-            timeinterval -= 1
+    def get_time_remaining(self):
+        
+        return round(self.end_time - time.time(), 1)
 
     def active(self):
         if self.is_active:
@@ -200,7 +213,10 @@ class TimestampManager:
         self.timing = timing_obj
         self.save_timestamps = save_timestamps
         self.screen = ScreenPrinter(self.box)
-        
+
+    
+
+    
     def create_save_file(self):
         self.save_path = self.box.output_file_path + '.csv'
         print(f'csv path: {self.save_path}')
