@@ -959,7 +959,7 @@ class ToneTrain(Tone):
     def get_hz(self):
         tones_remain = self.check_tone_list()
         if tones_remain:
-            return self.tone_list[position].get_hz()
+            return self.tone_list[self.position].get_hz()
         else:
             return 0
     
