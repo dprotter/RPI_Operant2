@@ -70,6 +70,8 @@ def run():
             if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0:
                 print('one of the pellet dispensers may be empty. refill, and then press enter.')
                 input()
+                pellets_dispenser_1_remaining = 10
+                pellets_dispenser_2_remaining = 10
             box.timing.wait_for_round_finish()
             
             phase.end_phase()
