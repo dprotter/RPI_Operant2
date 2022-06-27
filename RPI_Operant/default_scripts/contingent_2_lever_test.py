@@ -66,14 +66,17 @@ def run():
             if not lever_1.presses_reached and not lever_2.presses_reached:
                 lever_1.retract()
                 lever_2.retract()
-            phase = box.timing.new_phase(name ='ITI', length = box.timing.round_time_remaining())
+            
             if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0:
+                phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
                 print('one of the pellet dispensers may be empty. refill, and then press enter.')
                 input()
                 pellets_dispenser_1_remaining = 10
                 pellets_dispenser_2_remaining = 10
+                phase.end_phase()
+                
+            phase = box.timing.new_phase(name ='ITI', length = box.timing.round_time_remaining())
             box.timing.wait_for_round_finish()
-            
             phase.end_phase()
                    
 
