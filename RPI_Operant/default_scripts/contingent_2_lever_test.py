@@ -26,8 +26,8 @@ def run():
     speaker_2 = box.speakers.speaker_2
     dispenser_2 = box.port_dispensers.dispenser_2
     try:
-        pellets_dispenser_1_remaining = 2
-        pellets_dispenser_2_remaining = 2
+        pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
+        pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
         for i in range(1,box.software_config['values']['rounds']+1, 1):
             
             #testing
@@ -82,8 +82,8 @@ def run():
                 phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
                 print('one of the pellet dispensers may be empty. refill, and then press enter.')
                 input()
-                pellets_dispenser_1_remaining = 10
-                pellets_dispenser_2_remaining = 10
+                pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
+                pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
                 phase.end_phase()
             else:
                 print(f'pellets remaining| disp1: {pellets_dispenser_1_remaining} disp2:{pellets_dispenser_2_remaining}')
