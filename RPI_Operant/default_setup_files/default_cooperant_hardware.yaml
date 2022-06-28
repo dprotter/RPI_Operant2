@@ -38,6 +38,7 @@ port_dispensers:
     stop: 0.06
     sensor_pin: 24
     pullup_pulldown: pullup
+    max_pellets: 10
     
   dispenser_2:
     servo: 1
@@ -47,6 +48,7 @@ port_dispensers:
     stop: 0.06
     sensor_pin: 25
     pullup_pulldown: pullup
+    max_pellets: 10
     
   
 
