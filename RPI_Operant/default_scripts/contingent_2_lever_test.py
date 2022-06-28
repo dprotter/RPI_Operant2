@@ -2,7 +2,7 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'lever_1_active':1, 'lever_2_active':1}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'lever_1_active':0, 'lever_2_active':0}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 
@@ -25,6 +25,10 @@ def run():
     lever_2 = box.levers.lever_2
     speaker_2 = box.speakers.speaker_2
     dispenser_2 = box.port_dispensers.dispenser_2
+    
+    if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:
+        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified!\n^^^^^^^^^\n\n')
+    
     try:
         pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
         pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
@@ -80,7 +84,7 @@ def run():
             
             if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0:
                 phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
-                print('one of the pellet dispensers may be empty. refill, and then press enter.')
+                print('\n\nvvvvvv\none of the pellet dispensers may be empty. refill, and then press enter.\n^^^^^^^^^\n\n')
                 input()
                 pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
                 pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
