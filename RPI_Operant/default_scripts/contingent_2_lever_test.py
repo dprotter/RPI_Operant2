@@ -26,8 +26,8 @@ def run():
     speaker_2 = box.speakers.speaker_2
     dispenser_2 = box.port_dispensers.dispenser_2
     try:
-        pellets_dispenser_1_remaining = 10
-        pellets_dispenser_2_remaining = 10
+        pellets_dispenser_1_remaining = 2
+        pellets_dispenser_2_remaining = 2
         for i in range(1,box.software_config['values']['rounds']+1, 1):
 
             
