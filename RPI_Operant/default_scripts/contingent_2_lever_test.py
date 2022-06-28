@@ -4,7 +4,7 @@ import time
 import random
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'lever_1_active':0, 'lever_2_active':0}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_autotrain_1side.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 
 box = Box()
 def run():
