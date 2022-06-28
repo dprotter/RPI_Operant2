@@ -80,7 +80,7 @@ def run():
             
             if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0:
                 phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
-                print('one of the pellet dispensers may be empty. refill, and then press enter.')
+                print('\n\nvvvvvv\none of the pellet dispensers may be empty. refill, and then press enter.\n^^^^^^^^^\n\n')
                 input()
                 pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
                 pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
