@@ -4,11 +4,11 @@ checks:
   save_timestamps: True
 
 values:
-  rounds: 8
+  rounds: 15
   delay_by_day: [0]
   delay_default: 0
-  round_length: 10
-  lever_out_time: 6
+  round_length: 90
+  lever_out_time: 60
   
 
 
