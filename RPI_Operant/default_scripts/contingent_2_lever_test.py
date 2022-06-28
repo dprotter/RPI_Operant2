@@ -25,6 +25,10 @@ def run():
     lever_2 = box.levers.lever_2
     speaker_2 = box.speakers.speaker_2
     dispenser_2 = box.port_dispensers.dispenser_2
+    
+    if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:
+        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified!\n^^^^^^^^^\n\n')
+    
     try:
         pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
         pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
