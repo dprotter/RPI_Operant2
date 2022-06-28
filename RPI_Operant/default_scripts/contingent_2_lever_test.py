@@ -2,7 +2,7 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'lever_1_active':0, 'lever_2_active':0}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'lever_1_active':1, 'lever_2_active':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 
@@ -20,7 +20,7 @@ def run():
     lever_1 = box.levers.lever_1
     speaker_1 = box.speakers.speaker_1
     dispenser_1 = box.port_dispensers.dispenser_1
-    if RUNTIME_DICT['lever_1_active'] == 1:
+    if RUNTIME_DICT['lever_2_active'] == 1:
         print('lever_2 is active')
     lever_2 = box.levers.lever_2
     speaker_2 = box.speakers.speaker_2
