@@ -31,7 +31,7 @@ def run():
         for i in range(1,box.software_config['values']['rounds']+1, 1):
             
             #testing
-            press = random.randint(0,4)
+            press = random.randint(0,2)
             lat = 1
             
             box.timing.new_round(length = box.software_config['values']['round_length'])
