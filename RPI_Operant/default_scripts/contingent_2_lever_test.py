@@ -85,7 +85,8 @@ def run():
                 pellets_dispenser_1_remaining = 10
                 pellets_dispenser_2_remaining = 10
                 phase.end_phase()
-                
+            else:
+                print(f'pellets remaining| disp1: {pellets_dispenser_1_remaining} disp2:{pellets_dispenser_2_remaining}')
             phase = box.timing.new_phase(name ='ITI', length = box.timing.round_time_remaining())
             box.timing.wait_for_round_finish()
             phase.end_phase()
