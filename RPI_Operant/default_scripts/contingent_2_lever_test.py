@@ -29,7 +29,10 @@ def run():
         pellets_dispenser_1_remaining = 2
         pellets_dispenser_2_remaining = 2
         for i in range(1,box.software_config['values']['rounds']+1, 1):
-
+            
+            #testing
+            press = random.randint(0,4)
+            lat = 1
             
             box.timing.new_round(length = box.software_config['values']['round_length'])
             lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
@@ -41,8 +44,16 @@ def run():
             press_latency_2 = lever_2.extend()
             lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
             
+            #testing
+            start = time.time()
             while lever_phase.active():
-
+                
+                if press in [1,2] and time.time() - start > lat:
+                    if press ==1:
+                        lever_1.simulate_pressed()
+                    else:
+                        lever_2.simulate_pressed()
+                
                 if lever_1.presses_reached:
                     
                     lever_1.retract()
@@ -88,7 +99,7 @@ def run():
         speaker_2.turn_off()
         dispenser_2.stop_servo()
         lever_2.retract()
-        box.shutdown()
+        box.force_shutdown()
 
 if __name__ == '__main__':
     run()

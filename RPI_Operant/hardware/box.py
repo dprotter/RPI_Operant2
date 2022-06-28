@@ -298,6 +298,27 @@ class Box:
             for door in self.doors:
                 door.close()
 
+    def force_shutdown(self):
+        if not self.timing.current_phase == None:
+            self.timing.current_phase.end_phase()
+        self.done = True
+        
+        val = 0
+        while not self.monitor_worker_future.done():
+            time.sleep(0.05)
+            val +=1
+            if val>500:
+                print('waiting for shutdown')
+                val = 0
+        
+        for l in self.levers:
+            l.retract()
+        for speaker in self.speakers:
+            speaker.set_off()
+        
+        print('monitor_workers complete')
+        
+    
     def shutdown(self):
         
         if not self.timing.current_phase == None:
