@@ -86,7 +86,7 @@ def run():
                 lever_1.retract()
                 lever_2.retract()
             
-            if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0 or pellets_disepsner_3_remaining:
+            if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0 or pellets_dispenser_3_remaining:
                 phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
                 print('\n\nvvvvvv\none of the pellet dispensers may be empty. refill, and then press enter.\n^^^^^^^^^\n\n')
                 input()
