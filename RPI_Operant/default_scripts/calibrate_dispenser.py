@@ -122,19 +122,33 @@ box.setup(run_dict=RUNTIME_DICT,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True, simulated = False)
 
-d1 = box.port_dispensers.dispenser_1
-d2 = box.port_dispensers.dispenser_2
+try:
+    for d in box.port_dispensers:
+        calibrate_stop(d)
+        rough_calibrate(d)
+        fine_calibrate(d)
+        test_steps(d)
+except:
+    
+    d1 = box.port_dispensers.dispenser_1
+    d2 = box.port_dispensers.dispenser_2
+    d3 = box.port_dispensers.dispenser_2
 
-calibrate_stop(d1)
-calibrate_stop(d2)
+    calibrate_stop(d1)
+    calibrate_stop(d2)
+    calibrate_stop(d3)
 
-rough_calibrate(d1)
-rough_calibrate(d2)
+    rough_calibrate(d1)
+    rough_calibrate(d2)
+    rough_calibrate(d3)
 
-fine_calibrate(d1)
-fine_calibrate(d2)
 
-test_steps(d1)
-test_steps(d2)
+    fine_calibrate(d1)
+    fine_calibrate(d2)
+    fine_calibrate(d3)
+
+    test_steps(d1)
+    test_steps(d2)
+    test_steps(d3)
 
 box.shutdown()
