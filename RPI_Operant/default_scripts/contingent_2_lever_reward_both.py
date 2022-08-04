@@ -55,11 +55,11 @@ def run():
                     lever_2.retract()
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_1_active'] == 1:
-                        speaker_1.play_tone(tone_name = 'pellet_tone',wait = True)
+                        speaker_1.play_tone(tone_name = 'pellet_tone')
                         dispenser_1.dispense()
                         pellets_dispenser_1_remaining -=1
                         
-                        speaker_2.play_tone(tone_name = 'pellet_tone',wait = True)
+                        
                         dispenser_2.dispense()
                         pellets_dispenser_2_remaining -= 1
                 
@@ -68,11 +68,11 @@ def run():
                     lever_2.retract()
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_2_active'] == 1:
-                        speaker_2.play_tone(tone_name = 'pellet_tone',wait = True)
+                        speaker_2.play_tone(tone_name = 'pellet_tone')
                         dispenser_2.dispense()
                         pellets_dispenser_2_remaining -= 1
                         
-                        speaker_1.play_tone(tone_name = 'pellet_tone',wait = True)
+                        
                         dispenser_1.dispense()
                         pellets_dispenser_1_remaining -=1
             
