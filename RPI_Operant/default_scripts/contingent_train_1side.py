@@ -2,7 +2,9 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'side':1}
+from pathlib import Path
+experiment_name = Path(__file__).stem
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'side':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/cooperant_autotrain_1side.yaml'
 
