@@ -1,0 +1,83 @@
+output_path: 'default'
+
+checks:
+  save_timestamps: True
+
+values:
+  rounds: 10
+  delay_by_day: [0]
+  delay_default: 0
+  round_length: 100
+  lever_out_time: 80
+  lever_out_to_dispense_time: 2
+  reward_focal_lever_1_delay: 0
+  reward_focal_lever_2_delay: 0
+
+speaker_tones:
+  speaker_1:
+    round_start:
+      hz: 5000
+      length: 1
+    pellet_tone:
+      hz: 2500
+      length: 1
+    door_open:
+      hz: 10000
+      length: 1
+    door_close:
+      hz: 7000
+      length: 1
+    click_on: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
+    click_off: 
+      tone_1:
+        hz: 900
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 8000
+        length: 0.02
+
+  speaker_2:
+    round_start:
+      hz: 5000
+      length: 1
+    pellet_tone:
+      hz: 5000
+      length: 1
+    door_open:
+      hz: 10000
+      length: 1
+    door_close:
+      hz: 7000
+      length: 1
+    click_on: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
+    click_off: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
