@@ -19,7 +19,7 @@ parser.add_argument('--config_in', '-i',type = str,
 
 args = parser.parse_args()
 
-if args.csv_in:
+if args.config_in:
     config_file = args.config_in
  
 else:
