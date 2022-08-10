@@ -61,8 +61,8 @@ def run():
                     lever_2.retract()
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_1_active'] == 1:
-                        speaker_1.play_tone(tone_name = 'pellet_tone')
-                        dispenser_1.dispense()
+                        speaker_2.play_tone(tone_name = 'pellet_tone')
+                        dispenser_2.dispense()
                         pellets_dispenser_1_remaining -=1
                         if RUNTIME_DICT['reward_focal_lever_1']:
                             timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_1_delay'])
@@ -75,8 +75,8 @@ def run():
                     lever_2.retract()
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_2_active'] == 1:
-                        speaker_2.play_tone(tone_name = 'pellet_tone')
-                        dispenser_2.dispense()
+                        speaker_1.play_tone(tone_name = 'pellet_tone')
+                        dispenser_1.dispense()
                         pellets_dispenser_2_remaining -= 1
                         if RUNTIME_DICT['reward_focal_lever_2']:
                             timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_2_delay'])
