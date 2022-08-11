@@ -4,7 +4,9 @@ import time
 import random
 import os
 cwd = os.getcwd()
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_choice', 'reward_lever':1}
+from pathlib import Path
+experiment_name = Path(__file__).stem
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'reward_lever':1}
 
 USER_HARDWARE_CONFIG_PATH = os.path.join(cwd, 'RPI_Operant','default_setup_files','default_cooperant_hardware.yaml')
 USER_SOFTWARE_CONFIG_PATH = os.path.join(cwd, 'RPI_Operant','default_setup_files','cooperant_autotrain_1side.yaml')
