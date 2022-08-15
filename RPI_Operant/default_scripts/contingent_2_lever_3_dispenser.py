@@ -2,7 +2,9 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_train_1side', 'lever_1_active':0, 'lever_2_active':0, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
+from pathlib import Path
+experiment_name = Path(__file__).stem
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'lever_1_active':1, 'lever_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 
@@ -59,9 +61,9 @@ def run():
                     lever_2.retract()
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_1_active'] == 1:
-                        speaker_1.play_tone(tone_name = 'pellet_tone')
-                        dispenser_1.dispense()
-                        pellets_dispenser_1_remaining -=1
+                        speaker_2.play_tone(tone_name = 'pellet_tone')
+                        dispenser_2.dispense()
+                        pellets_dispenser_2_remaining -=1
                         if RUNTIME_DICT['reward_focal_lever_1']:
                             timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_1_delay'])
                             timeout.wait()
@@ -73,9 +75,9 @@ def run():
                     lever_2.retract()
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_2_active'] == 1:
-                        speaker_2.play_tone(tone_name = 'pellet_tone')
-                        dispenser_2.dispense()
-                        pellets_dispenser_2_remaining -= 1
+                        speaker_1.play_tone(tone_name = 'pellet_tone')
+                        dispenser_1.dispense()
+                        pellets_dispenser_1_remaining -= 1
                         if RUNTIME_DICT['reward_focal_lever_2']:
                             timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_2_delay'])
                             timeout.wait()
@@ -86,7 +88,7 @@ def run():
                 lever_1.retract()
                 lever_2.retract()
             
-            if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0 or pellets_dispenser_3_remaining:
+            if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0 or pellets_dispenser_3_remaining == 0:
                 phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
                 print('\n\nvvvvvv\none of the pellet dispensers may be empty. refill, and then press enter.\n^^^^^^^^^\n\n')
                 input()
