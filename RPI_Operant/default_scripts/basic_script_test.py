@@ -1,4 +1,21 @@
-from RPI_Operant.hardware.box_old import Box
+
+import sys
+import os
+  
+# getting the name of the directory
+# where the this file is present.
+current = os.path.dirname(os.path.abspath(__file__))
+# Getting the parent directory name
+# where the current directory is present.
+parent = os.path.dirname(current)
+# adding the parent directory to 
+# the sys.path.
+sys.path.append(parent)
+print(parent)
+
+
+from hardware.box import Box
+
 import time
 box=Box()
 box.stup()

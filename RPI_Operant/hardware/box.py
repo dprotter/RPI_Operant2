@@ -15,14 +15,15 @@ import importlib.util
 import os
 import traceback
 
-from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
+# from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
 
-from RPI_Operant.hardware.timing import TimeManager, TimestampManager
+from hardware.timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
 import queue
 import time
 import datetime
-from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
+from hardware.software_functions import merge_config_files, load_config_file
+from hardware.components import Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
@@ -36,7 +37,8 @@ COMPONENT_LOOKUP = {
                     'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
                     'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
                     'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
-                    'speakers':{'component_class':Speaker, 'label':'speaker'}
+                    'speakers':{'component_class':Speaker, 'label':'speaker'}, 
+                    'lasers':{'component_class':Laser, 'label':'laser'}
                     }
 
 

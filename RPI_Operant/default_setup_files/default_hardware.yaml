@@ -1,3 +1,8 @@
+lasers: 
+  laser1: 
+    pin: -1
+    pullup_pulldown: pulldown
+
 speakers:
   speaker1:
     pin: 21

@@ -6,11 +6,11 @@ try:
     import RPi.GPIO as GPIO
 except:
     print('RPi.GPIO not found')
-    from RPI_Operant.hardware.Fake_GPIO import Fake_GPIO
+    from hardware.Fake_GPIO import Fake_GPIO
     GPIO = Fake_GPIO()
 import queue
 import sys
-from RPI_Operant.hardware.event_strings import OperantEventStrings as oes
+from hardware.event_strings import OperantEventStrings as oes
 import inspect
 
 import os
@@ -747,6 +747,67 @@ class PortDispenser(Dispenser):
                 pellet_latency.submit()
                 self.pellet_state = False  
                 return       
+
+class Laser: 
+
+    def __init__(self, name, speaker_dict, box, simulated = False): 
+
+        self.box = box 
+        self.name = name 
+        self.pin = speaker_dict['pin']
+        self.on = False # current on/off state of the Laser
+        if simulated:
+            self.pi = self.SimulatedPiConnection()
+        else:
+            self.pi = pigpio.pi()
+
+        self._setup_laser_patterns() # creates dictionary of all the patterns defined in the yaml file so we can reference them by name
+    
+
+    class SimulatedPiConnection: 
+        def set_PWM_dutycycle(self, pin, dc):
+            '''print(f'speaker set to {dc} duty cycle')'''
+
+    class Cycle: 
+        def __init__(self, high_time, low_time, repeat, laser_object): 
+            self.high_time = high_time # seconds Laser is set to HIGH
+            self.low_time = low_time # seconds Laser is set to LOW
+            self.repeat = repeat # number of times we repeat this HIGH/LOW cycle 
+            self.laser_object = laser_object
+
+        
+        def trigger(self): 
+            '''turn the laser on/off according to the cycle attributes'''
+            for i in range(self.repeat): 
+                self.laser_object.turn_on()
+                time.sleep(self.high_time)
+                self.laser_object.turn_off()
+                time.sleep(self.low_time)
+            
+            return 
+        
+    def _setup_laser_patterns(self): 
+        ''' Instantiates Cycle Objects and sets them as attributes for the Laser so we can easily turn the laser on/off to match a certain pattern/cycle '''
+        laser_patterns = {} # empty dictionary 
+        for (pattern_name, pattern) in self.box.software_config['laser_patterns'].items(): 
+            # create a Cycle instance for each Pattern, and add an attribute for the pattern that points to the cycle instance  
+            setattr(self, pattern_name,( self.Cycle(pattern['on_seconds'], pattern['off_seconds'], pattern['repeat'], self)) ) 
+        return laser_patterns
+    
+    def turn_on(self): 
+        ''' turns laser on '''
+        self.on = True 
+        self.pi.set_PWM_dutycycle(self.pin, 3.3)
+    
+    def turn_off(self): 
+        ''' turns laser off '''
+        self.on = False
+        self.pi.set_PWM_dutycycle(self.pin, 0)
+    
+    
+
+        
+
 
 class Speaker:
     class FakeSpeaker:

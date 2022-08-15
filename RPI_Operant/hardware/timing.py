@@ -14,7 +14,7 @@ from queue import Queue
 import sys
 import csv
 import socket
-from RPI_Operant.hardware.software_functions import ScreenPrinter
+from hardware.software_functions import ScreenPrinter
 
 def format_ts(timestamp_obj):
     
