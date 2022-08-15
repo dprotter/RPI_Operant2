@@ -118,7 +118,9 @@ class Box:
         if len(self.speakers) ==1:
             self.speaker = self.speakers.get_components()[0]
         
+        
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
 
 
         self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = True)

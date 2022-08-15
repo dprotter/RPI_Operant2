@@ -221,7 +221,7 @@ class TimestampManager:
         self.save_path = self.box.output_file_path + '.csv'
         print(f'csv path: {self.save_path}')
         if self.save_timestamps:
-            with open(self.save_path, 'w') as file:
+            with open(self.save_path, 'w+') as file:
                 header = ['round','event','time','phase initialized','phase submitted','latency','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)

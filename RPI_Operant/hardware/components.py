@@ -108,7 +108,11 @@ class Lever:
         if 'speaker_name' in self.config_dict.keys():
             self.speaker = self.box.speakers.get_component(self.config_dict['speaker_name'])
         else:
-            self.speaker = self.box.speaker
+            try: 
+                self.speaker = self.box.speaker
+            except AttributeError as e: 
+                print(e, 'setting box.speaker to None.')
+                self.speaker = None
         
         switch_dict = {
             'pin':self.pin,
@@ -754,7 +758,7 @@ class Laser:
 
         self.box = box 
         self.name = name 
-        self.pin = speaker_dict['pin']
+        self.pin = speaker_dict['pin'] # PWM (pulse width modulation) pin number 
         self.on = False # current on/off state of the Laser
         if simulated:
             self.pi = self.SimulatedPiConnection()
@@ -796,11 +800,13 @@ class Laser:
     
     def turn_on(self): 
         ''' turns laser on '''
+        print(f'{self.name} On')
         self.on = True 
         self.pi.set_PWM_dutycycle(self.pin, 3.3)
     
     def turn_off(self): 
         ''' turns laser off '''
+        print(f'{self.name} Off')
         self.on = False
         self.pi.set_PWM_dutycycle(self.pin, 0)
     

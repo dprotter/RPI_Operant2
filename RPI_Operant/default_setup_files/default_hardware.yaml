@@ -77,3 +77,6 @@ positional_dispensers:
     pullup_pulldown: pullup
     dispense_timeout: 3
 
+    start: 1
+    n_spots: 1
+

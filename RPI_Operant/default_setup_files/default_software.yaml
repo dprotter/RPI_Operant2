@@ -9,7 +9,7 @@ laser_patterns:
   p1: 
     on_seconds: 5 
     off_seconds: 5
-    repeat: 1
+    repeat: 2
   p2: 
     on_seconds: 3 
     off_seconds: 3
@@ -20,7 +20,7 @@ laser_patterns:
     repeat: 1
 
 speaker_tones:
-  speaker:
+  speaker1:
     round_start:
       hz: 5000
       length: 1
