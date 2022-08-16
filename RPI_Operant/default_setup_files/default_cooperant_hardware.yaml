@@ -51,11 +51,12 @@ port_dispensers:
     max_pellets: 10
     
   dispenser_3:
-    servo: 8 ###must be updated
+
+    servo: 10 ###must be updated
     servo_type: continuous 
-    dispense: 0.18 ###must be updated
-    full_rotation_time: 3.495 ###must be updated
-    stop: 0.09  ###must be updated
+    dispense: 0.165 ###must be updated
+    full_rotation_time: 1.87225 ###must be updated
+    stop: 0.06  ###must be updated
     sensor_pin: 16 ###must be updated
     pullup_pulldown: pullup
     max_pellets: 10
