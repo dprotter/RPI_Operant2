@@ -31,8 +31,8 @@ def run():
     dispenser_3 = box.port_dispensers.dispenser_3
     
     if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:
-        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified!\n^^^^^^^^^\n\n')
-    
+        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified! exiting\n^^^^^^^^^\n\n')
+        exit()
     try:
         pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
         pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
@@ -45,12 +45,13 @@ def run():
             box.timing.new_round(length = box.software_config['values']['round_length'])
             lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
            
+            if RUNTIME_DICT['lever_1_active'] == 1:
+                press_latency_1 = lever_1.extend()
+                lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1)
             
-            press_latency_1 = lever_1.extend()
-            lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1)
-            
-            press_latency_2 = lever_2.extend()
-            lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
+            if RUNTIME_DICT['lever_2_active'] == 1:
+                press_latency_2 = lever_2.extend()
+                lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
             
 
             while lever_phase.active():
