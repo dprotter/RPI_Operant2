@@ -765,7 +765,7 @@ class Laser:
         else:
             self.pi = pigpio.pi()
 
-        self._setup_laser_patterns() # creates dictionary of all the patterns defined in the yaml file so we can reference them by name
+        self.patterns = self._setup_laser_patterns() # creates Cycle objects and sets as attributes for all the patterns defined in the yaml file so we can reference them by name. Also returns a list of all of the string names of the patterns to allow us to iterate thru all the patterns if desired.  
     
 
     class SimulatedPiConnection: 
@@ -773,11 +773,14 @@ class Laser:
             '''print(f'speaker set to {dc} duty cycle')'''
 
     class Cycle: 
-        def __init__(self, high_time, low_time, repeat, laser_object): 
+        def __init__(self, name, high_time, low_time, repeat, laser_object): 
+            self.name = name 
             self.high_time = high_time # seconds Laser is set to HIGH
             self.low_time = low_time # seconds Laser is set to LOW
             self.repeat = repeat # number of times we repeat this HIGH/LOW cycle 
             self.laser_object = laser_object
+
+            self.total_time = (high_time + low_time)*repeat
 
         
         def trigger(self): 
@@ -792,11 +795,13 @@ class Laser:
         
     def _setup_laser_patterns(self): 
         ''' Instantiates Cycle Objects and sets them as attributes for the Laser so we can easily turn the laser on/off to match a certain pattern/cycle '''
-        laser_patterns = {} # empty dictionary 
+        pattern_list = [] # empty list 
         for (pattern_name, pattern) in self.box.software_config['laser_patterns'].items(): 
             # create a Cycle instance for each Pattern, and add an attribute for the pattern that points to the cycle instance  
-            setattr(self, pattern_name,( self.Cycle(pattern['on_seconds'], pattern['off_seconds'], pattern['repeat'], self)) ) 
-        return laser_patterns
+            newCycle = self.Cycle(pattern_name, pattern['on_seconds'], pattern['off_seconds'], pattern['repeat'], self)
+            setattr(self, pattern_name, newCycle ) 
+            pattern_list.append(newCycle)
+        return pattern_list
     
     def turn_on(self): 
         ''' turns laser on '''
