@@ -4,7 +4,7 @@ import time
 import random
 from pathlib import Path
 experiment_name = Path(__file__).stem
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'lever_1_active':1, 'lever_2_active':1}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'lever_1_active':1, 'lever_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 
@@ -28,12 +28,16 @@ def run():
     speaker_2 = box.speakers.speaker_2
     dispenser_2 = box.port_dispensers.dispenser_2
     
-    if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:
-        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified!\n^^^^^^^^^\n\n')
+    dispenser_3 = box.port_dispensers.dispenser_3
     
+    if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:
+        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified! exiting\n^^^^^^^^^\n\n')
+        exit()
     try:
         pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
         pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
+        pellets_dispenser_3_remaining = dispenser_2.config_dict['max_pellets']
+        
         for i in range(1,box.software_config['values']['rounds']+1, 1):
             
 
@@ -41,12 +45,13 @@ def run():
             box.timing.new_round(length = box.software_config['values']['round_length'])
             lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
            
+            if RUNTIME_DICT['lever_1_active'] == 1:
+                press_latency_1 = lever_1.extend()
+                lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1)
             
-            press_latency_1 = lever_1.extend()
-            lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1)
-            
-            press_latency_2 = lever_2.extend()
-            lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
+            if RUNTIME_DICT['lever_2_active'] == 1:
+                press_latency_2 = lever_2.extend()
+                lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
             
 
             while lever_phase.active():
@@ -58,12 +63,13 @@ def run():
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_1_active'] == 1:
                         speaker_1.play_tone(tone_name = 'pellet_tone')
-                        dispenser_1.dispense()
+                        dispenser_1.dispense(override_pellet_state = True)
                         pellets_dispenser_1_remaining -=1
-                        
-                        
-                        dispenser_2.dispense()
-                        pellets_dispenser_2_remaining -= 1
+                        if RUNTIME_DICT['reward_focal_lever_1']:
+                            timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_1_delay'])
+                            timeout.wait()
+                            dispenser_3.dispense(override_pellet_state = True)
+                            pellets_dispenser_3_remaining -= 1
                 
                 elif lever_2.presses_reached:
                     lever_1.retract()
@@ -71,19 +77,19 @@ def run():
                     lever_phase.end_phase()
                     if RUNTIME_DICT['lever_2_active'] == 1:
                         speaker_2.play_tone(tone_name = 'pellet_tone')
-                        dispenser_2.dispense()
+                        dispenser_2.dispense(override_pellet_state = True)
                         pellets_dispenser_2_remaining -= 1
-                        
-                        
-                        dispenser_1.dispense()
-                        pellets_dispenser_1_remaining -=1
-            
+                        if RUNTIME_DICT['reward_focal_lever_2']:
+                            timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_2_delay'])
+                            timeout.wait()
+                            dispenser_3.dispense(override_pellet_state = True)
+                            pellets_dispenser_3_remaining -= 1
 
             if not lever_1.presses_reached and not lever_2.presses_reached:
                 lever_1.retract()
                 lever_2.retract()
             
-            if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0:
+            if pellets_dispenser_1_remaining == 0 or pellets_dispenser_2_remaining == 0 or pellets_dispenser_3_remaining == 0:
                 phase = box.timing.new_phase(name ='refill_pellets', length = 1000)
                 print('\n\nvvvvvv\none of the pellet dispensers may be empty. refill, and then press enter.\n^^^^^^^^^\n\n')
                 input()
