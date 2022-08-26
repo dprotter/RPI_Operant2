@@ -2,7 +2,9 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'contingent_2_lever_reward_both', 'lever_1_active':1, 'lever_2_active':1}
+from pathlib import Path
+experiment_name = Path(__file__).stem
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'lever_1_active':1, 'lever_2_active':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 
