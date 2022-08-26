@@ -747,7 +747,66 @@ class PortDispenser(Dispenser):
                 pellet_latency.submit()
                 self.pellet_state = False  
                 return       
+class Output:
+    
+    '''vvvvvvvvvvv
+    begin transition to pigpio and use pi.trigger()
+    where to put the pi object? probably attached to the box instance during init. move the fake pigpio.
+    
+    '''
+    
+    
+    
+    def __init__(self, name, output_config_dict, box, simulated = False):
+        '''make a dispenser'''
+        self.box = box
+        self.config_dict = output_config_dict
+        self.pullup_pulldown = self.config_dict['pullup_pulldown']
+        self.pin = self.config_dict['pin']
+        self.active = False
+        self.name = self.config_dict['name']
+        
+        if self.pullup_pulldown == 'pullup':    
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            self.switch_active = self.set_active_PU_UP()
+            self.switch_inactive = self.set_inactive_PU_UP()
+            
+        elif self.pullup_pulldown == 'pulldown':
+            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            self.switch_active = self.set_active_PU_DOWN()
+            self.switch_inactive = self.set_inactive_PU_DOWN()
+        
+        else:
+            raise Exception(f'Output {self.name} does not have pullup_pulldown set')
 
+   
+    def set_active_PU_UP(self):
+        GPIO.out(self.pin, 0)
+        self.active = True
+        
+    def set_active_PU_DOWN(self):
+        GPIO.out(self.pin, 1)
+        self.active = True
+        
+    def set_inactive_PU_UP(self):
+        GPIO.out(self.pin, 1)
+        self.active = False
+        
+    def set_inactive_PU_DOWN(self):
+        GPIO.out(self.pin, 0)
+        self.active = False
+        
+    @thread_it     
+    def activate(self):
+        self.switch_active()
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated_{self.name}', modifiers = {'ID':self.name})
+        
+    @thread_it     
+    def deactivate(self):
+        self.switch_inactive()
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_deactivated_{self.name}', modifiers = {'ID':self.name})
+        
+    
 class Speaker:
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
