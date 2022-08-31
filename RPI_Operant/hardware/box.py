@@ -15,7 +15,7 @@ import importlib.util
 import os
 import traceback
 
-from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
+from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser, Output
 
 from RPI_Operant.hardware.timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
@@ -23,7 +23,12 @@ import queue
 import time
 import datetime
 from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
-
+try:
+    if os.system('sudo lsof -i TCP:8888'):
+        os.system('sudo pigpiod')
+    import pigpio
+except:
+    print('pigpio not found')
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
 DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_software.yaml')
@@ -36,7 +41,8 @@ COMPONENT_LOOKUP = {
                     'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
                     'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
                     'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
-                    'speakers':{'component_class':Speaker, 'label':'speaker'}
+                    'speakers':{'component_class':Speaker, 'label':'speaker'},
+                    'outputs':{'component_class':Output, 'label':'output'}
                     }
 
 
@@ -57,6 +63,7 @@ class Box:
         self.done = False
         self.completed = False
         self.run_dict = run_dict
+        self.pi = pigpio.pi()
         
         ###### load and merge config files
         if user_hardware_config_file_path:
@@ -132,6 +139,10 @@ class Box:
             self.timing.start_timing()
         self.setup_complete = True
     
+    def start_and_trigger(self, obj):
+        self.timing.start_timing()
+        obj.trigger()
+        
     def generate_output_fname(self):
         vole = self.run_dict['vole']
         day = self.run_dict['day']

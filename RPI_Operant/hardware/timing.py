@@ -141,7 +141,7 @@ class Phase:
             time.sleep(0.1)
 
 class Timestamp: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
+    def __init__(self, timestamp_manager, event_descriptor, modifiers = None, print_to_screen = True): 
         
         
         self.timestamp_manager = timestamp_manager 
@@ -149,7 +149,7 @@ class Timestamp:
         self.round = timestamp_manager.timing.round # round number that event occurred during 
         self.round_start_time = timestamp_manager.timing.round_start_time
         self.phase_initialized = timestamp_manager.timing.current_phase.name if timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name
-        
+        self.print_to_screen = print_to_screen
         
         self.round_initialized = timestamp_manager.timing.round
         if modifiers:

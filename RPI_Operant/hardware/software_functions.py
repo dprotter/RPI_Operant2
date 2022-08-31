@@ -35,6 +35,7 @@ class ScreenPrinter:
         
     
     def format_line(self, obj):
+        
         if 'latency' in obj.__dict__.keys():
             return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: {obj.latency}'
         else:
@@ -49,8 +50,10 @@ class ScreenPrinter:
             print(self.display_list)'''
         while not self.box.finished():
             if not self.print_queue.empty():
-                print(self.format_line(self.print_queue.get()))
-                print()
+                ob = self.print_queue.get()
+                if ob.print_to_screen:
+                    print(self.format_line(ob))
+                    print()
             else:
                 cd=self.format_phase_countdown()
                 if cd:

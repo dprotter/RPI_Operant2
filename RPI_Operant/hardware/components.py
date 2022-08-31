@@ -15,12 +15,7 @@ import inspect
 
 import os
 
-try:
-    if os.system('sudo lsof -i TCP:8888'):
-        os.system('sudo pigpiod')
-    import pigpio
-except:
-    print('pigpio not found')
+
 
 try:
     from adafruit_servokit import ServoKit
@@ -749,12 +744,8 @@ class PortDispenser(Dispenser):
                 return       
 class Output:
     
-    '''vvvvvvvvvvv
-    begin transition to pigpio and use pi.trigger()
-    where to put the pi object? probably attached to the box instance during init. move the fake pigpio.
-    
     '''
-    
+    '''
     
     
     def __init__(self, name, output_config_dict, box, simulated = False):
@@ -764,7 +755,7 @@ class Output:
         self.pullup_pulldown = self.config_dict['pullup_pulldown']
         self.pin = self.config_dict['pin']
         self.active = False
-        self.name = self.config_dict['name']
+        self.name = name
         
         if self.pullup_pulldown == 'pullup':    
             GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -796,17 +787,34 @@ class Output:
         GPIO.out(self.pin, 0)
         self.active = False
         
-    @thread_it     
+         
     def activate(self):
         self.switch_active()
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated_{self.name}', modifiers = {'ID':self.name})
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', modifiers = {'ID':self.name}, print_to_screen = False)
         
-    @thread_it     
+         
     def deactivate(self):
         self.switch_inactive()
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_deactivated_{self.name}', modifiers = {'ID':self.name})
-        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_deactivated', modifiers = {'ID':self.name}, print_to_screen = False)
     
+    @thread_it
+    def pulse_output(self, length = 1, pulse_string = None):
+        '''pulse an output pin. relies on time.sleep, so not super accurate for short pulses.
+        length = time in s to pulse (float, int)
+        pulse_string = string to be timestamped in the output file'''
+        timestamp_str = pulse_string if pulse_string else f'output_puslse_start_len_{length}'
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = timestamp_str, modifiers = {'ID':self.name})
+        
+        self.activate()
+        time.sleep(length)
+        self.deactivate()
+    
+    @thread_it
+    def trigger(self, length = 0.1):
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', modifiers = {'ID':self.name})
+        self.activate()
+        time.sleep(length)
+        self.deactivate()
 class Speaker:
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
@@ -824,7 +832,7 @@ class Speaker:
         if simulated:
             self.pi = self.FakeSpeaker()
         else:
-            self.pi = pigpio.pi()
+            self.pi = self.box.pi()
         self.click_on_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_on'].items()]
         self.click_off_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_off'].items()]
         self.tone_queue = queue.Queue()
@@ -911,33 +919,6 @@ class Speaker:
             length = self.tone_dict[tone_name]['length']
             self.tone_queue.put(Tone(hz, length, tone_name))
 
-    """def click_on(self):
-        '''play through a designated train of tones.'''
-        tt = ToneTrain('click_on')
-        for hz, length in self.click_on_train:
-            tt.add_tone(Tone(hz, length, 'click_on'))
-        self.tone_queue.put(tt)
-        time.sleep(tt.total_duration)
-        
-        
-    
-    def click_on_off(self):
-        '''play through a designated train of tones.'''
-        tt = ToneTrain('click')
-        for hz, length in self.click_on_train:
-            tt.add_tone(Tone(hz, length, 'click_on_off'))
-        for hz, length in self.click_off_train:
-            tt.add_tone(Tone(hz, length, 'click_on_off'))
-        self.tone_queue.put(tt)
-        time.sleep(tt.total_duration)
-    
-    def click_off(self):
-        '''play through a designated train of tones.'''
-        tt = ToneTrain('click_off')
-        for hz, length in self.click_off_train:
-            tt.add_tone(Tone(hz, length, 'click_off'))
-        self.tone_queue.put(tt)
-        time.sleep(tt.total_duration)"""
 
     @thread_it
     def click_on(self):

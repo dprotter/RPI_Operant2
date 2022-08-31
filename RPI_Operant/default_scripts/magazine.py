@@ -15,7 +15,10 @@ def run():
     box.setup(run_dict=RUNTIME_DICT, 
               user_config_file_path=USER_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
-              start_now=True, simulated = True)
+              start_now=False, simulated = True)
+    
+    output_object = box.outputs.miniscope_trigger
+    box.start_and_trigger(output_object)
     
     time.sleep(0.5)
     for i in range(1,3, 1):
