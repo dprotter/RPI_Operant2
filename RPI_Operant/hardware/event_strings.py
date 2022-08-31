@@ -18,6 +18,9 @@ class OperantEventStrings:
     
     tone_start = 'tone_start_'
     tone_stop = 'tone_stop_'
+
+    laser_on = 'laser_on_'
+    laser_off = 'laser_off_'
     
     pellet_dispensed = 'pellet_dispense'
     pellet_skip = 'pellet_skipped'

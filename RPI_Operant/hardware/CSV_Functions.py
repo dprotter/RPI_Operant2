@@ -2,7 +2,7 @@ from datetime import datetime
 import pandas as pd
 import importlib
 import os
-from hardware.software_functions import load_config_file
+from .software_functions import load_config_file
 import yaml
 import threading
 import time

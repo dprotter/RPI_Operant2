@@ -40,7 +40,18 @@ def run():
             laser1_pattern.trigger() # turns on laser 1, pattern i
             
             phase.end_phase()
-    
+        
+    if box.doors.door_1.is_open(): 
+        
+        time.sleep(3)
+
+        box.lasers.laser1.turn_on() 
+
+
+    #
+    # Other Syntax for starting certain Laser Pattern 
+    box.lasers.laser1.p1.trigger() 
+    box.lasers.laser1.p2.trigger()
 
         
     

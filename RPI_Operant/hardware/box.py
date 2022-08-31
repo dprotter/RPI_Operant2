@@ -17,13 +17,13 @@ import traceback
 
 # from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
 
-from hardware.timing import TimeManager, TimestampManager
+from .timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
 import queue
 import time
 import datetime
-from hardware.software_functions import merge_config_files, load_config_file
-from hardware.components import Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
+from .software_functions import merge_config_files, load_config_file
+from .components import Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')

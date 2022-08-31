@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 import yaml
 import queue
-from hardware.components import thread_it
+from .components import thread_it
 
 def load_config_file(file):
     '''load a config yaml file and return the resulting dict'''

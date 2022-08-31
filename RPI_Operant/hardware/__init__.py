@@ -1,1 +1,1 @@
-from hardware import box, CSV_Functions, components, event_strings, software_functions
+from . import box, CSV_Functions, components, event_strings, software_functions

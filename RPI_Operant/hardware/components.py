@@ -6,11 +6,11 @@ try:
     import RPi.GPIO as GPIO
 except:
     print('RPi.GPIO not found')
-    from hardware.Fake_GPIO import Fake_GPIO
+    from .Fake_GPIO import Fake_GPIO
     GPIO = Fake_GPIO()
 import queue
 import sys
-from hardware.event_strings import OperantEventStrings as oes
+from .event_strings import OperantEventStrings as oes
 import inspect
 
 import os
@@ -766,7 +766,6 @@ class Laser:
             self.pi = pigpio.pi()
 
         self.patterns = self._setup_laser_patterns() # creates Cycle objects and sets as attributes for all the patterns defined in the yaml file so we can reference them by name. Also returns a list of all of the string names of the patterns to allow us to iterate thru all the patterns if desired.  
-    
 
     class SimulatedPiConnection: 
         def set_PWM_dutycycle(self, pin, dc):
@@ -806,20 +805,19 @@ class Laser:
     def turn_on(self): 
         ''' turns laser on '''
         print(f'{self.name} On')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on, modifiers = {'ID':self.name})
         self.on = True 
         self.pi.set_PWM_dutycycle(self.pin, 3.3)
+
     
     def turn_off(self): 
         ''' turns laser off '''
         print(f'{self.name} Off')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off, modifiers = {'ID':self.name})        
         self.on = False
         self.pi.set_PWM_dutycycle(self.pin, 0)
     
     
-
-        
-
-
 class Speaker:
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
