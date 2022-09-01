@@ -7,8 +7,8 @@ experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'lever_1_active':1, 'lever_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
 # USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 # USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
-USER_HARDWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
+USER_HARDWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 box = Box()
 def run():
@@ -34,7 +34,6 @@ def run():
     lever_2 = box.levers.lever_2
     speaker_2 = box.speakers.speaker_2
     dispenser_2 = box.port_dispensers.dispenser_2
-    
     dispenser_3 = box.port_dispensers.dispenser_3
     
     if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:

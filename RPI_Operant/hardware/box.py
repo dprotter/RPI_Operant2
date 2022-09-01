@@ -66,6 +66,7 @@ class Box:
         else:
             self.config = load_config_file(DEFAULT_HARDWARE_CONFIG)
         
+
         if user_software_config_file_path:
             self.software_config = load_config_file(user_software_config_file_path)
         else:
