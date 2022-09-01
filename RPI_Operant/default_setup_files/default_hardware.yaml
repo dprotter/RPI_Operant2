@@ -71,10 +71,11 @@ dispensers:
     pullup_pulldown: pullup
     dispense_timeout: 3
 
+
 outputs:
   round_LED:
     pin: 100
-    pullup_pulldown: pulldown
+    pullup_pulldown: pulldown 
 
   event_LED:
     pin: 100

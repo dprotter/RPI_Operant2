@@ -521,7 +521,7 @@ class Dispenser:
         self.sensor.pressed = False
     
     @thread_it
-    def dispense(self):
+    def dispense(self, on_retrieve_events = None):
         ''''''
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
@@ -544,16 +544,20 @@ class Dispenser:
                     self.pellet_state = True
                     pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, 
                                                                             modifiers = {'ID':self.name})
-                    self.monitor_pellet(pellet_latency)
+                    self.monitor_pellet(pellet_latency, on_retrieve_events = on_retrieve_events)
                     return None
             
     
     @thread_it
-    def monitor_pellet(self, pellet_latency):
+    def monitor_pellet(self, pellet_latency, on_retrieve_events = None):
         '''track when a pellet is retrieved'''
         while not self.box.finished():
             if not self.sensor_pressed:
                 pellet_latency.submit()
+                if on_retrieve_events:
+                    for event in on_retrieve_events:
+                        event()
+                
                 
 class PositionalDispenser:
 
@@ -856,8 +860,14 @@ class Output:
         self.activate()
         time.sleep(length)
         self.deactivate()
-        
-class Speaker:
+    
+    def prepare_pulse(self, length, pulse_string = None):
+        'create a premade pulse object that can be passed to on-press-event lists'
+        return lambda: self.pulse_output(length, pulse_string)  
+   
+    def prepare_trigger(self, length, pulse_string = None):
+        'create a premade trigger object that can be passed to on-press-event lists'
+        return lambda: self.trigger(length, pulse_string)
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
             '''print(f'speaker set to {hz} hz')'''

@@ -17,47 +17,38 @@ def run():
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=False, simulated = True)
     
-    output_object = box.outputs.miniscope_trigger
-    box.start_and_trigger(output_object)
+    #this could be
+    trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
+    lever = box.levers.food
+    dispenser = box.dispensers.food
+    box.start_and_trigger([trigger_object])
     
-    event_output = box.outputs.event_LED
     
-    time.sleep(0.5)
-    for i in range(1,3, 1):
-        box.timing.new_round()
-        phase = box.timing.new_phase(f'test_{i}', length =30)
-        press_latency = box.levers.door_1.extend()
+    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_press_food')
+    retrieve_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.7, pulse_string = 'pellet_retrieved')
+ 
+    for i in range(1,box.software_config['values']['rounds']+1, 1):
+        box.timing.new_round(length = box.software_config['values']['round_length'])
         
-        fut = box.levers.door_1.wait_for_n_presses(n=4, latency_obj = press_latency)
+        phase = box.timing.new_phase('lever_out', box.software_config['values']['lever_out'])
+        press_latency = box.levers.food.extend()
+        
+        fut = lever.wait_for_n_presses(n=4, latency_obj = press_latency, on_press_events = [press_led_pulse])
         while phase.active():
-            if box.levers.door_1.presses_reached:
-                print('wowee!')
-                box.levers.door_1.retract()
-                phase.finished()
-                reward = box.timing.new_phase(name = 'social reward', length=2)
-                box.doors.door_1.open()
-                time.sleep(1)
-                box.doors.door_1.simulate_open()
-                
-            else:
-                val = random.random()
-                time.sleep(1*val)
-                box.levers.door_1.simulate_pressed()
-                time.sleep(0.5*val)
-                box.levers.door_1.simulate_unpressed()
-                time.sleep(1*val)
+            if lever.presses_reached:
+                lever.retract()
+                dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])
+                break
+        phase.wait()
+        phase = box.timing.new_phase('lever_out_pt2', box.software_config['values']['lever_pt2'])
+        if not lever.presses_reached:
+            dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])
         
-        while reward.active():
-            '''wait'''
         
-         #only setting wait = false here so that we can simulate the closing.
-        box.doors.door_1.close(wait = False) 
-        time.sleep(0.5)
-        box.doors.door_1.simulate_closed()
-        iti = box.timing.new_phase(name='ITI', length = 1)
-        while iti.active():
-            '''wait'''
-    
+        phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
+        
+        box.timing.wait_for_round_finish()
+        phase.end_phase()
     
     
     box.shutdown()

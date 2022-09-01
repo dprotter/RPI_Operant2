@@ -139,9 +139,16 @@ class Box:
             self.timing.start_timing()
         self.setup_complete = True
     
-    def start_and_trigger(self, obj):
+    def start_and_trigger(self, obj_list):
+        '''start timing and subsequently call any functions passed within obj list.
+           be cautious with things that must be triggered very close to initiation, as functions that 
+           take considerable time to run will throw off timing, and the list will be run in the order 
+           it was passed. 
+           obj_list: list of functions to be run
+        '''
         self.timing.start_timing()
-        obj.trigger()
+        for obj in obj_list:
+            obj()
         
     def generate_output_fname(self):
         vole = self.run_dict['vole']
