@@ -20,6 +20,8 @@ def run():
     output_object = box.outputs.miniscope_trigger
     box.start_and_trigger(output_object)
     
+    event_output = box.outputs.event_LED
+    
     time.sleep(0.5)
     for i in range(1,3, 1):
         box.timing.new_round()
