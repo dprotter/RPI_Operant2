@@ -4,7 +4,7 @@ import time
 import random
 from pathlib import Path
 experiment_name = Path(__file__).stem
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'lever_1_active':1, 'lever_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'levers.door_1_active':1, 'levers.door_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
 # USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
 # USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
 USER_HARDWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
@@ -24,57 +24,70 @@ def run():
     time.sleep(0.5)
     
         
-    if RUNTIME_DICT['lever_1_active'] == 1:
-        print('lever_1 is active')
-    lever_1 = box.levers.lever_1
-    speaker_1 = box.speakers.speaker_1
-    dispenser_1 = box.port_dispensers.dispenser_1
-    if RUNTIME_DICT['lever_2_active'] == 1:
-        print('lever_2 is active')
-    lever_2 = box.levers.lever_2
-    speaker_2 = box.speakers.speaker_2
-    dispenser_2 = box.port_dispensers.dispenser_2
-    dispenser_3 = box.port_dispensers.dispenser_3
+    if RUNTIME_DICT['levers.door_1_active'] == 1:
+        print('levers.door_1 is active')
+    lever_door_1 = box.levers.door_1
+    speaker1 = box.speakers.speaker1
+    positional_dispenser_1 = box.positional_dispensers.positional_dispenser_1
+    if RUNTIME_DICT['levers.door_2_active'] == 1:
+        print('levers.door_2 is active')
+    lever_door_2 = box.levers.door_2
     
-    if RUNTIME_DICT['lever_1_active'] == 0 and RUNTIME_DICT['lever_2_active'] == 0:
+    if RUNTIME_DICT['levers.door_1_active'] == 0 and RUNTIME_DICT['levers.door_2_active'] == 0:
         print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified!\n^^^^^^^^^\n\n')
     
     try:
-        pellets_dispenser_1_remaining = dispenser_1.config_dict['max_pellets']
-        pellets_dispenser_2_remaining = dispenser_2.config_dict['max_pellets']
-        pellets_dispenser_3_remaining = dispenser_2.config_dict['max_pellets']
         
-        for i in range(1,box.software_config['values']['rounds']+1, 1):
+        for i in range(box.software_config['values']['rounds']):
             
 
-            
             box.timing.new_round(length = box.software_config['values']['round_length'])
+
+            print('New Phase, new Pattern')
+            laser1_pattern = box.lasers.laser1.patterns[i]
+            phase = box.timing.new_phase(f'{box.lasers.laser1.name}, {laser1_pattern.name}', length = laser1_pattern.total_time) # iterate thru phases 
+
+            
+
+            # iterate both phase and laser pattern 
+
+            while phase.active(): 
+    
+                laser1_pattern.trigger() # turns on laser 1, pattern i
+                
+                phase.end_phase()
+            
+        if box.doors.door_1.is_open(): 
+            
+            time.sleep(3)
+
+            box.lasers.laser1.turn_on() 
+
+            return 
+            #### #### #### #### 
+            #### #### #### #### 
+            #### #### #### #### 
+
             lever_phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
            
             
-            press_latency_1 = lever_1.extend()
-            lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1)
+            press_latency_1 = lever_door_1.extend()
+            lever_door_1.wait_for_n_presses(n=1, latency_obj = press_latency_1)
             
-            press_latency_2 = lever_2.extend()
-            lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
+            press_latency_2 = lever_door_2.extend()
+            lever_door_2.wait_for_n_presses(n=1, latency_obj = press_latency_2)
             
 
             while lever_phase.active():
                 
-                if lever_1.presses_reached:
+                if lever_door_1.presses_reached:
                     
-                    lever_1.retract()
-                    lever_2.retract()
+                    lever_door_1.retract()
+                    lever_door_2.retract()
                     lever_phase.end_phase()
-                    if RUNTIME_DICT['lever_1_active'] == 1:
-                        speaker_2.play_tone(tone_name = 'pellet_tone')
-                        dispenser_2.dispense()
+                    if RUNTIME_DICT['levers.door_1_active'] == 1:
                         pellets_dispenser_2_remaining -=1
-                        if RUNTIME_DICT['reward_focal_lever_1']:
-                            timeout = box.timing.new_timeout(box.software_config['values']['focal_reward_lever_1_delay'])
-                            timeout.wait()
-                            dispenser_3.dispense()
-                            pellets_dispenser_3_remaining -= 1
+
                 
                 elif lever_2.presses_reached:
                     lever_1.retract()
@@ -109,13 +122,12 @@ def run():
                    
 
         box.shutdown()
+
     except KeyboardInterrupt:
-        speaker_1.turn_off()
-        dispenser_1.stop_servo()
-        lever_1.retract()
-        speaker_2.turn_off()
-        dispenser_2.stop_servo()
-        lever_2.retract()
+        speaker1.turn_off()
+        positional_dispenser_1.stop_servo()
+        lever_door_1.retract()
+        lever_door_2.retract()
         box.force_shutdown()
 
 if __name__ == '__main__':

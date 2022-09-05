@@ -785,10 +785,12 @@ class Laser:
         def trigger(self): 
             '''turn the laser on/off according to the cycle attributes'''
             for i in range(self.repeat): 
-                self.laser_object.turn_on()
+                timestamp_on = self.laser_object.turn_on()
                 time.sleep(self.high_time)
-                self.laser_object.turn_off()
+                timestamp_on.submit()
+                timestamp_off = self.laser_object.turn_off()
                 time.sleep(self.low_time)
+                timestamp_off.submit()
             
             return 
         
@@ -805,17 +807,19 @@ class Laser:
     def turn_on(self): 
         ''' turns laser on '''
         print(f'{self.name} On')
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on, modifiers = {'ID':self.name})
+        t = self.box.timestamp_manager.new_latency(description = oes.laser_on, modifiers = {'ID':self.name})
         self.on = True 
         self.pi.set_PWM_dutycycle(self.pin, 3.3)
+        return t 
 
     
     def turn_off(self): 
         ''' turns laser off '''
         print(f'{self.name} Off')
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off, modifiers = {'ID':self.name})        
+        t = self.box.timestamp_manager.new_latency(description = oes.laser_off, modifiers = {'ID':self.name})        
         self.on = False
         self.pi.set_PWM_dutycycle(self.pin, 0)
+        return t
     
     
 class Speaker:

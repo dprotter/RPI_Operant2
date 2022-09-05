@@ -4,16 +4,22 @@ output_path: 'default'
 checks:
   save_timestamps: True
 
+values:
+  rounds: 3
+  delay_by_day: [0]
+  delay_default: 0
+  round_length: 10
+  
 laser_patterns: 
   # all lasers will recieve a copy of the patterns defined here. Can access in scripts to execute in any order. 
   p1: 
     on_seconds: 5 
     off_seconds: 5
-    repeat: 2
+    repeat: 3
   p2: 
     on_seconds: 3 
     off_seconds: 3
-    repeat: 1
+    repeat: 2
   p3: 
     on_seconds: 1
     off_seconds: 1
