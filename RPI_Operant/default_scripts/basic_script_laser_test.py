@@ -40,25 +40,39 @@ def run():
         
         for i in range(box.software_config['values']['rounds']):
             
-
+            print(f'ROUND {i+1}')
             box.timing.new_round(length = box.software_config['values']['round_length'])
 
-            print('New Phase, new Pattern')
-            laser1_pattern = box.lasers.laser1.patterns[i]
-            laser2_pattern = box.lasers.laser2.patterns[i]
-            phase = box.timing.new_phase(f'{box.lasers.laser1.name}, {laser1_pattern.name}', length = laser1_pattern.total_time) # iterate thru phases 
-            phase2 = box.timing.new_phase(f'{box.lasers.laser2.name}, {laser2_pattern.name}', length = laser2_pattern.total_time) 
+            phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
+            # # Notes on Laser Script Syntax # # 
+            # to iterate thru every laser pattern, loop thru any laser object's pattern list ( e.g. for pattern in box.lasers.laser1.patterns )
+            # to add logic for when we should trigger playing a certain pattern, we can use the phase functionality ( like while phase.active, check for a certain condition that if met will cause us to exit from the phase early and enter a new phase)
             
-
-            # iterate both phase and laser pattern 
-
+            lever_presses_met = False
             while phase.active(): 
+                # Wait for an event here!! Add an if statement!! 
+                #   use this for logic if we are waiting for some event to trigger the phase exit 
+                #   e.g. if n number of lever presses is met, we open door and trigger a certain pattern on a laser! 
+                lever_presses_met = True 
+                if lever_presses_met: 
+                    phase.end_phase() # Early exit 
+
+            
+            if lever_presses_met: # if True, we know that we encountered an event that caused us to exit the previous phase early. ( probs recieving enough lever presses ! )  
+                phase = box.timing.new_phase(f'all lasers running pattern {box.lasers.laser1.p1.name}', length = box.lasers.laser1.p1.total_time) # iterate thru phases 
     
-                laser1_pattern.trigger() # turns on laser 1, pattern i
-                laser2_pattern.trigger()
+                box.lasers.laser1.p1.trigger() # turns on laser 1, pattern i
+                box.lasers.laser2.p1.trigger()
+
+                phase.wait()
                 
                 phase.end_phase()
-                phase2.end_phase()
+
+            else: 
+                print('lever presses was not met')
+                # did not recieve enough lever presses. 
+                # Any logic for how we want to react to this case goes here. 
+                pass    
             
             time.sleep(1)
             

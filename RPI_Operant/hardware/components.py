@@ -778,19 +778,18 @@ class Laser:
             self.low_time = low_time # seconds Laser is set to LOW
             self.repeat = repeat # number of times we repeat this HIGH/LOW cycle 
             self.laser_object = laser_object
+            self.box = laser_object.box
 
             self.total_time = (high_time + low_time)*repeat
 
-        
+        @thread_it
         def trigger(self): 
             '''turn the laser on/off according to the cycle attributes'''
             for i in range(self.repeat): 
-                timestamp_on = self.laser_object.turn_on()
+                latency_obj = self.laser_object.turn_on() # submits a normal timestampt and creates the latency timestamp for submition at a later time
                 time.sleep(self.high_time)
-                timestamp_on.submit()
-                timestamp_off = self.laser_object.turn_off()
+                self.laser_object.turn_off(latency_obj = latency_obj) # submits a normal timestamp and submits the latency timestamp 
                 time.sleep(self.low_time)
-                timestamp_off.submit()
             
             return 
         
@@ -807,19 +806,22 @@ class Laser:
     def turn_on(self): 
         ''' turns laser on '''
         print(f'{self.name} On')
-        t = self.box.timestamp_manager.new_latency(description = oes.laser_on, modifiers = {'ID':self.name})
+        latency_obj = self.box.timestamp_manager.new_latency(description = oes.laser_on, modifiers = {'ID':self.name})
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on, modifiers = {'ID':self.name})
         self.on = True 
         self.pi.set_PWM_dutycycle(self.pin, 3.3)
-        return t 
+        return latency_obj
 
     
-    def turn_off(self): 
+    def turn_off(self, latency_obj = None): 
         ''' turns laser off '''
         print(f'{self.name} Off')
-        t = self.box.timestamp_manager.new_latency(description = oes.laser_off, modifiers = {'ID':self.name})        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off, modifiers = {'ID':self.name})        
         self.on = False
         self.pi.set_PWM_dutycycle(self.pin, 0)
-        return t
+        if latency_obj is not None: 
+            latency_obj.submit() # sets time of the latency from when we turned the laser on until right when we turn the laser off 
+        return 
     
     
 class Speaker:
