@@ -74,13 +74,14 @@ dispensers:
 
 outputs:
   round_LED:
-    pin: 100
-    pullup_pulldown: pulldown 
+    type: HAT
+    channel: 5
 
   event_LED:
-    pin: 100
-    pullup_pulldown: pulldown
+    type: HAT
+    channel: 6
 
   miniscope_trigger:
-    pin: 100
+    type: GPIO
+    pin: 20
     pullup_pulldown: pulldown

@@ -26,14 +26,17 @@ except:
 
 def get_servo(ID, servo_type):
     '''take a servo positional ID on the adafruit board, and the servo type, and return a servo_kit obj'''
-
-    if servo_type not in ('positional', 'continuous'):
-        raise KeyError(f'servo type was passed as {servo_type}, must be either "positional" or "continuous"')
+    ACCEPTABLE_TYPES = ('positional', 'continuous', 'output')
+    if servo_type not in ACCEPTABLE_TYPES:
+        raise KeyError(f'servo type was passed as {servo_type}, must be in:\n{ACCEPTABLE_TYPES}')
 
     if servo_type == 'positional':
         return SERVO_KIT.servo[ID]
-    else:
+    elif servo_type == 'continuous':
         return SERVO_KIT.continuous_servo[ID] 
+    else:
+        return SERVO_KIT.channel[ID]
+
 
 
 def thread_it(func):
@@ -791,42 +794,61 @@ class Output:
         '''make a dispenser'''
         self.box = box
         self.config_dict = output_config_dict
-        self.pullup_pulldown = self.config_dict['pullup_pulldown']
-        self.pin = self.config_dict['pin']
         self.active = False
         self.name = name
-        
-        if self.pullup_pulldown == 'pullup':    
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            self.switch_active = self.set_active_PU_UP()
-            self.switch_inactive = self.set_inactive_PU_UP()
+        self.pullup_pulldown = self.config_dict['pullup_pulldown']
+        if self.config_dict['type'] == 'GPIO':
+            self.pin = self.config_dict['pin']
             
-        elif self.pullup_pulldown == 'pulldown':
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            self.switch_active = self.set_active_PU_DOWN()
-            self.switch_inactive = self.set_inactive_PU_DOWN()
-        
-        else:
-            raise Exception(f'Output {self.name} does not have pullup_pulldown set')
+            
+            if self.pullup_pulldown == 'pullup':    
+                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                self.switch_active = self.set_active_PU_UP()
+                self.switch_inactive = self.set_inactive_PU_UP()
+                
+            elif self.pullup_pulldown == 'pulldown':
+                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+                self.switch_active = self.set_active_PU_DOWN()
+                self.switch_inactive = self.set_inactive_PU_DOWN()
+            
+            else:
+                raise Exception(f'Output {self.name} does not have pullup_pulldown set')
+            
+        elif self.config_dict['type'] == 'HAT':
 
-   
+            self.channel = SERVO_KIT._channels[self.channel]
+            self.switch_active = self.set_active_HAT()
+            self.switch_inactive = self.set_inactive_HAT(0)
+    
+    ################################################
+    ############## HAT ###############
+    def set_active_HAT(self):
+        self.channel.set_duty_cycle(0xffff)
+        
+    def set_inactive_HAT(self):
+        self.chanel.set_duty_cycle(0)
+        
+    ############## PU ###############
     def set_active_PU_UP(self):
         GPIO.out(self.pin, 0)
         self.active = True
-        
-    def set_active_PU_DOWN(self):
-        GPIO.out(self.pin, 1)
-        self.active = True
-        
+
     def set_inactive_PU_UP(self):
         GPIO.out(self.pin, 1)
         self.active = False
         
+        
+    ############## PD ###############    
+    def set_active_PU_DOWN(self):
+        GPIO.out(self.pin, 1)
+        self.active = True
+        
     def set_inactive_PU_DOWN(self):
         GPIO.out(self.pin, 0)
         self.active = False
-        
+    ################################################    
          
+        
     def activate(self):
         self.switch_active()
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', 
@@ -868,6 +890,11 @@ class Output:
     def prepare_trigger(self, length, pulse_string = None):
         'create a premade trigger object that can be passed to on-press-event lists'
         return lambda: self.trigger(length, pulse_string)
+    
+    
+    
+    
+    
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
             '''print(f'speaker set to {hz} hz')'''
