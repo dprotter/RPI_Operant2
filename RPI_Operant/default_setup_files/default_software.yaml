@@ -2,7 +2,7 @@
 output_path: 'default'
 
 checks:
-  save_timestamps: True
+  save_timestamps: False
 
 values:
   rounds: 3

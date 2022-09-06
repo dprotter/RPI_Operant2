@@ -212,9 +212,7 @@ class TimestampManager:
         # Round and start time are updated each new round 
         self.timing = timing_obj
         self.save_timestamps = save_timestamps
-        self.screen = ScreenPrinter(self.box)
-
-    
+        self.screen = ScreenPrinter(self.box)    
 
     
     def create_save_file(self):
@@ -253,6 +251,7 @@ class TimestampManager:
 
                     #open file here to prevent repeated opening and closing
                     with open(self.save_path, 'a') as file:
+
                         csv_writer = csv.writer(file, delimiter = ',')
                         while not self.queue.empty():
 
