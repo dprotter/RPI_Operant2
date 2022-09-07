@@ -817,7 +817,7 @@ class Output:
             
         elif self.config_dict['type'] == 'HAT':
 
-            self.channel = SERVO_KIT._pca[self.config_dict['channel']]
+            self.channel = SERVO_KIT._pca.channels[self.config_dict['channel']]
             self.switch_active = self.set_active_HAT()
             self.switch_inactive = self.set_inactive_HAT()
     
