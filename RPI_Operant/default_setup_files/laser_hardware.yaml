@@ -1,0 +1,82 @@
+lasers: 
+  laser1: 
+    pin: 20
+    pullup_pulldown: pulldown
+
+speakers:
+  speaker1:
+    pin: 21
+  #speaker2:
+  #  pin: 22
+
+doors:
+  door_1:
+    servo: 0
+    stop: 0.05
+    close: -0.1
+    open: 0.8
+    open_time: 1.6
+    override_open_pin: 24
+    override_close_pin: 25
+    state_switch: 4
+    servo_type: continuous
+    close_timeout: 5
+ 
+  door_2:
+    servo: 13
+    stop: 0.03
+    close: 0.8
+    open: -0.2
+    open_time: 1.6
+    override_open_pin: 6
+    override_close_pin: 4
+    state_switch: 17
+    servo_type: continuous
+    close_timeout: 5
+
+levers:
+  food:
+    servo: 4
+    extended: 30
+    retracted: 110
+    pin: 19
+    pullup_pulldown: pullup
+    servo_type: positional
+    target_name: positional_dispenser_1
+    target_type: positional_dispenser
+    
+  door_1:
+    servo: 2
+    extended: 32
+    retracted: 110
+    pin: 18
+    pullup_pulldown: pullup
+    target_name: door_1
+    target_type: door
+    servo_type: positional
+    interpress_interval: 0.25
+  
+  door_2:
+    servo: 12
+    extended: 10
+    retracted: 90
+    pin: 22
+    pullup_pulldown: pullup
+    target_name: door_2
+    target_type: door
+    servo_type: positional
+    interpress_interval: 0.25
+
+positional_dispensers:
+  positional_dispenser_1:
+    servo: 1
+    servo_type: positional 
+    dispense: 0.075
+    stop: 0
+    sensor_pin: 16
+    pullup_pulldown: pullup
+    dispense_timeout: 3
+
+    start: 1
+    n_spots: 1
+
