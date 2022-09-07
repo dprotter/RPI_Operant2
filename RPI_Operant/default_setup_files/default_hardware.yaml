@@ -41,7 +41,7 @@ levers:
   food:
     servo: 4
     extended: 30
-    retracted: 105
+    retracted: 90
     pin: 19
     pullup_pulldown: pullup
     servo_type: positional
@@ -50,8 +50,8 @@ levers:
     
   door_1:
     servo: 2
-    extended: 20
-    retracted: 100
+    extended: 30
+    retracted: 90
     pin: 18
     pullup_pulldown: pullup
     target_name: door_1
@@ -61,8 +61,8 @@ levers:
   
   door_2:
     servo: 12
-    extended: 20
-    retracted: 100
+    extended: 30
+    retracted: 90
     pin: 22
     pullup_pulldown: pullup
     target_name: door_2
