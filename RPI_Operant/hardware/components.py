@@ -824,10 +824,10 @@ class Output:
     ################################################
     ############## HAT ###############
     def set_active_HAT(self):
-        self.channel.set_duty_cycle(0xffff)
+        self.channel.duty_cycle = 0xffff
         
     def set_inactive_HAT(self):
-        self.chanel.set_duty_cycle(0)
+        self.chanel.duty_cycle = 0
         
     ############## PU ###############
     def set_active_PU_UP(self):
