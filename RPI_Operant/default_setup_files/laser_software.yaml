@@ -13,7 +13,6 @@ values:
   
 laser_patterns: 
   # all lasers will recieve a copy of the patterns defined here. Can access in scripts to execute in any order. 
-
   interval_5_sec: 
     on_seconds: 5 
     off_seconds: 0

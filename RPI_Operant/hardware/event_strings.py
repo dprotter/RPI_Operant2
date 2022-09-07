@@ -21,6 +21,7 @@ class OperantEventStrings:
 
     laser_on = 'laser_on_'
     laser_off = 'laser_off_'
+    laser_on_latency = 'laser_on_latency'
     
     pellet_dispensed = 'pellet_dispense'
     pellet_skip = 'pellet_skipped'

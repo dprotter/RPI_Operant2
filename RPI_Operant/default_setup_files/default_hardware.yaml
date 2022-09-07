@@ -1,16 +1,16 @@
-lasers: 
-  laser1: 
-    pin: -1
-    pullup_pulldown: pulldown
-  laser2: 
-    pin: -1
-    pullup_pulldown: pulldown
-
 speakers:
   speaker1:
     pin: 21
-  #speaker2:
-  #  pin: 22
+  speaker2:
+    pin: 22
+
+beams: 
+  door1_ir: 
+    pin: 12
+    pullup_pulldown: pullup
+  door2_ir: 
+    pin: 13
+    pullup_pulldown: pullup
 
 doors:
   door_1:
@@ -32,7 +32,7 @@ doors:
     open: -0.2
     open_time: 1.6
     override_open_pin: 6
-    override_close_pin: 4
+    override_close_pin: 5
     state_switch: 17
     servo_type: continuous
     close_timeout: 5
@@ -42,7 +42,7 @@ levers:
     servo: 4
     extended: 30
     retracted: 90
-    pin: 19
+    pin: 27
     pullup_pulldown: pullup
     servo_type: positional
     target_name: positional_dispenser_1

@@ -4,7 +4,7 @@ import time
 import random
 from pathlib import Path
 experiment_name = Path(__file__).stem
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'levers.door_1_active':1, 'levers.door_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 
 # # For Running on the Raspberry Pi: 
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_hardware.yaml'
@@ -24,22 +24,10 @@ def run():
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True, 
-              simulated=True)
+              simulated=False)
     time.sleep(0.5)
     
         
-    if RUNTIME_DICT['levers.door_1_active'] == 1:
-        print('levers.door_1 is active')
-    lever_door_1 = box.levers.door_1
-    speaker1 = box.speakers.speaker1
-    positional_dispenser_1 = box.positional_dispensers.positional_dispenser_1
-    if RUNTIME_DICT['levers.door_2_active'] == 1:
-        print('levers.door_2 is active')
-    lever_door_2 = box.levers.door_2
-    
-    if RUNTIME_DICT['levers.door_1_active'] == 0 and RUNTIME_DICT['levers.door_2_active'] == 0:
-        print('\n\nvvvvvvvv\nwarning!!!! no active levers have been specified!\n^^^^^^^^^\n\n')
-    
     try:
         
         for i in range(box.software_config['values']['rounds']):
@@ -63,7 +51,7 @@ def run():
 
             
             if lever_presses_met: # if True, we know that we encountered an event that caused us to exit the previous phase early. ( probs recieving enough lever presses ! )  
-                phase = box.timing.new_phase(f'all lasers running pattern {box.lasers.laser1.interval_5_sec.name}', length = box.lasers.laser1.interval_5_sec.total_time) # iterate thru phases 
+                phase = box.timing.new_phase(f'{box.lasers.laser1.interval_5_sec.name}', length = box.lasers.laser1.interval_5_sec.total_time) # iterate thru phases 
     
                 box.lasers.laser1.interval_5_sec.trigger() # turns on laser 1, pattern i
 
@@ -86,10 +74,12 @@ def run():
         box.shutdown()
 
     except KeyboardInterrupt:
+        print('keyboard interrupt, shutting down')
         speaker1.turn_off()
         positional_dispenser_1.stop_servo()
         lever_door_1.retract()
         lever_door_2.retract()
+        laser1.turn_off()
         box.force_shutdown()
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ import sys
 
 try:
     import RPi.GPIO as GPIO
+    GPIO.setmode(GPIO.BCM)
 except:
     print('RPi.GPIO not found')
     from .Fake_GPIO import Fake_GPIO
@@ -379,7 +380,7 @@ class Door:
 
 
         oc_button_dict = { 
-            'pin':self.config_dict['override_open_pin'],
+            'pin':self.config_dict['override_close_pin'],
             'pullup_pulldown':'pullup'
         }
         self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', oc_button_dict, self.box)
@@ -760,16 +761,12 @@ class Laser:
         self.name = name 
         self.pin = speaker_dict['pin'] # PWM (pulse width modulation) pin number 
         self.on = False # current on/off state of the Laser
-        if simulated:
-            self.pi = self.SimulatedPiConnection()
-        else:
-            self.pi = pigpio.pi()
-
+        # self.gpio = GPIO.setup(self.pin, GPIO.OUT)
         self.patterns = self._setup_laser_patterns() # creates Cycle objects and sets as attributes for all the patterns defined in the yaml file so we can reference them by name. Also returns a list of all of the string names of the patterns to allow us to iterate thru all the patterns if desired.  
 
     class SimulatedPiConnection: 
-        def set_PWM_dutycycle(self, pin, dc):
-            '''print(f'speaker set to {dc} duty cycle')'''
+        def output(self, pin_num, zero_or_one):
+            '''print(f'laser{self.name} set to {zero_or_one}')'''
 
     class Cycle: 
         def __init__(self, name, high_time, low_time, repeat, laser_object): 
@@ -806,10 +803,11 @@ class Laser:
     def turn_on(self): 
         ''' turns laser on '''
         print(f'{self.name} On')
-        latency_obj = self.box.timestamp_manager.new_latency(description = oes.laser_on, modifiers = {'ID':self.name})
+        latency_obj = self.box.timestamp_manager.new_latency(description = oes.laser_on_latency, modifiers = {'ID':self.name})
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on, modifiers = {'ID':self.name})
         self.on = True 
-        self.pi.set_PWM_dutycycle(self.pin, 3.3)
+        GPIO.setup(self.pin, GPIO.OUT)
+        GPIO.output(self.pin, GPIO.HIGH) # sets to 3.3V
         return latency_obj
 
     
@@ -818,7 +816,7 @@ class Laser:
         print(f'{self.name} Off')
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off, modifiers = {'ID':self.name})        
         self.on = False
-        self.pi.set_PWM_dutycycle(self.pin, 0)
+        GPIO.output(self.pin, GPIO.LOW) # sets to 0.0V
         if latency_obj is not None: 
             latency_obj.submit() # sets time of the latency from when we turned the laser on until right when we turn the laser off 
         return 
@@ -1047,7 +1045,7 @@ class ToneTrain(Tone):
 
 class Beam:
     
-    def __init__(self, name, beam_config_dict, box):
+    def __init__(self, name, beam_config_dict, box, simulated = False):
         
         
         self.config_dict = beam_config_dict

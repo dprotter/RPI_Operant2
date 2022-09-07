@@ -14,6 +14,8 @@ import importlib.util
 
 import os
 import traceback
+import signal
+import sys
 
 # from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
 
@@ -23,7 +25,7 @@ import queue
 import time
 import datetime
 from .software_functions import merge_config_files, load_config_file
-from .components import Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
+from .components import Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser, Beam
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
@@ -38,7 +40,8 @@ COMPONENT_LOOKUP = {
                     'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
                     'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
                     'speakers':{'component_class':Speaker, 'label':'speaker'}, 
-                    'lasers':{'component_class':Laser, 'label':'laser'}
+                    'lasers':{'component_class':Laser, 'label':'laser'}, 
+                    'beams': {'component_class':Beam, 'label':'beam'}
                     }
 
 
@@ -121,9 +124,15 @@ class Box:
         
         
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        
+        #
+        # Set Interrupt Handler for Clean Exit
+        #
+        signal.signal(signal.SIGINT, self._interrupt_handler) # Ctrl-C
+        signal.signal(signal.SIGTSTP, self._interrupt_handler) # Ctrl-Z
 
-
+        # 
+        # THREADING 
+        # 
         self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = True)
         
         #startup queue monitoring
@@ -303,6 +312,13 @@ class Box:
             for door in self.doors:
                 door.close()
 
+    
+    def _interrupt_handler(self, signal, frame): 
+        ''' catches interrupt, notifies threads, attempts a clean exit '''
+        print(f'(box.py, _interrupt_handler) Shutting Down')
+        self.force_shutdown() # shuts off all of the hardware 
+        sys.exit(0)
+
     def force_shutdown(self):
         if not self.timing.current_phase == None:
             self.timing.current_phase.end_phase()
@@ -320,6 +336,10 @@ class Box:
             l.retract()
         for speaker in self.speakers:
             speaker.set_off()
+        if hasattr(self, 'lasers'): # if lasers are in the box, shut off as well
+            for laser in self.lasers: 
+                laser.turn_off()
+
         
         print('monitor_workers complete')
         
