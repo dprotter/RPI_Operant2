@@ -827,7 +827,7 @@ class Output:
         self.channel.duty_cycle = 0xffff
         
     def set_inactive_HAT(self):
-        self.chanel.duty_cycle = 0
+        self.channel.duty_cycle = 0
         
     ############## PU ###############
     def set_active_PU_UP(self):
