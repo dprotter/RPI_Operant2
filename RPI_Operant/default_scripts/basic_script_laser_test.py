@@ -5,10 +5,14 @@ import random
 from pathlib import Path
 experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'levers.door_1_active':1, 'levers.door_2_active':1, 'reward_focal_lever_1':1, 'reward_focal_lever_2':1}
-# USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
-# USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
-USER_HARDWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
+
+# # For Running on the Raspberry Pi: 
+USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_cooperant_hardware.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/contingent_2_lever_test.yaml'
+
+# # For Running Locally: 
+# USER_HARDWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
+# USER_SOFTWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 box = Box()
 def run():
@@ -59,20 +63,22 @@ def run():
 
             
             if lever_presses_met: # if True, we know that we encountered an event that caused us to exit the previous phase early. ( probs recieving enough lever presses ! )  
-                phase = box.timing.new_phase(f'all lasers running pattern {box.lasers.laser1.p1.name}', length = box.lasers.laser1.p1.total_time) # iterate thru phases 
+                phase = box.timing.new_phase(f'all lasers running pattern {box.lasers.laser1.interval_5_sec.name}', length = box.lasers.laser1.interval_5_sec.total_time) # iterate thru phases 
     
-                box.lasers.laser1.p1.trigger() # turns on laser 1, pattern i
-                box.lasers.laser2.p1.trigger()
+                box.lasers.laser1.interval_5_sec.trigger() # turns on laser 1, pattern i
+                box.lasers.laser2.interval_5_sec.trigger()
 
                 phase.wait()
                 
                 phase.end_phase()
 
             else: 
+
                 print('lever presses was not met')
                 # did not recieve enough lever presses. 
                 # Any logic for how we want to react to this case goes here. 
                 pass    
+            
             
             time.sleep(1)
             
