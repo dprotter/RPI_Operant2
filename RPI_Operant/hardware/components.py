@@ -911,7 +911,7 @@ class Speaker:
         if simulated:
             self.pi = self.FakeSpeaker()
         else:
-            self.pi = self.box.pi()
+            self.pi = self.box.pi
         self.click_on_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_on'].items()]
         self.click_off_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_off'].items()]
         self.tone_queue = queue.Queue()
