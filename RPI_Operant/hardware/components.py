@@ -894,7 +894,7 @@ class Output:
     
     
     
-    
+class Speaker:  
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
             '''print(f'speaker set to {hz} hz')'''
