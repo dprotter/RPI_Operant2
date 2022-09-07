@@ -18,6 +18,7 @@ box.setup(run_dict=RUNTIME_DICT,
             start_now=True)
 
 for output in box.outputs:
+    print(f'testing output: {output.name}')
     for _ in range(4):
         output.activate()
         time.sleep(0.25)
