@@ -796,17 +796,18 @@ class Output:
         self.config_dict = output_config_dict
         self.active = False
         self.name = name
-        self.pullup_pulldown = self.config_dict['pullup_pulldown']
+        
         if self.config_dict['type'] == 'GPIO':
+            
             self.pin = self.config_dict['pin']
             
             
-            if self.pullup_pulldown == 'pullup':    
+            if self.config_dict['pullup_pulldown'] == 'pullup':    
                 GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
                 self.switch_active = self.set_active_PU_UP()
                 self.switch_inactive = self.set_inactive_PU_UP()
                 
-            elif self.pullup_pulldown == 'pulldown':
+            elif self.config_dict['pullup_pulldown'] == 'pulldown':
                 GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
                 self.switch_active = self.set_active_PU_DOWN()
                 self.switch_inactive = self.set_inactive_PU_DOWN()
