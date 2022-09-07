@@ -120,9 +120,10 @@ class Box:
             setattr(self, component_group_name, comp_container)
 
         #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
-        if len(self.speakers) ==1:
+        if len(self.speakers) == 1:
             self.speaker = self.speakers.get_components()[0]
-        
+        else: 
+            print(f'speakers are {self.speakers}')
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
