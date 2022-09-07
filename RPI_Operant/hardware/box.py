@@ -118,13 +118,15 @@ class Box:
             
             #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
+            if label == 'speaker':
+                #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
+                if len(self.speakers) == 1:
+                    self.speaker = self.speakers.get_components()[0]
+                else: 
+                    print(f'speakers are {self.speakers}')
+                #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
-        if len(self.speakers) == 1:
-            self.speaker = self.speakers.get_components()[0]
-        else: 
-            print(f'speakers are {self.speakers}')
-        #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
 
 
         self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = True)
