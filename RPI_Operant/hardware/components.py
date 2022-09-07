@@ -831,21 +831,21 @@ class Output:
         
     ############## PU ###############
     def set_active_PU_UP(self):
-        GPIO.out(self.pin, 0)
+        GPIO.output(self.pin, 0)
         self.active = True
 
     def set_inactive_PU_UP(self):
-        GPIO.out(self.pin, 1)
+        GPIO.output(self.pin, 1)
         self.active = False
         
         
     ############## PD ###############    
     def set_active_PU_DOWN(self):
-        GPIO.out(self.pin, 1)
+        GPIO.output(self.pin, 1)
         self.active = True
         
     def set_inactive_PU_DOWN(self):
-        GPIO.out(self.pin, 0)
+        GPIO.output(self.pin, 0)
         self.active = False
     ################################################    
          
