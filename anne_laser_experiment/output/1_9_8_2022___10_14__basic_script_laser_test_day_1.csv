@@ -1,0 +1,2 @@
+round,event,time,phase initialized,phase submitted,latency,modifiers,round timestamp initialized
+1,lever_extended_door_1,0.56,lever_out,lever_out,,ID:door_1|,1

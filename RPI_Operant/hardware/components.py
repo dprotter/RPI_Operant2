@@ -759,12 +759,17 @@ class Laser:
 
         self.box = box 
         self.name = name 
-        self.pin = speaker_dict['pin'] # PWM (pulse width modulation) pin number 
+        self.pin = speaker_dict['pin'] 
+        if not simulated: 
+            self.gpio = GPIO 
+            GPIO.setup(self.pin, GPIO.OUT) # Connecting to Pi ! 
+        else: 
+            print(f'Simulating {self.name} pi connection')
+            self.gpio = self.SimulatedGPIO()
         self.on = False # current on/off state of the Laser
-        # self.gpio = GPIO.setup(self.pin, GPIO.OUT)
         self.patterns = self._setup_laser_patterns() # creates Cycle objects and sets as attributes for all the patterns defined in the yaml file so we can reference them by name. Also returns a list of all of the string names of the patterns to allow us to iterate thru all the patterns if desired.  
 
-    class SimulatedPiConnection: 
+    class SimulatedGPIO: 
         def output(self, pin_num, zero_or_one):
             '''print(f'laser{self.name} set to {zero_or_one}')'''
 
@@ -806,8 +811,7 @@ class Laser:
         latency_obj = self.box.timestamp_manager.new_latency(description = oes.laser_on_latency, modifiers = {'ID':self.name})
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on, modifiers = {'ID':self.name})
         self.on = True 
-        GPIO.setup(self.pin, GPIO.OUT)
-        GPIO.output(self.pin, GPIO.HIGH) # sets to 3.3V
+        self.gpio.output(self.pin, GPIO.HIGH) # sets to 3.3V
         return latency_obj
 
     
@@ -816,7 +820,7 @@ class Laser:
         print(f'{self.name} Off')
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off, modifiers = {'ID':self.name})        
         self.on = False
-        GPIO.output(self.pin, GPIO.LOW) # sets to 0.0V
+        self.gpio.output(self.pin, GPIO.LOW) # sets to 0.0V
         if latency_obj is not None: 
             latency_obj.submit() # sets time of the latency from when we turned the laser on until right when we turn the laser off 
         return 

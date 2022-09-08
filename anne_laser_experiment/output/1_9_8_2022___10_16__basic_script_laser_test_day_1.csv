@@ -1,0 +1,23 @@
+round,event,time,phase initialized,phase submitted,latency,modifiers,round timestamp initialized
+1,lever_extended_door_1,0.56,lever_out,lever_out,,ID:door_1|,1
+1,lever_extended_door_2,0.61,lever_out,lever_out,,ID:door_2|,1
+1,lever_pressed_door_2,4.18,lever_out,lever_out,3.62,ID:door_2|n_presses:1|presses_required:1|,1
+1,presses_reached_door_2,4.18,lever_out,lever_out,3.62,ID:door_2|n_presses:1|presses_required:1|,1
+1,laser_on_,4.19,interval_5_sec,interval_5_sec,,ID:laser1|,1
+1,lever_retracted_door_1,4.24,interval_5_sec,interval_5_sec,,ID:door_1|,1
+1,lever_retracted_door_2,4.44,interval_5_sec,interval_5_sec,,ID:door_2|,1
+1,lever_retracted_door_2,4.44,interval_5_sec,interval_5_sec,,ID:door_2|,1
+1,laser_off_,9.19,interval_5_sec,interval_5_sec,,ID:laser1|,1
+1,laser_on_latency,9.19,interval_5_sec,interval_5_sec,5.0,ID:laser1|,1
+2,lever_extended_door_1,10.28,lever_out,lever_out,,ID:door_1|,2
+2,lever_extended_door_2,10.33,lever_out,lever_out,,ID:door_2|,2
+2,lever_pressed_door_1,16.85,lever_out,lever_out,6.62,ID:door_1|n_presses:1|presses_required:1|,2
+2,presses_reached_door_1,16.85,lever_out,lever_out,6.62,ID:door_1|n_presses:1|presses_required:1|,2
+2,laser_on_,16.86,interval_5_sec,interval_5_sec,,ID:laser1|,2
+2,lever_retracted_door_2,16.91,interval_5_sec,interval_5_sec,,ID:door_2|,2
+2,lever_retracted_door_1,17.07,interval_5_sec,interval_5_sec,,ID:door_1|,2
+2,lever_retracted_door_1,17.07,interval_5_sec,interval_5_sec,,ID:door_1|,2
+2,laser_off_,21.86,interval_5_sec,interval_5_sec,,ID:laser1|,2
+2,laser_on_latency,21.86,interval_5_sec,interval_5_sec,5.0,ID:laser1|,2
+3,lever_extended_door_1,22.94,lever_out,lever_out,,ID:door_1|,3
+3,lever_extended_door_2,23.0,lever_out,lever_out,,ID:door_2|,3

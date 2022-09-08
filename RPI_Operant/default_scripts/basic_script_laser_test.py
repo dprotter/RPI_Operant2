@@ -10,9 +10,6 @@ RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_software.yaml'
 
-# # For Running Locally: 
-# USER_HARDWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
-# USER_SOFTWARE_CONFIG_PATH = '/Users/sarahlitz/Desktop/Projects/Donaldson Lab/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 box = Box()
 def run():
@@ -25,6 +22,7 @@ def run():
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=True, 
               simulated=False)
+
     time.sleep(0.5)
     
         
@@ -35,49 +33,76 @@ def run():
             print(f'ROUND {i+1}')
             box.timing.new_round(length = box.software_config['values']['round_length'])
 
+            # # Phase 1: Extending Levers # # 
             phase = box.timing.new_phase(f'lever_out', length = box.software_config['values']['lever_out_time'])
-            # # Notes on Laser Script Syntax # # 
-            # to iterate thru every laser pattern, loop thru any laser object's pattern list ( e.g. for pattern in box.lasers.laser1.patterns )
-            # to add logic for when we should trigger playing a certain pattern, we can use the phase functionality ( like while phase.active, check for a certain condition that if met will cause us to exit from the phase early and enter a new phase)
             
-            lever_presses_met = False
-            while phase.active(): 
-                # Wait for an event here!! Add an if statement!! 
-                #   use this for logic if we are waiting for some event to trigger the phase exit 
-                #   e.g. if n number of lever presses is met, we open door and trigger a certain pattern on a laser! 
-                lever_presses_met = True 
-                if lever_presses_met: 
-                    phase.end_phase() # Early exit 
+            # lever 1 
+            press_latency_1 = box.levers.door_1.extend()
+            box.levers.door_1.wait_for_n_presses(n = 1, latency_obj = press_latency_1)
 
+            # lever 2 
+            press_latency_2 = box.levers.door_2.extend()
+            box.levers.door_2.wait_for_n_presses(n = 1, latency_obj = press_latency_2)
+
+            lever_press_met = False 
+            while phase.active(): 
+                
+                if box.levers.door_1.presses_reached: # lever 1 goal met
+
+                    # retract lever 1 
+                    lever_press_met = True 
+                    box.levers.door_1.retract()
+                    phase.end_phase() # Early exit from the Lever Out phase
+                
+
+                elif box.levers.door_2.presses_reached: # lever 2 goal met 
+                
+                    # retract lever 2 
+                    lever_press_met = True 
+                    box.levers.door_2.retract()
+                    phase.end_phase() # Early exit from the Lever Out phase
+
+
+            # Lever Phase Ended! If either lever is still extended, retract now. 
+            if box.levers.door_1.is_extended: 
+                box.levers.door_1.retract()
+            if box.levers.door_2.is_extended: 
+                box.levers.door_2.retract()
             
-            if lever_presses_met: # if True, we know that we encountered an event that caused us to exit the previous phase early. ( probs recieving enough lever presses ! )  
-                phase = box.timing.new_phase(f'{box.lasers.laser1.interval_5_sec.name}', length = box.lasers.laser1.interval_5_sec.total_time) # iterate thru phases 
+            if lever_press_met: # if True, we know that we encountered an event that caused us to exit the previous phase early. ( probs recieving enough lever presses ! )  
+                phase = box.timing.new_phase(f'{box.lasers.laser1.interval_5_sec.name}', length = box.lasers.laser1.interval_5_sec.total_time) 
     
-                box.lasers.laser1.interval_5_sec.trigger() # turns on laser 1, pattern i
+                print('a lever met its required # of presses, playing the 5 second interval laser')
+                box.lasers.laser1.interval_5_sec.trigger() 
 
                 phase.wait()
                 
                 phase.end_phase()
 
             else: 
+                
+                phase = box.timing.new_phase(f'{box.lasers.laser1.interval_1_sec.name}', length = box.lasers.laser1.interval_1_sec.total_time)
+                
+                print('lever presses was not met, playing the 1 second interval laser pattern')
 
-                print('lever presses was not met')
-                # did not recieve enough lever presses. 
-                # Any logic for how we want to react to this case goes here. 
-                pass    
-            
-            
+                box.lasers.laser1.interval_1_sec.trigger()
+
+                phase.wait()
+                phase.end_phase()
+                
+
             time.sleep(1)
             
         
         box.timing.wait_for_round_finish()
         box.shutdown()
-
+ 
     except KeyboardInterrupt:
         print('keyboard interrupt, shutting down')
         speaker1.turn_off()
         positional_dispenser_1.stop_servo()
         lever_door_1.retract()
+        box.levers.door_1.retract()
         lever_door_2.retract()
         laser1.turn_off()
         box.force_shutdown()
