@@ -173,9 +173,10 @@ class Timestamp:
         self.timestamp_manager.screen.print_queue.put(self)
 
 class Latency: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
+    def __init__(self, timestamp_manager, event_descriptor, modifiers = None, print_to_screen = True): 
 
         self.start_time = time.time()
+        self.print_to_screen = print_to_screen
         self.timestamp_manager = timestamp_manager 
         self.event_descriptor = event_descriptor # string that describes what the event is 
         self.phase_initialized = timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name # phase that timestamp was initialized occurred during 
@@ -231,13 +232,13 @@ class TimestampManager:
         '''how to create a new timestamp object'''
         return Timestamp(self, description, modifiers)
 
-    def create_and_submit_new_timestamp(self, description, modifiers = None):
+    def create_and_submit_new_timestamp(self, description, modifiers = None, print_to_screen = True):
         '''create and immediately submit new timestamp'''
-        Timestamp(self, description, modifiers).submit()
+        Timestamp(self, description, modifiers, print_to_screen=print_to_screen).submit()
 
-    def new_latency(self, description, modifiers = None):
+    def new_latency(self, description, modifiers = None, print_to_screen = True):
         '''will track latency between initialization and submission'''
-        return Latency(self, description, modifiers)
+        return Latency(self, description, modifiers, print_to_screen = print_to_screen)
 
 
     def finish_writing_items(self): 
