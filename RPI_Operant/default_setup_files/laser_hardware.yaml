@@ -43,7 +43,7 @@ doors:
 levers:
   food:
     servo: 4
-    extended: 30
+    extended: 22
     retracted: 110
     pin: 27
     pullup_pulldown: pullup
@@ -73,16 +73,19 @@ levers:
     servo_type: positional
     interpress_interval: 0.25
 
-positional_dispensers:
-  positional_dispenser_1:
+dispensers:
+  continuous_dispenser_1: 
     servo: 1
-    servo_type: positional 
-    dispense: 0.075
-    stop: 0
+    servo_type: continuous 
+    dispense: 0.23
+    stop: 0.06
     sensor_pin: 16
     pullup_pulldown: pullup
     dispense_timeout: 3
 
     start: 1
     n_spots: 1
+
+
+
 

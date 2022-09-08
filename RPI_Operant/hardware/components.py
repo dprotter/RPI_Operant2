@@ -137,7 +137,7 @@ class Lever:
         self.lever_press_queue = queue.Queue()
         self.lever_presses = 0
         
-        self.wiggle = 10
+        self.wiggle = 0
     def simulate_lever_press(self):
         self.simulate_pressed()
         time.sleep(0.1)
@@ -189,7 +189,7 @@ class Lever:
         '''extend a lever and timestamp it'''
         #note, make a ts object and submit later after successful retraction
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name})
-        retract_start = max(180, self.retracted + self.wiggle)
+        retract_start = min(180, self.retracted + self.wiggle)
  
         #wait for the vole to get off the lever
         timeout = self.box.timing.new_timeout(self.retraction_timeout)
@@ -481,7 +481,6 @@ class Dispenser:
         else:
             self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
         self.name = name
-        self.pellet_state = False
 
         sensor_dict = { 
             'pin':self.config_dict['sensor_pin'],
@@ -490,7 +489,9 @@ class Dispenser:
         
         self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
 
-
+    @property
+    def pellet_state(self): 
+        return self.sensor.pressed 
 
     def start_servo(self):
         self.servo.throttle = self.config_dict['dispense']
@@ -514,35 +515,35 @@ class Dispenser:
         ''''''
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
-            print('previous pellet not retrieved')
-            self.box.timestamp_manager
-            
-        elif self.sensor_blocked:
-            '''timestamp put "pellet sensor already blocked"'''
-            '''wait????'''
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}', modifiers = {'ID':self.name})
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}', modifiers = {'ID':self.name})            
+        
         else:
             self.start_servo()
             read = 0
-            timeout = self.box.timing.new_timeout(timeout = self.config_dict['dispense_timeout'])
+            timeout = self.box.timing.new_timeout(length = self.config_dict['dispense_timeout'])
             while timeout.active():
-                if self.sensor.pressed:
+                if self.pellet_state:
                     read+=1
                 if read > 2:
                     '''timestamp put "pellet dispensed"'''
                     self.stop_servo()
-                    self.pellet_state = True
                     pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, modifiers = {'ID':self.name})
                     self.monitor_pellet(pellet_latency)
                     return None
+            
+            self.stop_servo()
             
     
     @thread_it
     def monitor_pellet(self, pellet_latency):
         '''track when a pellet is retrieved'''
         while not self.box.finished():
-            if not self.sensor_pressed:
-                pellet_latency.submit()
+            if not self.pellet_state:
+                pellet_latency.submit() # pellet was retrieved! record once and return 
+                return 
                 
+
 class PositionalDispenser:
 
     def __init__(self, name, dispenser_config_dict, box, simulated = False):
@@ -558,7 +559,7 @@ class PositionalDispenser:
         self.positions = self.calculate_positions()
         self.current_position_index = self.set_starting_index()
         self.current_position_angle = self.positions[self.current_position_index]
-        
+        self.stop_speed = self.config_dict['stop']
         self.dispense_timeout = self.config_dict['dispense_timeout']
         self.name = name
         self.pellet_state = False
@@ -610,7 +611,7 @@ class PositionalDispenser:
         self.current_position_angle = new_angle
     
     def sensor_blocked(self):
-        return self.sensor.pushed
+        return self.sensor.pressed
 
     def simulate_dispensed(self):
         '''used in scripts to simulate a pellet being dispensed'''
@@ -626,18 +627,19 @@ class PositionalDispenser:
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
             print('previous item not retrieved')
-            self.box.timestamp_manager.create_and_submite_new_timestamp(description = oes.pellet_skip, modifiers = {'ID':self.name})
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_skip, modifiers = {'ID':self.name})
             
-        elif self.sensor_blocked:
+        elif self.sensor_blocked():
             '''timestamp put "pellet sensor already blocked"'''
             '''wait????'''
+            print('sensor blocked', self.sensor_blocked)
         else:
             
             read = 0
-            timeout = self.box.timing.new_timeout(timeout = self.dispense_timeout)
+            timeout = self.box.timing.new_timeout(length = self.dispense_timeout)
             while timeout.active():
                 self.next_position()
-                timeout_2 = self.box.timing.new_timeout(timeout = 0.25)
+                timeout_2 = self.box.timing.new_timeout(length = 0.25)
                 while timeout_2.active():
                     if self.sensor.pressed:
                         read+=1
@@ -653,7 +655,7 @@ class PositionalDispenser:
                 
                 #step back to the 1/4 position in this slot
                 self.small_step_backwards(n=1)
-                timeout_3 = self.box.timing.new_timeout(timeout = 0.25)
+                timeout_3 = self.box.timing.new_timeout(length = 0.25)
                 while timeout_3.active():
                     if self.sensor.pressed:
                         read+=1
@@ -669,7 +671,7 @@ class PositionalDispenser:
                 
                 #go to the 3/4 position within this slot
                 self.small_step_forward(n=2)
-                timeout_4 = self.box.timing.new_timeout(timeout = 0.25)
+                timeout_4 = self.box.timing.new_timeout(length = 0.25)
                 while timeout_4.active():
                     if self.sensor.pressed:
                         read+=1
@@ -684,7 +686,10 @@ class PositionalDispenser:
                 #here, if not luck, we will step to the next position
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_failure)
             
-    
+    def stop(self): 
+        print(f'STOPPING {self.name}')
+        self.servo.throttle = self.stop_speed
+
     @thread_it
     def monitor_pellet(self, pellet_latency):
         '''track when a pellet is retrieved'''
@@ -809,7 +814,7 @@ class Laser:
         ''' turns laser on '''
         print(f'{self.name} On')
         latency_obj = self.box.timestamp_manager.new_latency(description = oes.laser_on_latency, modifiers = {'ID':self.name})
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on, modifiers = {'ID':self.name})
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on+self.name, modifiers = {'ID':self.name})
         self.on = True 
         self.gpio.output(self.pin, GPIO.HIGH) # sets to 3.3V
         return latency_obj
@@ -818,7 +823,7 @@ class Laser:
     def turn_off(self, latency_obj = None): 
         ''' turns laser off '''
         print(f'{self.name} Off')
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off, modifiers = {'ID':self.name})        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off+self.name, modifiers = {'ID':self.name})        
         self.on = False
         self.gpio.output(self.pin, GPIO.LOW) # sets to 0.0V
         if latency_obj is not None: 

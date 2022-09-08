@@ -28,6 +28,7 @@ def run():
         
     try:
         
+      
         for i in range(box.software_config['values']['rounds']):
             
             print(f'ROUND {i+1}')
@@ -52,14 +53,16 @@ def run():
                     # retract lever 1 
                     lever_press_met = True 
                     box.levers.door_1.retract()
+                    box.doors.door_1.open()
                     phase.end_phase() # Early exit from the Lever Out phase
                 
 
                 elif box.levers.door_2.presses_reached: # lever 2 goal met 
                 
-                    # retract lever 2 
+                    # retract lever 2 , open door 2
                     lever_press_met = True 
                     box.levers.door_2.retract()
+                    box.doors.door_2.open()
                     phase.end_phase() # Early exit from the Lever Out phase
 
 
@@ -70,6 +73,28 @@ def run():
                 box.levers.door_2.retract()
             
             if lever_press_met: # if True, we know that we encountered an event that caused us to exit the previous phase early. ( probs recieving enough lever presses ! )  
+                
+                #
+                # Phase: Speaker & Dispenser Test
+                #
+                
+                phase = box.timing.new_phase(f'Play Sound & Dispense Pellet & Lasers On', length = box.lasers.laser1.interval_1_sec.total_time)
+                
+                print('lever presses was met, play sound, dispense pellet, and turn on laser')
+
+                box.speakers.speaker1.play_tone(tone_name = 'pellet_tone')
+                box.dispensers.continuous_dispenser_1.dispense()
+                box.lasers.laser1.interval_1_sec.trigger()
+
+                phase.wait()
+                phase.end_phase()
+
+
+            else: 
+
+                #
+                # Phase: Laser Test 
+                #
                 phase = box.timing.new_phase(f'{box.lasers.laser1.interval_5_sec.name}', length = box.lasers.laser1.interval_5_sec.total_time) 
     
                 print('a lever met its required # of presses, playing the 5 second interval laser')
@@ -79,22 +104,22 @@ def run():
                 
                 phase.end_phase()
 
-            else: 
-                
-                phase = box.timing.new_phase(f'{box.lasers.laser1.interval_1_sec.name}', length = box.lasers.laser1.interval_1_sec.total_time)
-                
-                print('lever presses was not met, playing the 1 second interval laser pattern')
 
-                box.lasers.laser1.interval_1_sec.trigger()
 
-                phase.wait()
-                phase.end_phase()
-                
+            # # Close doors once lasers finish playing pattern # #
+            if box.doors.door_1.is_open(): 
+                box.doors.door_1.close()
+            if box.doors.door_2.is_open(): 
+                box.doors.door_2.close()
 
             time.sleep(1)
             
         
+        # Creating an extra phase here so a countdown gets displayed on the screen!
+        p  = box.timing.new_phase(f'waiting for round to finish', length = box.timing.round_time_remaining())
         box.timing.wait_for_round_finish()
+        p.end_phase()
+
         box.shutdown()
  
     except KeyboardInterrupt:

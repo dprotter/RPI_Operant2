@@ -1,2 +1,2 @@
 vole,day,title,runtime,finished,rounds_completed,script_path,script_setup,hardware_setup,output_path,args,Unnamed: 11
-1,1,laser tests,9_8_2022__10_19,,,/home/pi/RPI_Operant2/RPI_Operant/default_scripts/basic_script_laser_test.py,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_software.yaml,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_hardware.yaml,/home/pi/RPI_Operant2/anne_laser_experiment/output,,
+1,1,laser tests,9_8_2022__14_0,True,,/home/pi/RPI_Operant2/RPI_Operant/default_scripts/basic_script_laser_test.py,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_software.yaml,/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_hardware.yaml,/home/pi/RPI_Operant2/anne_laser_experiment/output,,

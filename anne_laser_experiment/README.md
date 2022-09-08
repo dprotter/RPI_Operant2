@@ -13,6 +13,8 @@ commands to run hardware tests:
 ~~~
 python3 -m RPI_Operant.default_scripts.calibrate_lasers
 python3 -m RPI_Operant.default_scripts.calibrate_levers
+python3 -m RPI_Operant.default_scripts.calibrate_dispenser
+python3 -m RPI_Operant.default_scripts.show_outputs
 ~~~
 
 

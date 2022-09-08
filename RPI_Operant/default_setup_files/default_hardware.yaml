@@ -1,8 +1,6 @@
 speakers:
   speaker1:
     pin: 21
-  speaker2:
-    pin: 22
 
 beams: 
   door1_ir: 

@@ -9,7 +9,7 @@ USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_fil
 box = Box()    
 box.setup(user_hardware_config_file_path=USER_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
-              start_now=True, simulated = True)
+              start_now=True, simulated = False)
 
 
 def calibrate_lever(lever):
