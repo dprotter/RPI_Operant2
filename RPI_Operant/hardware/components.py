@@ -804,8 +804,8 @@ class Output:
             
 
             GPIO.setup(self.pin, GPIO.OUT)
-            self.switch_active = self.set_active_PU_UP()
-            self.switch_inactive = self.set_inactive_PU_UP()
+            self.switch_active = self.set_active_GPIO()
+            self.switch_inactive = self.set_inactive_GPIO()
                 
 
         elif self.config_dict['type'] == 'HAT':
@@ -827,11 +827,11 @@ class Output:
                 
         
     ############## GPIO ###############    
-    def set_active_PU_DOWN(self):
+    def set_active_GPIO(self):
         GPIO.output(self.pin, 1)
         self.active = True
         
-    def set_inactive_PU_DOWN(self):
+    def set_inactive_GPIO(self):
         GPIO.output(self.pin, 0)
         self.active = False
     ################################################    
