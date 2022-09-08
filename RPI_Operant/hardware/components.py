@@ -804,15 +804,15 @@ class Output:
             
 
             GPIO.setup(self.pin, GPIO.OUT)
-            self.switch_active = self.set_active_GPIO()
-            self.switch_inactive = self.set_inactive_GPIO()
+            self.switch_active = self.set_active_GPIO
+            self.switch_inactive = self.set_inactive_GPIO
                 
 
         elif self.config_dict['type'] == 'HAT':
 
             self.channel = SERVO_KIT._pca.channels[self.config_dict['channel']]
-            self.switch_active = self.set_active_HAT()
-            self.switch_inactive = self.set_inactive_HAT()
+            self.switch_active = self.set_active_HAT
+            self.switch_inactive = self.set_inactive_HAT
             
         else:
             raise Exception(f'incorrect output type passed: {self.config_dict["type"]}\n must be "HAT" or "GPIO"')
