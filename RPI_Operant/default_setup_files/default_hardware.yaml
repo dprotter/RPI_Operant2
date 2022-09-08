@@ -84,9 +84,9 @@ outputs:
   miniscope_trigger:
     type: GPIO
     pin: 20
-    pullup_pulldown: pulldown
+
 
   led_GPIO_test:
     type: GPIO
     pin: 21
-    pullup_pulldown: pulldown
+

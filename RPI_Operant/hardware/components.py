@@ -802,24 +802,20 @@ class Output:
             self.pin = self.config_dict['pin']
             
             
-            if self.config_dict['pullup_pulldown'] == 'pullup':    
-                GPIO.setup(self.pin, GPIO.OUT, pull_up_down=GPIO.PUD_UP)
-                self.switch_active = self.set_active_PU_UP()
-                self.switch_inactive = self.set_inactive_PU_UP()
+
+            GPIO.setup(self.pin, GPIO.OUT)
+            self.switch_active = self.set_active_PU_UP()
+            self.switch_inactive = self.set_inactive_PU_UP()
                 
-            elif self.config_dict['pullup_pulldown'] == 'pulldown':
-                GPIO.setup(self.pin, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
-                self.switch_active = self.set_active_PU_DOWN()
-                self.switch_inactive = self.set_inactive_PU_DOWN()
-            
-            else:
-                raise Exception(f'Output {self.name} does not have pullup_pulldown set')
-            
+
         elif self.config_dict['type'] == 'HAT':
 
             self.channel = SERVO_KIT._pca.channels[self.config_dict['channel']]
             self.switch_active = self.set_active_HAT()
             self.switch_inactive = self.set_inactive_HAT()
+            
+        else:
+            raise Exception(f'incorrect output type passed: {self.config_dict["type"]}\n must be "HAT" or "GPIO"')
     
     ################################################
     ############## HAT ###############
@@ -828,18 +824,9 @@ class Output:
         
     def set_inactive_HAT(self):
         self.channel.duty_cycle = 0
+                
         
-    ############## PU ###############
-    def set_active_PU_UP(self):
-        GPIO.output(self.pin, 0)
-        self.active = True
-
-    def set_inactive_PU_UP(self):
-        GPIO.output(self.pin, 1)
-        self.active = False
-        
-        
-    ############## PD ###############    
+    ############## GPIO ###############    
     def set_active_PU_DOWN(self):
         GPIO.output(self.pin, 1)
         self.active = True
