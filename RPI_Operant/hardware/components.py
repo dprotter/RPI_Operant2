@@ -803,12 +803,12 @@ class Output:
             
             
             if self.config_dict['pullup_pulldown'] == 'pullup':    
-                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.setup(self.pin, GPIO.OUT, pull_up_down=GPIO.PUD_UP)
                 self.switch_active = self.set_active_PU_UP()
                 self.switch_inactive = self.set_inactive_PU_UP()
                 
             elif self.config_dict['pullup_pulldown'] == 'pulldown':
-                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+                GPIO.setup(self.pin, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
                 self.switch_active = self.set_active_PU_DOWN()
                 self.switch_inactive = self.set_inactive_PU_DOWN()
             
