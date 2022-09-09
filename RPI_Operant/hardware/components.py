@@ -526,18 +526,18 @@ class Dispenser:
     @thread_it
     def dispense(self, on_retrieve_events = None):
         ''''''
+
+        print(' DISPENSING ')
+
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
-            print('previous pellet not retrieved')
-            self.box.timestamp_manager
-            
-        elif self.sensor_blocked:
-            '''timestamp put "pellet sensor already blocked"'''
-            '''wait????'''
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}', modifiers = {'ID':self.name})
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}', modifiers = {'ID':self.name})     
+        
         else:
             self.start_servo()
             read = 0
-            timeout = self.box.timing.new_timeout(timeout = self.config_dict['dispense_timeout'])
+            timeout = self.box.timing.new_timeout(length = self.config_dict['dispense_timeout'])
             while timeout.active():
                 if self.sensor.pressed:
                     read+=1
@@ -554,9 +554,10 @@ class Dispenser:
     @thread_it
     def monitor_pellet(self, pellet_latency, on_retrieve_events = None):
         '''track when a pellet is retrieved'''
-        while not self.box.finished():
-            if not self.sensor_pressed:
+        while not self.box.finished() and self.pellet_state:
+            if not self.sensor.pressed:
                 pellet_latency.submit()
+                self.pellet_state = False
                 if on_retrieve_events:
                     for event in on_retrieve_events:
                         event()

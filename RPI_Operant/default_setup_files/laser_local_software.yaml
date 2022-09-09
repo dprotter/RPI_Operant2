@@ -1,0 +1,63 @@
+#set to false to use default output path within RPI_Operant
+output_path: 'default'
+
+checks:
+  save_timestamps: True
+
+values:
+  rounds: 3
+  delay_by_day: [0]
+  delay_default: 0
+  round_length: 60
+  lever_out_time: 60
+  
+laser_patterns: 
+  # all lasers will recieve a copy of the patterns defined here. Can access in scripts to execute in any order. 
+  interval_5_sec: 
+    on_seconds: 5 
+    off_seconds: 5
+    repeat: 2
+  interval_3_sec: 
+    on_seconds: 3 
+    off_seconds: 3
+    repeat: 2
+  interval_1_sec: 
+    on_seconds: 1
+    off_seconds: 1
+    repeat: 2
+
+speaker_tones:
+  speaker1:
+    round_start:
+      hz: 5000
+      length: 1
+    pellet_tone:
+      hz: 2500
+      length: 1
+    door_open:
+      hz: 10000
+      length: 1
+    door_close:
+      hz: 7000
+      length: 1
+    click_on: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
+
+    click_off: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
