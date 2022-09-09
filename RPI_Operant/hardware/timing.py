@@ -173,12 +173,14 @@ class Timestamp:
         self.timestamp_manager.screen.print_queue.put(self)
 
 class Latency: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers = None, print_to_screen = True): 
+    def __init__(self, timestamp_manager, event_1 = None, event_2 = None, event_descriptor= None,  modifiers = None, print_to_screen = True): 
 
         self.start_time = time.time()
         self.print_to_screen = print_to_screen
         self.timestamp_manager = timestamp_manager 
-        self.event_descriptor = event_descriptor # string that describes what the event is 
+        self.event_descriptor = event_descriptor # string that describes what the event is
+        self.event_1 = event_1 #first event
+        self.event_2 = event_2 #second event
         self.phase_initialized = timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name # phase that timestamp was initialized occurred during 
         self.round_initialized = timestamp_manager.timing.round  # round number that timestamp was initialized occurred during 
         if modifiers:
@@ -189,7 +191,10 @@ class Latency:
                 self.modifiers = modifiers
         else:
             self.modifiers = {}
-        
+    
+    def reformat_event_descriptor(self):
+        self.event_descriptor = f'{self.event_1}_|_{self.event_2}'
+    
     def add_modifier(self, key, value):
         
         self.modifiers.update({key:value})

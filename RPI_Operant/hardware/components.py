@@ -2,6 +2,7 @@
 import time
 import sys
 from tkinter import E
+from turtle import setundobuffer
 
 try:
     import RPi.GPIO as GPIO
@@ -432,6 +433,7 @@ class Door:
             print(f'{self.name} opened!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
+            return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
         
     @thread_it
     def close(self, wait = True):
@@ -1094,7 +1096,73 @@ class Beam:
         }
 
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
+        self.monitor = False
+    
+    def monitor_beam_break(self, latency_to_first_beambreak = None, end_with_phase = None):
+        if self.monitor:
+            print(f'beam monitoring already active, but monitor_beam_break was called again for {self.name}. this will be ignored')
+        if end_with_phase:
+            self._monitor_beam_break_for_phase(end_with_phase, latency = latency_to_first_beambreak)
+        else:
+            self._monitor_beam_break(latency = latency_to_first_beambreak)
+    
+    @thread_it     
+    def _monitor_beam_break_for_phase(self, phase, latency = None):
+        self.begin_monitoring()
+        if latency:
+            latency.event_2 = oes.beam_broken+self.name
+            latency.add_modifier(key = 'beam_ID', value = self.name)
+            latency_submitted = False
+            while self.monitor and phase.active() and not latency_submitted:
+                if self.switch.pressed:
+                    latency.submit()
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
+                                                                                modifiers = {'ID':self.name})
+                    latency_submitted = True 
+                    timeout = self.box.timing.new_timeout(0.1)
+                    while self.switch.pressed or timeout.active():
+                        ''''''
+                    
+        while self.monitor and phase.active():
+            if self.switch.pressed:
+                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
+                                                   modifiers = {'ID':self.name})
+                timeout = self.box.timing.new_timeout(0.1)
+                while self.switch.pressed or timeout.active():
+                    ''''''
+        self.end_monitoring()
+    
+    @thread_it     
+    def _monitor_beam_break(self, latency = None):
+        self.begin_monitoring()
+        if latency:
+            latency.event_2 = oes.beam_broken+self.name
+            latency.add_modifier(key = 'beam_ID', value = self.name)
+            latency_submitted = False
+            while self.monitor and not latency_submitted:
+                if self.switch.pressed:
+                    latency.submit()
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
+                                                                                modifiers = {'ID':self.name})
+                    latency_submitted = True 
+                    timeout = self.box.timing.new_timeout(0.1)
+                    while self.switch.pressed or timeout.active():
+                        ''''''
+                    
+        while self.monitor:
+            if self.switch.pressed:
+                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
+                                                   modifiers = {'ID':self.name})
+                timeout = self.box.timing.new_timeout(0.1)
+                while self.switch.pressed or timeout.active():
+                    ''''''
+                    
         
+    def _begin_monitoring(self):
+        self.monitor = True
+    
+    def end_monitoring(self):
+        self.monitor = False
         
 class Fake_GPIO:
     def __init__(self):
