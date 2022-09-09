@@ -1,8 +1,7 @@
 speakers:
-  speaker1:
+  speaker:
     pin: 21
-  #speaker2:
-  #  pin: 22
+
 
 doors:
   door_1:
@@ -62,8 +61,8 @@ levers:
     servo_type: positional
     interpress_interval: 0.25
 
-positional_dispensers:
-  positional_dispenser_1:
+dispensers:
+  dispenser:
     servo: 1
     servo_type: positional 
     dispense: 0.075
@@ -71,4 +70,23 @@ positional_dispensers:
     sensor_pin: 16
     pullup_pulldown: pullup
     dispense_timeout: 3
+
+
+outputs:
+  round_LED:
+    type: HAT
+    channel: 4
+
+  event_LED:
+    type: HAT
+    channel: 5
+
+  miniscope_trigger:
+    type: GPIO
+    pin: 20
+
+
+  led_GPIO_test:
+    type: GPIO
+    pin: 21
 

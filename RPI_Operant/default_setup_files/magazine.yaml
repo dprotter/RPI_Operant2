@@ -5,8 +5,12 @@ checks:
 
 values:
   rounds: 15
+  round_length: 60
   delay_by_day: [0]
   delay_default: 0
+  lever_out: 2
+  lever_pt2: 2
+  
 
 
 speaker_tones:
@@ -43,3 +47,5 @@ speaker_tones:
     tone_3:
       hz: 900
       length: 0.02
+  
+  f
