@@ -1,0 +1,59 @@
+round,event,time,phase initialized,phase submitted,latency,modifiers,round timestamp initialized
+1,lever_extended_door_1,0.55,lever_out,lever_out,,ID:door_1|,1
+1,lever_extended_door_2,0.61,lever_out,lever_out,,ID:door_2|,1
+1,lever_pressed_door_2,2.85,lever_out,lever_out,2.29,ID:door_2|n_presses:1|presses_required:1|,1
+1,presses_reached_door_2,2.85,lever_out,lever_out,2.29,ID:door_2|n_presses:1|presses_required:1|,1
+1,open_start_door_2,2.86,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,1
+1,laser_on_laser1,2.87,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,1
+1,tone_start_pellet_tone,2.92,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:speaker1|,1
+1,lever_retracted_door_1,2.92,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,1
+1,lever_retracted_door_2,3.02,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,1
+1,lever_retracted_door_2,3.06,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,1
+1,laser_off_laser1,3.87,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,1
+1,laser_on_latency,3.87,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,1.0,ID:laser1|,1
+1,tone_stop_pellet_tone,3.93,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:speaker1|,1
+1,open_finished_door_2,4.47,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,1
+1,laser_on_laser1,4.87,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,1
+1,laser_off_laser1,5.88,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,1
+1,laser_on_latency,5.88,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,1.0,ID:laser1|,1
+1,close_start_door_2,6.87,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,1
+1,close_finished_door_2,8.39,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,1
+2,lever_extended_door_1,9.45,lever_out,lever_out,,ID:door_1|,2
+2,lever_extended_door_2,9.5,lever_out,lever_out,,ID:door_2|,2
+2,pellet_retrieved,9.66,Play Sound & Dispense Pellet & Lasers On,lever_out,5.94,ID:continuous_dispenser_1|,1
+2,lever_pressed_door_1,15.61,lever_out,lever_out,6.22,ID:door_1|n_presses:1|presses_required:1|,2
+2,presses_reached_door_1,15.61,lever_out,lever_out,6.22,ID:door_1|n_presses:1|presses_required:1|,2
+2,open_start_door_1,15.62,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,2
+2,laser_on_laser1,15.63,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,2
+2,tone_start_pellet_tone,15.66,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:speaker1|,2
+2,lever_retracted_door_2,15.68,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,2
+2,lever_retracted_door_1,15.77,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,2
+2,lever_retracted_door_1,15.78,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,2
+2,laser_off_laser1,16.64,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,2
+2,laser_on_latency,16.64,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,1.0,ID:laser1|,2
+2,tone_stop_pellet_tone,16.68,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:speaker1|,2
+2,open_finished_door_1,17.24,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,2
+2,laser_on_laser1,17.64,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,2
+2,laser_off_laser1,18.64,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,2
+2,laser_on_latency,18.64,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,1.0,ID:laser1|,2
+2,close_start_door_1,19.64,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,2
+2,close_finished_door_1,21.55,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,2
+3,lever_extended_door_1,22.61,lever_out,lever_out,,ID:door_1|,3
+3,lever_extended_door_2,22.66,lever_out,lever_out,,ID:door_2|,3
+3,lever_pressed_door_2,54.09,lever_out,lever_out,31.48,ID:door_2|n_presses:1|presses_required:1|,3
+3,presses_reached_door_2,54.09,lever_out,lever_out,31.48,ID:door_2|n_presses:1|presses_required:1|,3
+3,open_start_door_2,54.09,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,3
+3,laser_on_laser1,54.12,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,3
+3,tone_start_pellet_tone,54.14,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:speaker1|,3
+3,lever_retracted_door_1,54.17,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_1|,3
+3,lever_retracted_door_2,54.25,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,3
+3,lever_retracted_door_2,54.25,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,3
+3,laser_off_laser1,55.12,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,3
+3,laser_on_latency,55.12,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,1.0,ID:laser1|,3
+3,tone_stop_pellet_tone,55.16,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:speaker1|,3
+3,open_finished_door_2,55.72,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,3
+3,laser_on_laser1,56.12,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,3
+3,laser_off_laser1,57.12,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:laser1|,3
+3,laser_on_latency,57.12,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,1.0,ID:laser1|,3
+3,close_start_door_2,58.11,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,3
+3,close_finished_door_2,59.56,Play Sound & Dispense Pellet & Lasers On,Play Sound & Dispense Pellet & Lasers On,,ID:door_2|,3

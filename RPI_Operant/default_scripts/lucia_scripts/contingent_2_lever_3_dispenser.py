@@ -11,11 +11,16 @@ USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_fil
 box = Box()
 def run():
     
+    #
+    # Call to Setup Box with Hardware/Software yaml files specified! 
+    #
     box.setup(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
-              start_now=True)
+              start_now=True, 
+              simulated=True)
     time.sleep(0.5)
+    
         
     if RUNTIME_DICT['lever_1_active'] == 1:
         print('lever_1 is active')

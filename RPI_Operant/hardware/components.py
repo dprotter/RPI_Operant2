@@ -6,13 +6,14 @@ from turtle import setundobuffer
 
 try:
     import RPi.GPIO as GPIO
+    GPIO.setmode(GPIO.BCM)
 except:
     print('RPi.GPIO not found')
-    from RPI_Operant.hardware.Fake_GPIO import Fake_GPIO
+    from .Fake_GPIO import Fake_GPIO
     GPIO = Fake_GPIO()
 import queue
 import sys
-from RPI_Operant.hardware.event_strings import OperantEventStrings as oes
+from .event_strings import OperantEventStrings as oes
 import inspect
 
 
@@ -107,7 +108,11 @@ class Lever:
         if 'speaker_name' in self.config_dict.keys():
             self.speaker = self.box.speakers.get_component(self.config_dict['speaker_name'])
         else:
-            self.speaker = self.box.speaker
+            try: 
+                self.speaker = self.box.speaker
+            except AttributeError as e: 
+                print(e, 'setting box.speaker to None.')
+                self.speaker = None
         
         switch_dict = {
             'pin':self.pin,
@@ -131,7 +136,7 @@ class Lever:
         self.lever_press_queue = queue.Queue()
         self.lever_presses = 0
         
-        self.wiggle = 10
+        self.wiggle = 0
     def simulate_lever_press(self):
         self.simulate_pressed()
         time.sleep(0.1)
@@ -185,7 +190,7 @@ class Lever:
         '''extend a lever and timestamp it'''
         #note, make a ts object and submit later after successful retraction
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name})
-        retract_start = max(180, self.retracted + self.wiggle)
+        retract_start = min(180, self.retracted + self.wiggle)
  
         #wait for the vole to get off the lever
         timeout = self.box.timing.new_timeout(self.retraction_timeout)
@@ -388,7 +393,7 @@ class Door:
 
 
         oc_button_dict = { 
-            'pin':self.config_dict['override_open_pin'],
+            'pin':self.config_dict['override_close_pin'],
             'pullup_pulldown':'pullup'
         }
         self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', 
@@ -497,7 +502,6 @@ class Dispenser:
         else:
             self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
         self.name = name
-        self.pellet_state = False
 
         sensor_dict = { 
             'pin':self.config_dict['sensor_pin'],
@@ -506,7 +510,9 @@ class Dispenser:
         
         self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
 
-
+    
+    def pellet_state(self): 
+        return self.sensor.pressed 
 
     def start_servo(self):
         self.servo.throttle = self.config_dict['dispense']
@@ -530,18 +536,15 @@ class Dispenser:
         ''''''
         #check if pellet was retrieved or is still in trough
         if self.pellet_state:
-            print('previous pellet not retrieved')
-            self.box.timestamp_manager
-            
-        elif self.sensor_blocked:
-            '''timestamp put "pellet sensor already blocked"'''
-            '''wait????'''
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}', modifiers = {'ID':self.name})
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}', modifiers = {'ID':self.name})            
+        
         else:
             self.start_servo()
             read = 0
-            timeout = self.box.timing.new_timeout(timeout = self.config_dict['dispense_timeout'])
+            timeout = self.box.timing.new_timeout(length = self.config_dict['dispense_timeout'])
             while timeout.active():
-                if self.sensor.pressed:
+                if self.pellet_state:
                     read+=1
                 if read > 2:
                     '''timestamp put "pellet dispensed"'''
@@ -551,6 +554,8 @@ class Dispenser:
                                                                             modifiers = {'ID':self.name})
                     self.monitor_pellet(pellet_latency, on_retrieve_events = on_retrieve_events)
                     return None
+            
+            self.stop_servo()
             
     
     @thread_it
@@ -564,6 +569,7 @@ class Dispenser:
                         event()
                 
                 
+
 class PositionalDispenser:
 
     def __init__(self, name, dispenser_config_dict, box, simulated = False):
@@ -579,7 +585,7 @@ class PositionalDispenser:
         self.positions = self.calculate_positions()
         self.current_position_index = self.set_starting_index()
         self.current_position_angle = self.positions[self.current_position_index]
-        
+        self.stop_speed = self.config_dict['stop']
         self.dispense_timeout = self.config_dict['dispense_timeout']
         self.name = name
         self.pellet_state = False
@@ -631,7 +637,7 @@ class PositionalDispenser:
         self.current_position_angle = new_angle
     
     def sensor_blocked(self):
-        return self.sensor.pushed
+        return self.sensor.pressed
 
     def simulate_dispensed(self):
         '''used in scripts to simulate a pellet being dispensed'''
@@ -650,16 +656,17 @@ class PositionalDispenser:
             self.box.timestamp_manager.create_and_submite_new_timestamp(description = oes.pellet_skip, 
                                                                         modifiers = {'ID':self.name})
             
-        elif self.sensor_blocked:
+        elif self.sensor_blocked():
             '''timestamp put "pellet sensor already blocked"'''
             '''wait????'''
+            print('sensor blocked', self.sensor_blocked)
         else:
             
             read = 0
-            timeout = self.box.timing.new_timeout(timeout = self.dispense_timeout)
+            timeout = self.box.timing.new_timeout(length = self.dispense_timeout)
             while timeout.active():
                 self.next_position()
-                timeout_2 = self.box.timing.new_timeout(timeout = 0.25)
+                timeout_2 = self.box.timing.new_timeout(length = 0.25)
                 while timeout_2.active():
                     if self.sensor.pressed:
                         read+=1
@@ -677,7 +684,7 @@ class PositionalDispenser:
                 
                 #step back to the 1/4 position in this slot
                 self.small_step_backwards(n=1)
-                timeout_3 = self.box.timing.new_timeout(timeout = 0.25)
+                timeout_3 = self.box.timing.new_timeout(length = 0.25)
                 while timeout_3.active():
                     if self.sensor.pressed:
                         read+=1
@@ -695,7 +702,7 @@ class PositionalDispenser:
                 
                 #go to the 3/4 position within this slot
                 self.small_step_forward(n=2)
-                timeout_4 = self.box.timing.new_timeout(timeout = 0.25)
+                timeout_4 = self.box.timing.new_timeout(length = 0.25)
                 while timeout_4.active():
                     if self.sensor.pressed:
                         read+=1
@@ -712,7 +719,10 @@ class PositionalDispenser:
                 #here, if not luck, we will step to the next position
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_failure)
             
-    
+    def stop(self): 
+        print(f'STOPPING {self.name}')
+        self.servo.throttle = self.stop_speed
+
     @thread_it
     def monitor_pellet(self, pellet_latency):
         '''track when a pellet is retrieved'''
@@ -803,8 +813,6 @@ class Output:
             
             self.pin = self.config_dict['pin']
             
-            
-
             GPIO.setup(self.pin, GPIO.OUT)
             self.switch_active = self.set_active_GPIO
             self.switch_inactive = self.set_inactive_GPIO
@@ -884,7 +892,80 @@ class Output:
     
     
     
-class Speaker:  
+class Laser: 
+
+    def __init__(self, name, speaker_dict, box, simulated = False): 
+
+        self.box = box 
+        self.name = name 
+        self.pin = speaker_dict['pin'] 
+        if not simulated: 
+            self.gpio = GPIO 
+            GPIO.setup(self.pin, GPIO.OUT) # Connecting to Pi ! 
+        else: 
+            print(f'Simulating {self.name} pi connection')
+            self.gpio = self.SimulatedGPIO()
+        self.on = False # current on/off state of the Laser
+        self.patterns = self._setup_laser_patterns() # creates Cycle objects and sets as attributes for all the patterns defined in the yaml file so we can reference them by name. Also returns a list of all of the string names of the patterns to allow us to iterate thru all the patterns if desired.  
+
+    class SimulatedGPIO: 
+        def output(self, pin_num, zero_or_one):
+            '''print(f'laser{self.name} set to {zero_or_one}')'''
+
+    class Cycle: 
+        def __init__(self, name, high_time, low_time, repeat, laser_object): 
+            self.name = name 
+            self.high_time = high_time # seconds Laser is set to HIGH
+            self.low_time = low_time # seconds Laser is set to LOW
+            self.repeat = repeat # number of times we repeat this HIGH/LOW cycle 
+            self.laser_object = laser_object
+            self.box = laser_object.box
+
+            self.total_time = (high_time + low_time)*repeat
+
+        @thread_it
+        def trigger(self): 
+            '''turn the laser on/off according to the cycle attributes'''
+            for i in range(self.repeat): 
+                latency_obj = self.laser_object.turn_on() # submits a normal timestampt and creates the latency timestamp for submition at a later time
+                time.sleep(self.high_time)
+                self.laser_object.turn_off(latency_obj = latency_obj) # submits a normal timestamp and submits the latency timestamp 
+                time.sleep(self.low_time)
+            
+            return 
+        
+    def _setup_laser_patterns(self): 
+        ''' Instantiates Cycle Objects and sets them as attributes for the Laser so we can easily turn the laser on/off to match a certain pattern/cycle '''
+        pattern_list = [] # empty list 
+        for (pattern_name, pattern) in self.box.software_config['laser_patterns'].items(): 
+            # create a Cycle instance for each Pattern, and add an attribute for the pattern that points to the cycle instance  
+            newCycle = self.Cycle(pattern_name, pattern['on_seconds'], pattern['off_seconds'], pattern['repeat'], self)
+            setattr(self, pattern_name, newCycle ) 
+            pattern_list.append(newCycle)
+        return pattern_list
+    
+    def turn_on(self): 
+        ''' turns laser on '''
+        print(f'{self.name} On')
+        latency_obj = self.box.timestamp_manager.new_latency(description = oes.laser_on_latency, modifiers = {'ID':self.name})
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_on+self.name, modifiers = {'ID':self.name})
+        self.on = True 
+        self.gpio.output(self.pin, GPIO.HIGH) # sets to 3.3V
+        return latency_obj
+
+    
+    def turn_off(self, latency_obj = None): 
+        ''' turns laser off '''
+        print(f'{self.name} Off')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.laser_off+self.name, modifiers = {'ID':self.name})        
+        self.on = False
+        self.gpio.output(self.pin, GPIO.LOW) # sets to 0.0V
+        if latency_obj is not None: 
+            latency_obj.submit() # sets time of the latency from when we turned the laser on until right when we turn the laser off 
+        return 
+    
+    
+class Speaker:
     class FakeSpeaker:
         def set_PWM_frequency(self, pin, hz):
             '''print(f'speaker set to {hz} hz')'''
@@ -1080,7 +1161,7 @@ class ToneTrain(Tone):
 
 class Beam:
     
-    def __init__(self, name, beam_config_dict, box):
+    def __init__(self, name, beam_config_dict, box, simulated = False):
         
         
         self.config_dict = beam_config_dict

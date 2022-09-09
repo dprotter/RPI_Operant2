@@ -14,7 +14,7 @@ from queue import Queue
 import sys
 import csv
 import socket
-from RPI_Operant.hardware.software_functions import ScreenPrinter
+from .software_functions import ScreenPrinter
 
 def format_ts(timestamp_obj):
     
@@ -218,16 +218,14 @@ class TimestampManager:
         # Round and start time are updated each new round 
         self.timing = timing_obj
         self.save_timestamps = save_timestamps
-        self.screen = ScreenPrinter(self.box)
-
-    
+        self.screen = ScreenPrinter(self.box)    
 
     
     def create_save_file(self):
         self.save_path = self.box.output_file_path + '.csv'
         print(f'csv path: {self.save_path}')
         if self.save_timestamps:
-            with open(self.save_path, 'w') as file:
+            with open(self.save_path, 'w+') as file:
                 header = ['round','event','time','phase initialized','phase submitted','latency','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)
@@ -259,6 +257,7 @@ class TimestampManager:
 
                     #open file here to prevent repeated opening and closing
                     with open(self.save_path, 'a') as file:
+
                         csv_writer = csv.writer(file, delimiter = ',')
                         while not self.queue.empty():
 
