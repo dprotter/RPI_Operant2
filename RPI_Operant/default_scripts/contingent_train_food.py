@@ -35,27 +35,20 @@ def run():
         box.timing.new_round(length = box.software_config['values']['round_length'])
         
         phase = box.timing.new_phase('lever_out', box.software_config['values']['lever_out'])
-        speaker.play_tone(tone_name = 'start_of_round')
         press_latency = box.levers.food.extend()
         
         #start the actual lever-out phase
         lever.wait_for_n_presses(n=4, latency_obj = press_latency, on_press_events = [press_led_pulse])
-        while phase.active() and not lever.presses_reached:
+        while phase.active():
             '''waiting here for something to happen'''
         
-        if lever.presses_reached:
-            lever.retract()
-            speaker.play_tone(tone_name = 'pellet_tone')
-            dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])  
+            if lever.presses_reached:
+                lever.retract()
+                speaker.play_tone(tone_name = 'pellet_tone')
+                dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])
         
-        #wait to the end of the first lever-out phase    
-        phase.wait()
-        phase = box.timing.new_phase('lever_out_pt2', box.software_config['values']['lever_pt2'])
         
-        #only dispense if not already dispensed
-        if not lever.presses_reached:
-            speaker.play_tone(tone_name = 'pellet_tone')
-            dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])
+        
         
         
         phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
