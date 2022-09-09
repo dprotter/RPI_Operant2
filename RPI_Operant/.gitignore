@@ -133,5 +133,5 @@ dmypy.json
 default_output_location/*
 
 # local setup files
-*local_harware.yaml
+*local_hardware.yaml
 *local_software.yaml
