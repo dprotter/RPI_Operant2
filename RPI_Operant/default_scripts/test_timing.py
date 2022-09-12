@@ -57,7 +57,7 @@ print('2nd copy of latency after modification: ', copy2_lat.modifiers, '  |  ', 
 
 print('original latency object start time ', press_latency_1.start_time, '  |  ', id(press_latency_1.start_time))
 print('1st copy of latency after start time change: ', copy1_lat.start_time, '  |  ', id(copy1_lat.start_time))
-print('2nd copy of latency after start time change: ', copy2_lat.start_time, '  |  ', id(copy1_lat.start_time))
+print('2nd copy of latency after start time change: ', copy2_lat.start_time, '  |  ', id(copy2_lat.start_time))
 time.sleep(1)
 
 copy1_lat.submit()

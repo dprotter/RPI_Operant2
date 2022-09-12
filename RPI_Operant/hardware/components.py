@@ -1222,26 +1222,39 @@ class Beam:
         print(f'starting to monitor beam {self.name}')
         self._begin_monitoring()
         if latency:
-            latency.event_2 = oes.beam_broken+self.name
-            latency.add_modifier(key = 'beam_ID', value = self.name)
+            local_latency = copy.copy(latency)
+            local_latency.event_2 = oes.beam_broken+self.name
+            local_latency.reformat_event_descriptor()
+            local_latency.add_modifier(key = 'beam_ID', value = self.name)
             latency_submitted = False
             while self.monitor and phase.active() and not latency_submitted:
                 if self.switch.pressed:
-                    latency.submit()
+                    local_latency.submit()
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                                                 modifiers = {'ID':self.name})
                     latency_submitted = True 
                     timeout = self.box.timing.new_timeout(0.1)
                     while self.switch.pressed or timeout.active():
                         ''''''
-                    
+                    if self.monitor:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+                    else:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
         while self.monitor and phase.active():
             if self.switch.pressed:
                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                    modifiers = {'ID':self.name})
-                timeout = self.box.timing.new_timeout(0.1)
-                while self.switch.pressed or timeout.active():
+                
+                while self.switch.pressed:
                     ''''''
+                if self.monitor:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+                else:
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                    modifiers = {'ID':self.name})
         self.end_monitoring()
     
     @thread_it     
@@ -1254,7 +1267,7 @@ class Beam:
     
             while self.monitor:
                 if self.switch.pressed:
-                    latency.submit()
+                    local_latency.submit()
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                                                 modifiers = {'ID':self.name})
                     

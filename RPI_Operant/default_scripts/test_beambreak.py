@@ -69,6 +69,10 @@ for beam in box.beams:
     beam.sim_break()
     time.sleep(0.3)
 
+time.sleep(0.5)
+for beam in box.beams:
+    beam.sim_break()
+    time.sleep(0.2)
 try:
     while phase.active():
         ''''''
