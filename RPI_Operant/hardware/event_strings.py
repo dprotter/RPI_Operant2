@@ -30,3 +30,5 @@ class OperantEventStrings:
     pellet_retrieved = 'pellet_retrieved'
     
     beam_broken = 'beam_broken_'
+    beam_unbroken = 'beam_unbroken_'
+    bb_monitor_ended_bb = 'monitor_ending_while_beam_broken_'

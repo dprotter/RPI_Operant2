@@ -15,6 +15,7 @@ import queue
 import sys
 from .event_strings import OperantEventStrings as oes
 import inspect
+import copy
 
 
 
@@ -270,18 +271,19 @@ class Lever:
                                 event()
                                 
                         if latency_obj:
-                            latency_obj.add_modifier(key = 'n_presses', value = self.lever_presses)
-                            latency_obj.submit()
+                            local_latency = copy.copy(latency_obj)
+                            local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
+                            local_latency.submit()
                         else:
                             self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
                                                                                        modifiers = {'total_presses':self.total_presses, 'ID':self.name})
                         
                         if self.lever_presses >= n:
                             if latency_obj:
-                                
-                                latency_obj.event_descriptor = oes.presses_reached+self.name
-                                latency_obj.add_modifier(key = 'n_presses', value = self.lever_presses)
-                                latency_obj.submit()
+                                local_latency = copy.copy(latency_obj)
+                                local_latency.event_descriptor = oes.presses_reached+self.name
+                                local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
+                                local_latency.submit()
                             else:
                                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name, 
                                                                                            modifiers ={'n_press':self.lever_presses, 'ID':self.name})
@@ -561,9 +563,10 @@ class Dispenser:
     @thread_it
     def monitor_pellet(self, pellet_latency, on_retrieve_events = None):
         '''track when a pellet is retrieved'''
+        local_latency = copy.copy(pellet_latency)
         while not self.box.finished():
             if not self.sensor_pressed:
-                pellet_latency.submit()
+                local_latency.submit()
                 if on_retrieve_events:
                     for event in on_retrieve_events:
                         event()
@@ -1217,27 +1220,42 @@ class Beam:
     def _monitor_beam_break(self, latency = None):
         self.begin_monitoring()
         if latency:
-            latency.event_2 = oes.beam_broken+self.name
-            latency.add_modifier(key = 'beam_ID', value = self.name)
-            latency_submitted = False
-            while self.monitor and not latency_submitted:
+            local_latency = copy.copy(latency)
+            local_latency.event_2 = oes.beam_broken+self.name
+            local_latency.add_modifier(key = 'beam_ID', value = self.name)
+    
+            while self.monitor:
                 if self.switch.pressed:
                     latency.submit()
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                                                 modifiers = {'ID':self.name})
-                    latency_submitted = True 
-                    timeout = self.box.timing.new_timeout(0.1)
-                    while self.switch.pressed or timeout.active():
+                    
+                    while self.switch.is_pressed() and self.monitor:
                         ''''''
+                        time.sleep(0.05)
+                    if self.monitor:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+                    else:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+      
                     
         while self.monitor:
             if self.switch.pressed:
                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                    modifiers = {'ID':self.name})
-                timeout = self.box.timing.new_timeout(0.1)
-                while self.switch.pressed or timeout.active():
+
+                while self.switch.is_pressed and self.monitor:
                     ''''''
-                    
+                if self.monitor:
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+                else:
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.bb_monitor_ended_bb+self.name, 
+                                                   modifiers = {'ID':self.name})
+        
+                
         
     def _begin_monitoring(self):
         self.monitor = True
