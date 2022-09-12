@@ -18,10 +18,17 @@ class OperantEventStrings:
     
     tone_start = 'tone_start_'
     tone_stop = 'tone_stop_'
+
+    laser_on = 'laser_on_'
+    laser_off = 'laser_off_'
+    laser_on_latency = 'laser_on_latency'
     
     pellet_dispensed = 'pellet_dispense'
     pellet_skip = 'pellet_skipped'
     pellet_failure = 'pellet_dispense_failure'
     pellet_not_retrieved = 'pellet_not_retrieved'
     pellet_retrieved = 'pellet_retrieved'
-        
+    
+    beam_broken = 'beam_broken_'
+    beam_unbroken = 'beam_unbroken_'
+    bb_monitor_ended_bb = 'monitor_ending_while_beam_broken_'

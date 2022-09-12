@@ -8,7 +8,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "program": "/home/pi/Litz/RPI_Operant2_Testing/RPI_Operant2/RPI_Operant/default_scripts/litz_script.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }
