@@ -425,13 +425,19 @@ class Door:
         '''use to simulate the door entering the closed state'''
         self.state_switch.pressed = True
     
+
+    def open(self, wait = False): 
+        self._open()       
+        return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
+
+            
+    
     @thread_it
-    def open(self, wait = False):
+    def _open(self):
+        self.servo.throttle = self.open_speed
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
                                                                    modifiers = {'ID':self.name})
-        self.servo.throttle = self.open_speed
-
         start_time = time.time()
         while time.time() < (start_time + self.open_time) and not self.overridden:
             time.sleep(0.05)
@@ -446,12 +452,8 @@ class Door:
             print(f'{self.name} opened!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
-            return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
-    
+
     @thread_it
-    def _open()  
-    @thread_it
-    
     def close(self, wait = True):
         '''open this door'''
         

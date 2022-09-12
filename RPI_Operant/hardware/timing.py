@@ -257,7 +257,9 @@ class TimestampManager:
 
     def new_latency(self, description=None, event_1 = None, event_2 = None, modifiers = None, print_to_screen = True):
         '''will track latency between initialization and submission'''
-        return Latency(self, *args, **kwargs)
+        return Latency(self, event_descriptor=description, 
+            event_1 = event_1, event_2 = event_2, modifiers = modifiers, 
+            print_to_screen = print_to_screen)
 
 
     def finish_writing_items(self): 
