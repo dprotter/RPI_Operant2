@@ -14,10 +14,12 @@ USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_fil
 parser = argparse.ArgumentParser(description='input io info')
 parser.add_argument('--config_hardware_in', '-i',type = str, 
                     help = 'where is the hardware yaml file stored?',
-                    action = 'store')
+                    action = 'store',
+                    default = None)
 parser.add_argument('--config_software_in', '-s',type = str, 
                     help = 'where is the software yaml file stored?',
-                    action = 'store')
+                    action = 'store',
+                    default = None)
 
 
 args = parser.parse_args()

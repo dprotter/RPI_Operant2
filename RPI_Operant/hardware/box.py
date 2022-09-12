@@ -17,7 +17,7 @@ import traceback
 import signal
 import sys
 
-from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser, Output
+from RPI_Operant.hardware.components import Beam, Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser, Output
 
 from .timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
@@ -443,7 +443,7 @@ class ComponentContainer:
     def get_components(self):
         '''return all contained objects'''
         obj_dict = self.__dict__
-        return [value for _, value in obj_dict.items() if not isinstance(value, str)]
+        return [value for _, value in obj_dict.items() if not hasattr(value, '__iter__')]
     
     def add_component(self, name, component_object):
             name = component_object.name

@@ -319,6 +319,12 @@ class Button:
             raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pullup" or "pulldown", but was passed {pullup_pulldown}')
          
         self.pressed = False
+
+    def simulate_pressed(self):
+        self.pressed = True
+    
+    def simulate_unpressed(self):
+        self.pressed = False
         
 class ButtonManager:
     
@@ -441,8 +447,11 @@ class Door:
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
             return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
-        
+    
     @thread_it
+    def _open()  
+    @thread_it
+    
     def close(self, wait = True):
         '''open this door'''
         
@@ -1187,6 +1196,17 @@ class Beam:
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
         self.monitor = False
     
+    def shutdown_protocol(self):
+        '''how to get this object to shutdown when the box is finished'''
+        self.monitor = False
+
+    
+    @thread_it
+    def sim_break(self):
+        self.switch.simulate_pressed()
+        time.sleep(0.7)
+        self.switch.simulate_unpressed()
+
     def monitor_beam_break(self, latency_to_first_beambreak = None, end_with_phase = None):
         if self.monitor:
             print(f'beam monitoring already active, but monitor_beam_break was called again for {self.name}. this will be ignored')
@@ -1197,7 +1217,8 @@ class Beam:
     
     @thread_it     
     def _monitor_beam_break_for_phase(self, phase, latency = None):
-        self.begin_monitoring()
+        print(f'starting to monitor beam {self.name}')
+        self._begin_monitoring()
         if latency:
             latency.event_2 = oes.beam_broken+self.name
             latency.add_modifier(key = 'beam_ID', value = self.name)
@@ -1223,7 +1244,7 @@ class Beam:
     
     @thread_it     
     def _monitor_beam_break(self, latency = None):
-        self.begin_monitoring()
+        self._begin_monitoring()
         if latency:
             local_latency = copy.copy(latency)
             local_latency.event_2 = oes.beam_broken+self.name

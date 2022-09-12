@@ -192,6 +192,22 @@ class Latency:
         else:
             self.modifiers = {}
     
+    def __copy__(self): 
+        ''' 
+        overrides the default behavior of shallow copy method. references the addresses of the following attributes, 
+        allowing each copy of this Latency object to manipulate event_2 and modifiers without effecting the other copies. 
+        every other attribute value is shared between the Latency object copies, so changes to those values WILL be reflected in every copy.
+        ''' 
+        newLat = Latency(self.timestamp_manager) 
+        newLat.start_time = self.start_time 
+        newLat.print_to_screen = self.print_to_screen 
+        newLat.timestamp_manager = self.timestamp_manager 
+        newLat.event_descriptor = self.event_descriptor
+        newLat.event_1 = self.event_1
+        newLat.phase_initialized = self.phase_initialized
+        newLat.round_initialized = self.round_initialized
+        return newLat
+
     def reformat_event_descriptor(self):
         self.event_descriptor = f'{self.event_1}_|_{self.event_2}'
     
@@ -239,9 +255,9 @@ class TimestampManager:
         '''create and immediately submit new timestamp'''
         Timestamp(self, description, modifiers, print_to_screen=print_to_screen).submit()
 
-    def new_latency(self, description, modifiers = None, print_to_screen = True):
+    def new_latency(self, description=None, event_1 = None, event_2 = None, modifiers = None, print_to_screen = True):
         '''will track latency between initialization and submission'''
-        return Latency(self, description, modifiers, print_to_screen = print_to_screen)
+        return Latency(self, *args, **kwargs)
 
 
     def finish_writing_items(self): 

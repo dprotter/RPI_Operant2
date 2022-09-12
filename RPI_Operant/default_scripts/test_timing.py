@@ -49,10 +49,15 @@ print('2nd copy of latency: ', copy2_lat)
 print('Modifying Both Latency copies... ')
 print('\n')
 copy1_lat.add_modifier(key='1', value='1')
-# copy2_lat.add_modifier(key='2', value='2')
-print('1st copy of latency after modification: ', copy1_lat.modifiers)
-print('2nd copy of latency after modification: ', copy2_lat.modifiers)
+copy2_lat.add_modifier(key='2', value='2')
+copy2_lat.start_time = time.time() + 10000
+print('original latency object modifier values ', press_latency_1.modifiers, '  |  ', id(press_latency_1.modifiers))
+print('1st copy of latency after modification: ', copy1_lat.modifiers, '  |  ', id(copy1_lat.modifiers))
+print('2nd copy of latency after modification: ', copy2_lat.modifiers, '  |  ', id(copy1_lat.modifiers))
 
+print('original latency object modifier values ', press_latency_1.modifiers, '  |  ', id(press_latency_1.modifiers))
+print('1st copy of latency after modification: ', copy1_lat.modifiers, '  |  ', id(copy1_lat.modifiers))
+print('2nd copy of latency after modification: ', copy2_lat.modifiers, '  |  ', id(copy1_lat.modifiers))
 time.sleep(1)
 
 copy1_lat.submit()
