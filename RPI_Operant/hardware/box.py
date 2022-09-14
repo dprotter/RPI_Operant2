@@ -29,7 +29,8 @@ try:
         os.system('sudo pigpiod')
     import pigpio
 except:
-    print('pigpio not found')
+    print('pigpio not found, using Fake_pigio. FOR TESTING PURPOSES')
+    from RPI_Operant.hardware.Fake_GPIO import Fake_pigpio as pigpio
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
