@@ -9,3 +9,14 @@ class Fake_GPIO:
     
     def input(self, pin):
         return 3
+
+class Fake_pigpio:
+    def pi():
+        return Fake_pigpio_funcs()
+class Fake_pigpio_funcs:
+        def __init__(self):
+            '''i just want to exist in peace.'''
+        def set_PWM_duty_cycle(self, pin, value):
+            '''just here to receive values'''
+        def set_PWM_frequency(self, pin, value):
+            '''just here to receive values'''

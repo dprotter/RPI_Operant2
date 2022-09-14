@@ -105,15 +105,7 @@ class Lever:
         self.target_name = self.config_dict['target_name']
         self.target_type = self.config_dict['target_type']
         
-        
-        if 'speaker_name' in self.config_dict.keys():
-            self.speaker = self.box.speakers.get_component(self.config_dict['speaker_name'])
-        else:
-            try: 
-                self.speaker = self.box.speaker
-            except AttributeError as e: 
-                print(e, 'setting box.speaker to None.')
-                self.speaker = None
+        self.attatch_speaker()
         
         switch_dict = {
             'pin':self.pin,
@@ -138,6 +130,22 @@ class Lever:
         self.lever_presses = 0
         
         self.wiggle = 0
+    
+    @thread_it
+    def attatch_speaker(self):
+        success = False 
+        timeout = self.box.timing.new_timeout(length = 2)
+        while not success and timeout.active():
+            if 'speaker_name' in self.config_dict.keys():
+                self.speaker = self.box.speakers.get_component(self.config_dict['speaker_name'])
+                success = True
+            else:
+                try: 
+                    self.speaker = self.box.speaker
+                    success = True
+                except AttributeError as e: 
+                    pass
+    
     def simulate_lever_press(self):
         self.simulate_pressed()
         time.sleep(0.1)
@@ -169,7 +177,8 @@ class Lever:
         
     
     def extend(self):
-        '''extend a lever and timestamp it'''
+        '''extend a lever and timestamp it
+        returns a latency object that may be used to get the latency from lever-out to a second event'''
         
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
@@ -426,14 +435,18 @@ class Door:
         self.state_switch.pressed = True
     
 
-    def open(self, wait = False): 
-        self._open()       
+    def open(self, wait = False):
+        '''open this door. 
+        wait = boolean --> should the box wait to move on to the next line of code until this event is complete?
+        
+        returns latency object'''
+        self._open(wait = wait)       
         return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
 
             
     
     @thread_it
-    def _open(self):
+    def _open(self, wait):
         self.servo.throttle = self.open_speed
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
@@ -1314,3 +1327,18 @@ class Fake_GPIO:
     
     def input(self, pin):
         return 3
+
+#i bet I can generate this dynamically from the classes, if they have certain attrs,
+#like "plural_name" and "component_type"
+COMPONENT_LOOKUP = {
+                    'doors':{'component_class':Door, 'label':'door'},
+                    'levers':{'component_class':Lever, 'label':'lever'},
+                    'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
+                    'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
+                    'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
+                    'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
+                    'outputs':{'component_class':Output, 'label':'output'},
+                    'speakers':{'component_class':Speaker, 'label':'speaker'}, 
+                    'lasers':{'component_class':Laser, 'label':'laser'}, 
+                    'beams': {'component_class':Beam, 'label':'beam'}
+                    }

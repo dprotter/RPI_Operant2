@@ -16,8 +16,7 @@ import os
 import traceback
 import signal
 import sys
-
-from RPI_Operant.hardware.components import Beam, Laser, Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser, Output
+from RPI_Operant.hardware.components import COMPONENT_LOOKUP, ButtonManager
 
 from .timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
@@ -30,25 +29,15 @@ try:
         os.system('sudo pigpiod')
     import pigpio
 except:
-    print('pigpio not found')
+    print('pigpio not found, using Fake_pigio. FOR TESTING PURPOSES')
+    from RPI_Operant.hardware.Fake_GPIO import Fake_pigpio as pigpio
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
 DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_software.yaml')
 DEFAULT_OUTPUT_LOCATION = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location')
 ERROR_LOG_PATH = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location/error_logs/')
-COMPONENT_LOOKUP = {
-                    'doors':{'component_class':Door, 'label':'door'},
-                    'levers':{'component_class':Lever, 'label':'lever'},
-                    'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
-                    'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
-                    'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
-                    'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
-                    'outputs':{'component_class':Output, 'label':'output'},
-                    'speakers':{'component_class':Speaker, 'label':'speaker'}, 
-                    'lasers':{'component_class':Laser, 'label':'laser'}, 
-                    'beams': {'component_class':Beam, 'label':'beam'}
-                    }
+
 
 
 
