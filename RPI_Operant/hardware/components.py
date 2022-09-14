@@ -177,7 +177,8 @@ class Lever:
         
     
     def extend(self):
-        '''extend a lever and timestamp it'''
+        '''extend a lever and timestamp it
+        returns a latency object that may be used to get the latency from lever-out to a second event'''
         
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
@@ -434,14 +435,18 @@ class Door:
         self.state_switch.pressed = True
     
 
-    def open(self, wait = False): 
-        self._open()       
+    def open(self, wait = False):
+        '''open this door. 
+        wait = boolean --> should the box wait to move on to the next line of code until this event is complete?
+        
+        returns latency object'''
+        self._open(wait = wait)       
         return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
 
             
     
     @thread_it
-    def _open(self):
+    def _open(self, wait):
         self.servo.throttle = self.open_speed
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
