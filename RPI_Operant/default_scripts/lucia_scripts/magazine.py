@@ -17,7 +17,6 @@ def run():
     box.setup(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
-<<<<<<< HEAD:RPI_Operant/default_scripts/lucia_scripts/magazine.py
               start_now=False, simulated = True)
     
     if box.software_config['trigger_on_start']:
@@ -31,20 +30,6 @@ def run():
     
     if box.software_config['trigger_on_start']:
         box.start_and_trigger([trigger_object])
-=======
-              start_now=True)
-    '''
-    #this could be
-    trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
-    '''
-    #simplifying hardware calls
-    lever = box.levers.food
-    dispenser = box.dispensers.continuous_dispenser_1
-    speaker = box.speakers.speaker1
-    #
-    '''
-    box.start_and_trigger([trigger_object])'''
->>>>>>> 944f81eea75620a148386a64e9f7d2f66bbb5f6c:RPI_Operant/default_scripts/magazine.py
     
     #get LED pulses to pass to other functions
     press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_press_food')
