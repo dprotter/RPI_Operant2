@@ -56,23 +56,23 @@ box.setup(run_dict=RUNTIME_DICT,
             start_now=True)
 phase = box.timing.new_phase('testing', length = 1000)
 lat_objects = []
+
 for door in box.doors:
-    
-    lat_objects += [door.open(wait = True)]
+    lat_objects += [door.open(wait = True)] # open all doors, and grab the returned latency object 
 
 for i, beam in enumerate(box.beams):
-    beam.monitor_beam_break(latency_to_first_beambreak = lat_objects[i], end_with_phase=phase)
+    beam.monitor_beam_break(latency_to_first_beambreak = lat_objects[i], end_with_phase=phase) # monitor every door for the first beam break, and pass the latency object that corresponds with each door
 
 
 time.sleep(0.5)
-for beam in box.beams:
+'''for beam in box.beams:
     beam.sim_break()
     time.sleep(0.3)
 
 time.sleep(0.5)
 for beam in box.beams:
     beam.sim_break()
-    time.sleep(0.2)
+    time.sleep(0.2)'''
 try:
     while phase.active():
         ''''''

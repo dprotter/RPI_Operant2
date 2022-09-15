@@ -336,6 +336,9 @@ class Box:
         self.done = True
         
         val = 0
+        for speaker in self.speakers:
+            print(self.speakers)
+            speaker.set_off()
         while not self.monitor_worker_future.done():
             time.sleep(0.05)
             val +=1

@@ -182,7 +182,7 @@ class Lever:
         
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
-        lat = self.box.timestamp_manager.new_latency(event_1 = oes.lever_extend+self.name, 
+        lat = self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
         extend_start = max(0, self.extended-self.wiggle)
 

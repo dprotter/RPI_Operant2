@@ -1,5 +1,5 @@
 speakers:
-  speaker:
+  speaker1:
     pin: 21
 
 beams: 
