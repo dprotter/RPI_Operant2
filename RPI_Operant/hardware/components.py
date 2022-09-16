@@ -564,7 +564,7 @@ class Dispenser:
         print(' DISPENSING ')
 
         #check if pellet was retrieved or is still in trough
-        if self.pellet_state:
+        if self.pellet_state():
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_not_retrieved}_{self.name}', modifiers = {'ID':self.name})
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_skip}_{self.name}', modifiers = {'ID':self.name})            
         
@@ -573,12 +573,11 @@ class Dispenser:
             read = 0
             timeout = self.box.timing.new_timeout(length = self.config_dict['dispense_timeout'])
             while timeout.active():
-                if self.pellet_state:
+                if self.pellet_state():
                     read+=1
                 if read > 2:
                     '''timestamp put "pellet dispensed"'''
                     self.stop_servo()
-                    self.pellet_state = True
                     pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, 
                                                                             modifiers = {'ID':self.name})
                     self.monitor_pellet(pellet_latency, on_retrieve_events = on_retrieve_events)
@@ -592,13 +591,18 @@ class Dispenser:
         '''track when a pellet is retrieved'''
         local_latency = copy.copy(pellet_latency)
         
-        while not self.box.finished() and self.pellet_state:
-            if not self.sensor.pressed:
+        # no pellet in trough
+        if not self.pellet_state(): # no pellet in trough, no need to loop 
+            return 
+
+        # pellet is in trough, monitor for pellet retrieval
+        while not self.box.finished(): 
+            if not self.pellet_state(): # stops looping as soon as pellet is gone from trough
                 local_latency.submit()
-                self.pellet_state = False
                 if on_retrieve_events:
                     for event in on_retrieve_events:
                         event()
+                return 
                 
                 
 

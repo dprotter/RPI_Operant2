@@ -108,6 +108,8 @@ class Phase:
     def __init__(self, name, length=1000, box=None, countdown = True): 
             # if timeframe is None, then there is no time limit on this phase. As a result, it will run until interrupt or a new phase is created
             self.start_time = time.time()
+            if length is None: 
+                length = 1000
             self.end_time = self.start_time + length
             self.name = name 
             self.timeframe = length

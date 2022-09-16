@@ -377,6 +377,8 @@ class Box:
             l.retract()
         for speaker in self.speakers:
             speaker.set_off()
+        for laser in self.lasers: 
+            laser.turn_off()
         
         print('monitor_workers complete')
         self.completed = True
