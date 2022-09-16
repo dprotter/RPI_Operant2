@@ -973,11 +973,12 @@ class Laser:
     def _setup_laser_patterns(self): 
         ''' Instantiates Cycle Objects and sets them as attributes for the Laser so we can easily turn the laser on/off to match a certain pattern/cycle '''
         pattern_list = [] # empty list 
-        for (pattern_name, pattern) in self.box.software_config['laser_patterns'].items(): 
-            # create a Cycle instance for each Pattern, and add an attribute for the pattern that points to the cycle instance  
-            newCycle = self.Cycle(pattern_name, pattern['on_seconds'], pattern['off_seconds'], pattern['repeat'], self)
-            setattr(self, pattern_name, newCycle ) 
-            pattern_list.append(newCycle)
+        if 'laser_patterns' in self.box.software_config.keys(): 
+            for (pattern_name, pattern) in self.box.software_config['laser_patterns'].items(): 
+                # create a Cycle instance for each Pattern, and add an attribute for the pattern that points to the cycle instance  
+                newCycle = self.Cycle(pattern_name, pattern['on_seconds'], pattern['off_seconds'], pattern['repeat'], self)
+                setattr(self, pattern_name, newCycle ) 
+                pattern_list.append(newCycle)
         return pattern_list
     
     def turn_on(self): 
