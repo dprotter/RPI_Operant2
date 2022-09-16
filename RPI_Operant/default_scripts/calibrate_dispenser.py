@@ -3,7 +3,7 @@ from RPI_Operant.hardware.box import Box
 import time
 import random
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'test_dispenser'}
-USER_CONFIG_PATH = '/home/pi/anne_experiment/yaml_setup_files/magazine_hardware.yaml'
+USER_CONFIG_PATH = '/home/pi/Local/laser_local_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/anne_experiment/yaml_setup_files/magazine_software.yaml'
 
 def calibrate_stop(d):

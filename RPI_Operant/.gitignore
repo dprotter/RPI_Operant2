@@ -132,6 +132,9 @@ dmypy.json
 # place for operant output files when
 default_output_location/*
 
-# local setup files
+# local setup files: any file w/ the word local will not get added
 *local_hardware.yaml
 *local_software.yaml
+default_setup_files/*local_hardware.yaml
+default_setup_files/*local_software.yaml
+default_setup_files/*local*.yaml 
