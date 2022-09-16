@@ -38,8 +38,8 @@ doors:
 levers:
   food:
     servo: 4
-    extended: 30
-    retracted: 90
+    extended: 22
+    retracted: 110
     pin: 27
     pullup_pulldown: pullup
     servo_type: positional
@@ -48,8 +48,8 @@ levers:
     
   door_1:
     servo: 2
-    extended: 30
-    retracted: 90
+    extended: 32
+    retracted: 105
     pin: 18
     pullup_pulldown: pullup
     target_name: door_1
@@ -59,7 +59,7 @@ levers:
   
   door_2:
     servo: 12
-    extended: 30
+    extended: 10
     retracted: 90
     pin: 22
     pullup_pulldown: pullup
@@ -69,31 +69,15 @@ levers:
     interpress_interval: 0.25
 
 dispensers:
-  dispenser:
+  continuous_dispenser_1: 
     servo: 1
-    servo_type: positional 
-    dispense: 0.075
-    stop: 0
+    servo_type: continuous 
+    dispense: 0.23
+    stop: 0.06
     sensor_pin: 16
     pullup_pulldown: pullup
     dispense_timeout: 3
 
-
-outputs:
-  round_LED:
-    type: HAT
-    channel: 4
-
-  event_LED:
-    type: HAT
-    channel: 5
-
-  miniscope_trigger:
-    type: GPIO
-    pin: 20
-
-
-  led_GPIO_test:
-    type: GPIO
-    pin: 21
+    start: 1
+    n_spots: 1
 

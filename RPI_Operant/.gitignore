@@ -131,3 +131,7 @@ dmypy.json
 
 # place for operant output files when
 default_output_location/*
+
+# local setup files
+*local_hardware.yaml
+*local_software.yaml

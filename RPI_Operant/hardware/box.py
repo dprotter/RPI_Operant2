@@ -14,30 +14,30 @@ import importlib.util
 
 import os
 import traceback
+import signal
+import sys
+from RPI_Operant.hardware.components import COMPONENT_LOOKUP, ButtonManager
 
-from RPI_Operant.hardware.components import Button, Lever, Door, ButtonManager, Dispenser, Speaker, PositionalDispenser, PortDispenser
-
-from RPI_Operant.hardware.timing import TimeManager, TimestampManager
+from .timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
 import queue
 import time
 import datetime
 from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
+try:
+    if os.system('sudo lsof -i TCP:8888'):
+        os.system('sudo pigpiod')
+    import pigpio
+except:
+    print('pigpio not found, using Fake_pigio. FOR TESTING PURPOSES')
+    from RPI_Operant.hardware.Fake_GPIO import Fake_pigpio as pigpio
 
 # Constants 
 DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
 DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_software.yaml')
 DEFAULT_OUTPUT_LOCATION = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location')
 ERROR_LOG_PATH = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location/error_logs/')
-COMPONENT_LOOKUP = {
-                    'doors':{'component_class':Door, 'label':'door'},
-                    'levers':{'component_class':Lever, 'label':'lever'},
-                    'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
-                    'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
-                    'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
-                    'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},
-                    'speakers':{'component_class':Speaker, 'label':'speaker'}
-                    }
+
 
 
 
@@ -57,6 +57,7 @@ class Box:
         self.done = False
         self.completed = False
         self.run_dict = run_dict
+        self.pi = pigpio.pi()
         
         ###### load and merge config files
         if user_hardware_config_file_path:
@@ -64,6 +65,7 @@ class Box:
         else:
             self.config = load_config_file(DEFAULT_HARDWARE_CONFIG)
         
+
         if user_software_config_file_path:
             self.software_config = load_config_file(user_software_config_file_path)
         else:
@@ -111,14 +113,26 @@ class Box:
             
             #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
+            if label == 'speaker':
+                #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
+                if len(self.speakers) == 1:
+                    self.speaker = self.speakers.get_components()[0]
+                else: 
+                    print(f'speakers are {self.speakers}')
+                #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-        #VVVVVVVVVVVVVVVV wanted to simplify this call elsewhere as box.speaker.click_on etc etc
-        if len(self.speakers) ==1:
-            self.speaker = self.speakers.get_components()[0]
+        
         
         #^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        #
+        # Set Interrupt Handler for Clean Exit
+        #
+        signal.signal(signal.SIGINT, self._interrupt_handler) # Ctrl-C
+        signal.signal(signal.SIGTSTP, self._interrupt_handler) # Ctrl-Z
 
-
+        # 
+        # THREADING 
+        # 
         self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = True)
         
         #startup queue monitoring
@@ -132,6 +146,17 @@ class Box:
             self.timing.start_timing()
         self.setup_complete = True
     
+    def start_and_trigger(self, obj_list):
+        '''start timing and subsequently call any functions passed within obj list.
+           be cautious with things that must be triggered very close to initiation, as functions that 
+           take considerable time to run will throw off timing, and the list will be run in the order 
+           it was passed. 
+           obj_list: list of functions to be run
+        '''
+        self.timing.start_timing()
+        for obj in obj_list:
+            obj()
+        
     def generate_output_fname(self):
         vole = self.run_dict['vole']
         day = self.run_dict['day']
@@ -298,12 +323,22 @@ class Box:
             for door in self.doors:
                 door.close()
 
+    
+    def _interrupt_handler(self, signal, frame): 
+        ''' catches interrupt, notifies threads, attempts a clean exit '''
+        print(f'(box.py, _interrupt_handler) Shutting Down')
+        self.force_shutdown() # shuts off all of the hardware 
+        sys.exit(0)
+
     def force_shutdown(self):
         if not self.timing.current_phase == None:
             self.timing.current_phase.end_phase()
         self.done = True
         
         val = 0
+        for speaker in self.speakers:
+            print(self.speakers)
+            speaker.set_off()
         while not self.monitor_worker_future.done():
             time.sleep(0.05)
             val +=1
@@ -314,7 +349,12 @@ class Box:
         for l in self.levers:
             l.retract()
         for speaker in self.speakers:
+            print(self.speakers)
             speaker.set_off()
+        if hasattr(self, 'lasers'): # if lasers are in the box, shut off as well
+            for laser in self.lasers: 
+                laser.turn_off()
+
         
         print('monitor_workers complete')
         
@@ -337,6 +377,8 @@ class Box:
             l.retract()
         for speaker in self.speakers:
             speaker.set_off()
+        for laser in self.lasers: 
+            laser.turn_off()
         
         print('monitor_workers complete')
         self.completed = True
@@ -395,7 +437,7 @@ class ComponentContainer:
     def get_components(self):
         '''return all contained objects'''
         obj_dict = self.__dict__
-        return [value for _, value in obj_dict.items() if not isinstance(value, str)]
+        return [value for _, value in obj_dict.items() if not hasattr(value, '__iter__')]
     
     def add_component(self, name, component_object):
             name = component_object.name

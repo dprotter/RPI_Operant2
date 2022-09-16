@@ -4,15 +4,17 @@ output_path: 'default'
 checks:
   save_timestamps: True
 
-values:
-  rounds: 3
-  delay_by_day: [0]
-  delay_default: 0
-  round_length: 60
-  lever_out_time: 60
-  
+
+led_pulses:
+  round:
+    length: 1
+  lever_press:
+    length: 0.3
+  pellet_retrieval:
+    length: 0.7
+
 speaker_tones:
-  speaker1:
+  speaker:
     round_start:
       hz: 5000
       length: 1
@@ -46,3 +48,4 @@ speaker_tones:
       tone_3:
         hz: 900
         length: 0.02
+      

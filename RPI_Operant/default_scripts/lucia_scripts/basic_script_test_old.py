@@ -1,8 +1,6 @@
 from RPI_Operant.hardware.box_old import Box
 import time
-box=Box()
-box.stup()
-
+box = Box(start_now = True)
 box.timing.new_round()
 
 print('box complete')

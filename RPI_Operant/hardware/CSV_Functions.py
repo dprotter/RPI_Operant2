@@ -2,7 +2,7 @@ from datetime import datetime
 import pandas as pd
 import importlib
 import os
-from RPI_Operant.hardware.software_functions import load_config_file
+from .software_functions import load_config_file
 import yaml
 import threading
 import time
@@ -81,8 +81,15 @@ class Experiment:
         self.current_args = self.parse_args()
         self.runtime_dict = self.generate_runtime_dict()
         self.load_module()
+        self.check_setup_filepaths()
         return True
-        
+    
+    def check_setup_filepaths(self):
+        if not os.path.isfile(self.current_row.script_setup):
+             print(f'WARNING: Experiment class received a path to software setup that does not point to a file:\n{self.current_row.script_setup}\n')
+        if not os.path.isfile(self.current_row.hardware_setup):
+             print(f'WARNING: Experiment class received a path to hardware setup that does not point to a file:\n{self.current_row.hardware_setup}\n')
+    
     def load_module(self):
         #dynamically reload the module with the new vole info.
         if os.path.isfile(self.current_row['script_path']):
@@ -166,7 +173,7 @@ class Experiment:
         if not config['output_path'] == 'default':
             
             if not os.path.isdir(config['output_path']):
-                response = input(f'output path does not exist. Should I make:\n{config["output_path"]}"y" : recursively make dir.\n"n"fall back to default output location\n')
+                response = input(f'output path does not exist. Should I make:\n{config["output_path"]}"y" : recursively make dir.\n"n" : fall back to default output location\n')
                 if response.lower == 'y':
                     success = r_mkdir(config["output_path"])
                     if not success:

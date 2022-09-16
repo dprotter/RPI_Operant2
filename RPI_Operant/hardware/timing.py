@@ -14,7 +14,7 @@ from queue import Queue
 import sys
 import csv
 import socket
-from RPI_Operant.hardware.software_functions import ScreenPrinter
+from .software_functions import ScreenPrinter
 
 def format_ts(timestamp_obj):
     
@@ -108,6 +108,8 @@ class Phase:
     def __init__(self, name, length=1000, box=None, countdown = True): 
             # if timeframe is None, then there is no time limit on this phase. As a result, it will run until interrupt or a new phase is created
             self.start_time = time.time()
+            if length is None: 
+                length = 1000
             self.end_time = self.start_time + length
             self.name = name 
             self.timeframe = length
@@ -141,7 +143,7 @@ class Phase:
             time.sleep(0.1)
 
 class Timestamp: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
+    def __init__(self, timestamp_manager, event_descriptor, modifiers = None, print_to_screen = True): 
         
         
         self.timestamp_manager = timestamp_manager 
@@ -149,7 +151,7 @@ class Timestamp:
         self.round = timestamp_manager.timing.round # round number that event occurred during 
         self.round_start_time = timestamp_manager.timing.round_start_time
         self.phase_initialized = timestamp_manager.timing.current_phase.name if timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name
-        
+        self.print_to_screen = print_to_screen
         
         self.round_initialized = timestamp_manager.timing.round
         if modifiers:
@@ -173,11 +175,14 @@ class Timestamp:
         self.timestamp_manager.screen.print_queue.put(self)
 
 class Latency: 
-    def __init__(self, timestamp_manager, event_descriptor, modifiers = None): 
+    def __init__(self, timestamp_manager, event_1 = None, event_2 = None, event_descriptor= None,  modifiers = None, print_to_screen = True): 
 
         self.start_time = time.time()
+        self.print_to_screen = print_to_screen
         self.timestamp_manager = timestamp_manager 
-        self.event_descriptor = event_descriptor # string that describes what the event is 
+        self.event_descriptor = event_descriptor # string that describes what the event is
+        self.event_1 = event_1 #first event
+        self.event_2 = event_2 #second event
         self.phase_initialized = timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name # phase that timestamp was initialized occurred during 
         self.round_initialized = timestamp_manager.timing.round  # round number that timestamp was initialized occurred during 
         if modifiers:
@@ -188,7 +193,26 @@ class Latency:
                 self.modifiers = modifiers
         else:
             self.modifiers = {}
-        
+    
+    def __copy__(self): 
+        ''' 
+        overrides the default behavior of shallow copy method. references the addresses of the following attributes, 
+        allowing each copy of this Latency object to manipulate event_2 and modifiers without effecting the other copies. 
+        every other attribute value is shared between the Latency object copies, so changes to those values WILL be reflected in every copy.
+        ''' 
+        newLat = Latency(self.timestamp_manager) 
+        newLat.start_time = self.start_time 
+        newLat.print_to_screen = self.print_to_screen 
+        newLat.timestamp_manager = self.timestamp_manager 
+        newLat.event_descriptor = self.event_descriptor
+        newLat.event_1 = self.event_1
+        newLat.phase_initialized = self.phase_initialized
+        newLat.round_initialized = self.round_initialized
+        return newLat
+
+    def reformat_event_descriptor(self):
+        self.event_descriptor = f'{self.event_1}_|_{self.event_2}'
+    
     def add_modifier(self, key, value):
         
         self.modifiers.update({key:value})
@@ -212,16 +236,14 @@ class TimestampManager:
         # Round and start time are updated each new round 
         self.timing = timing_obj
         self.save_timestamps = save_timestamps
-        self.screen = ScreenPrinter(self.box)
-
-    
+        self.screen = ScreenPrinter(self.box)    
 
     
     def create_save_file(self):
         self.save_path = self.box.output_file_path + '.csv'
         print(f'csv path: {self.save_path}')
         if self.save_timestamps:
-            with open(self.save_path, 'w') as file:
+            with open(self.save_path, 'w+') as file:
                 header = ['round','event','time','phase initialized','phase submitted','latency','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)
@@ -231,13 +253,15 @@ class TimestampManager:
         '''how to create a new timestamp object'''
         return Timestamp(self, description, modifiers)
 
-    def create_and_submit_new_timestamp(self, description, modifiers = None):
+    def create_and_submit_new_timestamp(self, description, modifiers = None, print_to_screen = True):
         '''create and immediately submit new timestamp'''
-        Timestamp(self, description, modifiers).submit()
+        Timestamp(self, description, modifiers, print_to_screen=print_to_screen).submit()
 
-    def new_latency(self, description, modifiers = None):
+    def new_latency(self, description=None, event_1 = None, event_2 = None, modifiers = None, print_to_screen = True):
         '''will track latency between initialization and submission'''
-        return Latency(self, description, modifiers)
+        return Latency(self, event_descriptor=description, 
+            event_1 = event_1, event_2 = event_2, modifiers = modifiers, 
+            print_to_screen = print_to_screen)
 
 
     def finish_writing_items(self): 
@@ -253,6 +277,7 @@ class TimestampManager:
 
                     #open file here to prevent repeated opening and closing
                     with open(self.save_path, 'a') as file:
+
                         csv_writer = csv.writer(file, delimiter = ',')
                         while not self.queue.empty():
 

@@ -52,7 +52,7 @@ port_dispensers:
     
   dispenser_3:
 
-    servo: 10 ###must be updated
+    servo: 8 ###must be updated
     servo_type: continuous 
     dispense: 0.165 ###must be updated
     full_rotation_time: 1.87225 ###must be updated
