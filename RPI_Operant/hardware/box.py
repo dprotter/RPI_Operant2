@@ -58,6 +58,7 @@ class Box:
         self.completed = False
         self.run_dict = run_dict
         self.pi = pigpio.pi()
+        self.shutdown_objects = []
         
         ###### load and merge config files
         if user_hardware_config_file_path:
@@ -154,8 +155,13 @@ class Box:
            obj_list: list of functions to be run
         '''
         self.timing.start_timing()
+        returned_objs = []
         for obj in obj_list:
-            obj()
+            returned_objs+=[obj()]
+            
+        if any(returned_objs):
+            
+            self.shutdown_objects+= [obj for obj in returned_objs if obj]
         
     def generate_output_fname(self):
         vole = self.run_dict['vole']
@@ -363,6 +369,13 @@ class Box:
         
         if not self.timing.current_phase == None:
             self.timing.current_phase.end_phase()
+        
+        #go through any objects that are currently on and
+        #turn them off
+        for obj in self.shutdown_objects:
+            obj.shutdown()
+            
+        time.sleep(0.25)
         self.done = True
         
         val = 0

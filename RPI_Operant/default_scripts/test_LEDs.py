@@ -20,10 +20,15 @@ trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
 box.start_and_trigger([trigger_object])
 
 for output in box.outputs:
-    print(f'testing output: {output.name}')
-    for _ in range(4):
-        output.activate()
-        time.sleep(0.25)
-        output.deactivate()
+    if not 'trigger' in output.name
+        print(f'testing output: {output.name}')
+        
+        for _ in range(4):
+            
+            output.activate()
+            time.sleep(0.25)
+            output.deactivate()
+    else:
+        print(f'skipping testing {output.name}')
 
 box.shutdown()

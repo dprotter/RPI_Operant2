@@ -18,7 +18,7 @@ def run():
               start_now=False, simulated = True)
     
     #this could be
-    trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
+    trigger_object = box.outputs.miniscope_trigger.prepare_trigger(length = 0)
     
     #simplifying hardware calls
     lever = box.levers.food

@@ -916,6 +916,16 @@ class Output:
         self.activate()
         time.sleep(length)
         self.deactivate()
+        return None
+    
+    def shutdown(self):
+        self.deactivate()
+    
+    def trigger_hold_high(self):
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
+                                                                   modifiers = {'ID':self.name})
+        self.switch.active()
+        return self
     
     def prepare_pulse(self, length, pulse_string = None):
         'create a premade pulse object that can be passed to on-press-event lists'
@@ -923,6 +933,8 @@ class Output:
    
     def prepare_trigger(self, length, pulse_string = None):
         'create a premade trigger object that can be passed to on-press-event lists'
+        if length == 0:
+            return lambda: self.trigger_hold_high(pulse_string)
         return lambda: self.trigger(length, pulse_string)
     
     
