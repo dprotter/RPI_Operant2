@@ -910,8 +910,12 @@ class Output:
         self.deactivate()
     
     @thread_it
-    def trigger(self, length = 0.1):
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
+    def trigger(self, length = 0.1, pulse_string = None):
+        if pulse_string:
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = pulse_string, 
+                                                                   modifiers = {'ID':self.name})
+        else:
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
                                                                    modifiers = {'ID':self.name})
         self.activate()
         time.sleep(length)
@@ -921,8 +925,12 @@ class Output:
     def shutdown(self):
         self.deactivate()
     
-    def trigger_hold_high(self):
-        self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
+    def trigger_hold_high(self, pulse_string):
+        if pulse_string:
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = pulse_string, 
+                                                                   modifiers = {'ID':self.name})
+        else:
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
                                                                    modifiers = {'ID':self.name})
         self.switch.active()
         return self
