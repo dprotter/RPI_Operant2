@@ -28,6 +28,7 @@ for output in box.outputs:
             output.activate()
             time.sleep(0.25)
             output.deactivate()
+            time.sleep(0.25)
     else:
         print(f'skipping testing {output.name}')
 
