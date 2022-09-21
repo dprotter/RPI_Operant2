@@ -16,8 +16,8 @@ box.setup(run_dict=RUNTIME_DICT,
             start_now=False)
 
 time.sleep(0.5)
-trigger_obj = box.outputs.miniscope_trigger
-box.start_and_trigger([trigger_obj])
+trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
+box.start_and_trigger([trigger_object])
 
 for output in box.outputs:
     print(f'testing output: {output.name}')
