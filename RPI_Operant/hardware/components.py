@@ -866,9 +866,11 @@ class Output:
     ################################################
     ############## HAT ###############
     def set_active_HAT(self):
+        self.active = True
         self.channel.duty_cycle = 0xffff
         
     def set_inactive_HAT(self):
+        self.active = False
         self.channel.duty_cycle = 0
                 
         
@@ -884,6 +886,7 @@ class Output:
          
         
     def activate(self):
+        
         self.switch_active()
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', 
                                                                     modifiers = {'ID':self.name}, 
@@ -891,6 +894,7 @@ class Output:
         
          
     def deactivate(self):
+        
         self.switch_inactive()
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_deactivated', 
                                                                     modifiers = {'ID':self.name}, 
@@ -917,13 +921,14 @@ class Output:
         else:
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
                                                                    modifiers = {'ID':self.name})
-        self.activate()
+        self.switch_active()
         time.sleep(length)
-        self.deactivate()
+        self.switch_inactive()
         return None
     
     def shutdown(self):
-        self.deactivate()
+        if self.active:
+            self.deactivate()
     
     def trigger_hold_high(self, pulse_string):
         if pulse_string:
@@ -932,7 +937,7 @@ class Output:
         else:
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
                                                                    modifiers = {'ID':self.name})
-        self.switch.active()
+        self.switch_active()
         return self
     
     def prepare_pulse(self, length, pulse_string = None):
