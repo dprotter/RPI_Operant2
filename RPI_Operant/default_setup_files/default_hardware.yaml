@@ -90,7 +90,7 @@ outputs:
 
   miniscope_trigger:
     type: GPIO
-    pin: 20
+    pin: 19
 
 
   led_GPIO_test:
