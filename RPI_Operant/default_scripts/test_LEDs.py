@@ -16,11 +16,11 @@ box.setup(run_dict=RUNTIME_DICT,
             start_now=False)
 
 time.sleep(0.5)
-trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
+trigger_object = box.outputs.miniscope_trigger.prepare_trigger(length = 0)
 box.start_and_trigger([trigger_object])
 
 for output in box.outputs:
-    if not 'trigger' in output.name
+    if not 'trigger' in output.name:
         print(f'testing output: {output.name}')
         
         for _ in range(4):
