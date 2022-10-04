@@ -40,6 +40,7 @@ class ScreenPrinter:
             return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: {obj.latency}'
         else:
             return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: ___'
+        
     
     @thread_it
     def print_output(self):

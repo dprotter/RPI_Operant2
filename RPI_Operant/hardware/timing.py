@@ -26,11 +26,13 @@ def format_ts(timestamp_obj):
             mod_string+=f'{key}:{val}|'
             
     if isinstance(timestamp_obj, Timestamp):
-        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, mod_string, timestamp_obj.round_initialized]
+        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, None, mod_string, timestamp_obj.round_initialized]
     
     elif isinstance(timestamp_obj, Latency):
-        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, timestamp_obj.latency, mod_string, timestamp_obj.round_initialized]
+        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, timestamp_obj.latency, None, mod_string, timestamp_obj.round_initialized]
     
+    elif isinstance(timestamp_obj, Duration): 
+        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, timestamp_obj.duration, mod_string, timestamp_obj.round_intialized]
     else:
         print(f'timestamp writing error, unknown object passed to timestamp manager: {timestamp_obj}')
 
@@ -174,6 +176,43 @@ class Timestamp:
         self.timestamp_manager.queue.put(format_ts(self))
         self.timestamp_manager.screen.print_queue.put(self)
 
+class Duration: 
+    def __init__(self, timestamp_manager, event_1 = None, event_2 = None, event_descriptor=None, modifiers = None, print_to_screen = True): 
+        self.start_time = time.time()
+        self.print_to_screen = print_to_screen
+        self.timestamp_manager = timestamp_manager 
+        self.event_descriptor = event_descriptor # string that describes what the event is
+        self.event_1 = event_1 #first event
+        self.event_2 = event_2 #second event
+        self.phase_initialized = timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name # phase that timestamp was initialized occurred during 
+        self.round_initialized = timestamp_manager.timing.round  # round number that timestamp was initialized occurred during 
+        if modifiers:
+            if not isinstance(modifiers, dict):
+                print('WARNING! Duration object instantiated with non-dictionary "modifiers" argument.')
+                self.modifiers = {'unknown':modifiers} 
+            else:
+                self.modifiers = modifiers
+        else:
+            self.modifiers = {}
+
+    def reformat_event_descriptor(self):
+        self.event_descriptor = f'{self.event_1}_|_{self.event_2}'
+    
+    def add_modifier(self, key, value):
+        self.modifiers.update({key:value})
+        
+    def submit(self): 
+        # self.timestamp = "{:.2f}".format(self.timestamp)
+        t = time.time()
+        self.round = self.timestamp_manager.timing.round
+        self.duration = round(t - self.start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase')
+        self.timestamp_manager.queue.put(format_ts(self))
+        self.timestamp_manager.screen.print_queue.put(self)
+
+
+
 class Latency: 
     def __init__(self, timestamp_manager, event_1 = None, event_2 = None, event_descriptor= None,  modifiers = None, print_to_screen = True): 
 
@@ -244,7 +283,7 @@ class TimestampManager:
         print(f'csv path: {self.save_path}')
         if self.save_timestamps:
             with open(self.save_path, 'w+') as file:
-                header = ['round','event','time','phase initialized','phase submitted','latency','modifiers','round timestamp initialized']
+                header = ['round','event','time','phase initialized','phase submitted','latency','duration','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)
                 
@@ -262,7 +301,12 @@ class TimestampManager:
         return Latency(self, event_descriptor=description, 
             event_1 = event_1, event_2 = event_2, modifiers = modifiers, 
             print_to_screen = print_to_screen)
-
+    
+    def new_duration(self, description = None, event_1 = None, event_2 = None, modifiers = None, print_to_screen = True): 
+        '''will track duration between initialization and submission'''
+        return Duration(self, event_descriptor=description, 
+            event_1 = event_1, event_2 = event_2, modifiers = modifiers, 
+            print_to_screen = print_to_screen)
 
     def finish_writing_items(self): 
         self.queue.join()

@@ -1252,6 +1252,19 @@ class Beam:
         time.sleep(0.7)
         self.switch.simulate_unpressed()
 
+
+    ''' (TODO) THIS NEEDS TO GET ADDED TO THE GIT REPO RPI_OPERANT2 '''
+    @thread_it
+    def count_beam_breaks(self): 
+        ''' counts the total number of beam breaks. Does not write to output files '''
+        self._begin_monitoring() # sets monitoring to true 
+        while self.monitor: 
+            if self.switch.pressed: 
+                self.total_beam_breaks += 1 
+
+                while self.monitor and self.switch.pressed: 
+                    '''wait for state change/unpress to occur'''
+
     def monitor_beam_break(self, latency_to_first_beambreak = None, end_with_phase = None):
         if self.monitor:
             print(f'beam monitoring already active, but monitor_beam_break was called again for {self.name}. this will be ignored')
