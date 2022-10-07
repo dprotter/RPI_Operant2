@@ -1255,12 +1255,27 @@ class Beam:
 
     ''' (TODO) THIS NEEDS TO GET ADDED TO THE GIT REPO RPI_OPERANT2 '''
     @thread_it
-    def count_beam_breaks(self): 
-        ''' counts the total number of beam breaks. Does not write to output files '''
+    def count_beam_breaks( self, get_duration = False ): 
+        ''' counts the total number of beam breaks. if get_duration is set to True, then will create Duration objects and submit to the output file. 
+            ** This is for use in monitoring when a vole is in the 'interaction zone'. This only provides info on when a beam is broken, not when it is unbroken. 
+            To retrieve info on when a beam is broken & unbroken, use the function monitor_beam_break instead. ** 
+        '''
         self._begin_monitoring() # sets monitoring to true 
+        duration = self.box.timestamp_manager.new_duration(description = None, event_1='starting duration; this should never get written to the output file!')
         while self.monitor: 
             if self.switch.pressed: 
                 self.total_beam_breaks += 1 
+                
+                # If get_duration is True, this provides the duration between [break1, break2] , [break3, break4] , [break5, break6] , etc. 
+                
+                if get_duration is True:     
+                    if self.total_beam_breaks%2 != 0: 
+                        # just reached an odd num of beam breaks -> need to create a new duration object that we will submit later on 
+                        duration = self.box.timestamp_manager.new_duration(description = oes.beam_broken+self.name, modifiers={'ID':self.name}, event_1='entered interaction zone')
+                    else: 
+                        # even num of beam breaks -> assign to the duration object's 2nd event and submit the duration to the timestamp manager
+                        duration.event_2 = 'left interaction zone'
+                        duration.submit()
 
                 while self.monitor and self.switch.pressed: 
                     '''wait for state change/unpress to occur'''
