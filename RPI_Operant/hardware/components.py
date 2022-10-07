@@ -1240,6 +1240,8 @@ class Beam:
 
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
         self.monitor = False
+
+        self.total_beam_breaks = 0
     
     def shutdown_protocol(self):
         '''how to get this object to shutdown when the box is finished'''

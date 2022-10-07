@@ -32,7 +32,7 @@ def format_ts(timestamp_obj):
         return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, timestamp_obj.latency, None, mod_string, timestamp_obj.round_initialized]
     
     elif isinstance(timestamp_obj, Duration): 
-        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, timestamp_obj.duration, mod_string, timestamp_obj.round_intialized]
+        return [timestamp_obj.round, timestamp_obj.event_descriptor, timestamp_obj.timestamp, timestamp_obj.phase_initialized, timestamp_obj.phase_submitted, None, timestamp_obj.duration, mod_string, timestamp_obj.round_initialized]
     else:
         print(f'timestamp writing error, unknown object passed to timestamp manager: {timestamp_obj}')
 
