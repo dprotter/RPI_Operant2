@@ -3,8 +3,8 @@ from RPI_Operant.hardware.box import Box
 import time
 import random
 
-USER_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_software.yaml'
+USER_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/local_hardware.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 box = Box()    
 box.setup(user_hardware_config_file_path=USER_CONFIG_PATH,
@@ -13,6 +13,7 @@ box.setup(user_hardware_config_file_path=USER_CONFIG_PATH,
 
 
 def calibrate_laser(l):
+
 
     inp =input(f'enter an "s" to skip to the next laser, or enter any key to test {l.name} \n')
     if not inp == 's':
@@ -28,6 +29,8 @@ def calibrate_laser(l):
                     else: 
                         # turn off 
                         l.turn_off()
+                
+                print(f'{l.name} (Pin # {l.pin}) is On: {l.on} || {l.gpio.input(l.pin)}')
 
 
 for l in box.lasers:
