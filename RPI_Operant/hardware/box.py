@@ -363,7 +363,15 @@ class Box:
 
         
         print('monitor_workers complete')
-        
+    
+    def get_delay(self):
+        if not 'delay_by_day' or 'delay' in self.software_config.keys():
+            print('neither delay_by_day nor delay are present in the software config file, but were requested') 
+        if self.run_dict['day'] >= len( self.software_config['delay_by_day']):
+            print('day exceedes delay_by_day length. using final delay_by_day value')
+            return self.software_config['delay_by_day'][-1]
+        else:
+            return self.software_config['delay_by_day'][int(self.run_dict['day']) - 1]
     
     def shutdown(self):
         

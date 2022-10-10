@@ -20,7 +20,7 @@ def run():
               start_now=False, simulated = True)
     
     if box.software_config['trigger_on_start']:
-        #this could be
+        
         trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
     
     #simplifying hardware calls
