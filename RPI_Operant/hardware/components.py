@@ -335,6 +335,10 @@ class Button:
     def simulate_unpressed(self):
         self.pressed = False
         
+    def wait_for_press(self):
+        while not self.pressed:
+            time.sleep(0.05)
+        
 class ButtonManager:
     
     def __init__(self, box, simulated = False):
