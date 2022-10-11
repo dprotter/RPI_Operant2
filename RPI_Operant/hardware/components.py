@@ -216,17 +216,17 @@ class Lever:
         ts.submit()
     
     @thread_it
-    def watch_lever_pin(self):
+    def watch_lever_pin(self, tone = True):
         self.monitoring = True
         while self.monitoring:
             if self.switch.pressed:
                 self.total_presses +=1
                 self.lever_press_queue.put(('pressed'))
-                self.speaker.click_on()
+                if tone: self.speaker.click_on()
                 timeout = self.box.timing.new_timeout(self.retraction_timeout)
                 while self.switch.pressed and timeout.active():
                     '''waiting for vole to get off lever. nothing necessary within loop'''
-                self.speaker.click_off()
+                if tone: self.speaker.click_off()
                 
                 
                 #wait to loop until inter-press interval is passed
@@ -239,11 +239,12 @@ class Lever:
     def wait_for_n_presses(self, n = 1, reset_with_new_phase = False, 
                            latency_obj = None, 
                            reset_with_new_round = True,
-                           on_press_events = None):
+                           on_press_events = None, 
+                           play_lever_tones = True):
         'monitor lever and wait for n_presses before '
         if latency_obj:
             latency_obj.add_modifier(key = 'presses_required', value = n)
-        self.watch_lever_pin()
+        self.watch_lever_pin(play_lever_tones)
         if reset_with_new_phase:
             print('reset with new phase')
             #get the current phase object
