@@ -32,3 +32,4 @@ class OperantEventStrings:
     beam_broken = 'beam_broken_'
     beam_unbroken = 'beam_unbroken_'
     bb_monitor_ended_bb = 'monitor_ending_while_beam_broken_'
+    inside_interaction_zone = 'inside_interaction_zone_'

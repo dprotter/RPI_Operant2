@@ -1244,10 +1244,17 @@ class Beam:
 
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
         self.monitor = False
-    
+
+        self.total_beam_breaks = 0
+        self.counting = False # set to True while the count_beam_breaks function is running
+        self.get_durations = False # set to True when we want to be creating duration objects to represent if vole is in or out of the Interaction Zone
+
+
     def shutdown_protocol(self):
         '''how to get this object to shutdown when the box is finished'''
         self.monitor = False
+        self.get_durations = False 
+        self.counting = False 
 
     
     @thread_it
@@ -1255,6 +1262,136 @@ class Beam:
         self.switch.simulate_pressed()
         time.sleep(0.7)
         self.switch.simulate_unpressed()
+
+
+    ''' Interaction Zone Functions for Anne '''
+    def start_getting_beam_broken_durations(self): 
+        self.get_durations = True 
+        self.get_beam_broken_durations(reset_on_call=True)
+    def stop_getting_beam_broken_durations(self): 
+        self.get_durations = False 
+    @thread_it 
+    def get_beam_broken_durations(self, reset_on_call=False): 
+
+        '''VERSION 2 of getting durations. This one assumes that a vole is large enough that when it is in the interaction zone, the ir beam is broken the entire time.'''
+        self._begin_monitoring() # sets monitoring to true 
+
+        if reset_on_call: 
+            self.total_beam_breaks = 0
+
+        while self.monitor and self.get_durations: 
+
+            if self.switch.pressed: 
+                self.total_beam_breaks += 1 
+
+                print(f'total beam breaks: {self.total_beam_breaks} ')
+
+                # create duration object 
+                duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone+self.name, modifiers={'ID':self.name}, event_1=f'entered interaction zone')
+
+                while self.monitor and self.switch.pressed: 
+                    '''wait for state change/unpress to occur'''
+                
+                if not self.switch.pressed: 
+                    duration.event_2 = 'exited interaction zone'
+                    duration.submit()
+                else: 
+                    # monitoring stopped 
+                    duration.event_2 = 'stopped monitoring while vole still in interaction zone'
+                    duration.submit()
+    
+    ''' Interaction Zone Monitoring, Version 2: Assumes vole is small enough that it will run completely passed the ir beam, so requires some extra work to become aware of where the vole is positioned.'''
+    @property 
+    def inInteractionZone(self): 
+        # using the total number of beam breaks that have been recorded, returns True/False to represent if a vole is in the interaction zone or not 
+        if self.total_beam_breaks%2 != 0:  return True 
+        else:  return False 
+    @thread_it
+    def get_interaction_zone_durations( self, door_object = None ): 
+        '''
+            if a door_object gets passed in, then we adjust behavior when the door is open vs. closed. When the door is closed, 
+            we assume that every beam break is entering the interaction zone and every beam unbroken is the vole leaving, because there is not enough room for the vole to get passed the ir beam.
+        '''
+
+        if self.counting is False: 
+            print('At time of get_interaction_zone_durations() call, was not already counting the beam breaks. As a result, cannot tell if vole is starting out in the interaction zone or not. Calling count_beam_breaks() now.')
+            self.count_beam_breaks() # should already have been counting beam breaks by now, but if we weren't, start now. 
+            self._begin_monitoring()
+
+        self.get_durations = True  # To stop this function, set self.get_durations to False 
+
+        breaks_prev = self.total_beam_breaks 
+
+        #
+        #   Initialize Duration Variable 
+        # Check if vole is already in the interaction zone. ( represented by an odd number of beam breaks )
+        if self.inInteractionZone: 
+            # vole is starting out in the interaction zone. Create a duration object to represent this. 
+            duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone, event_1 = 'Vole in the interaction zone at start of duration tracking.')
+            print(f'Vole in the interaction zone at start of duration tracking. (total breaks: {self.total_beam_breaks})')
+            state = True 
+        else: 
+            state = False 
+            duration = None 
+
+        while self.monitor and self.get_durations: 
+            
+            # Wait to continue until inInteractionZone changes states 
+            while self.monitor and self.get_durations:
+                ''' do nothing until total_beam_breaks has been incremented '''
+                if breaks_prev != self.total_beam_breaks: 
+                    break 
+
+            if not self.monitor or not self.get_durations: 
+                return 
+
+            breaks_prev = self.total_beam_breaks 
+
+            # while get_durations is set to True, continuously create/submit duration objects thru the timestamp manager to represent when the vole is in the interaction zone
+            if self.inInteractionZone: 
+                state = True 
+                # vole entered interaction zone. Set event 1
+                print(f'vole entered interaction zone (total breaks: {self.total_beam_breaks})')
+                duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone+self.name, modifiers={'ID':self.name}, event_1=f'entered interaction zone')
+            else: 
+                state = False 
+                # vole left the interaction zone. Set event 2 
+                print(f'vole left interaction zone (total breaks: {self.total_beam_breaks})')
+                duration.event_2 = 'exited interaction zone'
+                duration.submit()
+        
+            
+    @thread_it
+    def count_beam_breaks( self, reset_on_call = False ): 
+        ''' 
+            counts the total number of beam breaks. if get_duration is set to True, then will create Duration objects and submit to the output file. 
+            
+            ** 
+            This is for use in monitoring when a vole is in the 'interaction zone'. This only provides info on when a beam is broken, not when it is unbroken. 
+            To retrieve info on when a beam is broken & unbroken, use the function monitor_beam_break instead. 
+            ** 
+        
+        '''
+        if reset_on_call is True: 
+            self.total_beam_breaks = 0 # starts from scratch each time the function is called 
+
+
+        self.counting = True # allows other functions to see that we are currently counting the total number of beam breaks!
+        self._begin_monitoring() # sets monitoring to true 
+
+
+        while self.monitor: 
+
+            if self.switch.pressed: 
+                self.total_beam_breaks += 1 
+
+                print(f'total beam breaks: {self.total_beam_breaks} ')
+
+                while self.monitor and self.switch.pressed: 
+                    '''wait for state change/unpress to occur'''
+
+        self.counting = False 
+
 
     def monitor_beam_break(self, latency_to_first_beambreak = None, end_with_phase = None):
         if self.monitor:
@@ -1318,7 +1455,7 @@ class Beam:
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                                                 modifiers = {'ID':self.name})
                     
-                    while self.switch.is_pressed() and self.monitor:
+                    while self.switch.pressed and self.monitor:
                         ''''''
                         time.sleep(0.05)
                     if self.monitor:
@@ -1334,7 +1471,7 @@ class Beam:
                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                    modifiers = {'ID':self.name})
 
-                while self.switch.is_pressed and self.monitor:
+                while self.switch.pressed and self.monitor:
                     ''''''
                 if self.monitor:
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
