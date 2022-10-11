@@ -1293,9 +1293,10 @@ class Beam:
                     duration.submit()
                 else: 
                     # monitoring stopped 
-                    duration.event_2 = 'stopped monitoring'
+                    duration.event_2 = 'stopped monitoring while vole still in interaction zone'
                     duration.submit()
     
+    ''' Interaction Zone Monitoring, Version 2: Assumes vole is small enough that it will run completely passed the ir beam, so requires some extra work to become aware of where the vole is positioned.'''
     @property 
     def inInteractionZone(self): 
         # using the total number of beam breaks that have been recorded, returns True/False to represent if a vole is in the interaction zone or not 
@@ -1450,7 +1451,7 @@ class Beam:
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                                                 modifiers = {'ID':self.name})
                     
-                    while self.switch.is_pressed() and self.monitor:
+                    while self.switch.pressed and self.monitor:
                         ''''''
                         time.sleep(0.05)
                     if self.monitor:
@@ -1466,7 +1467,7 @@ class Beam:
                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
                                                    modifiers = {'ID':self.name})
 
-                while self.switch.is_pressed and self.monitor:
+                while self.switch.pressed and self.monitor:
                     ''''''
                 if self.monitor:
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
