@@ -37,9 +37,15 @@ class ScreenPrinter:
     def format_line(self, obj):
         
         if 'latency' in obj.__dict__.keys():
+            if 'duration' in obj.__dict__.keys(): 
+                return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: {obj.latency}, dur: {obj.duration}'    
             return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: {obj.latency}'
+
         else:
+            if 'duration' in obj.__dict__.keys(): 
+                return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: ___, dur: {obj.duration}'    
             return f'{obj.round},  {obj.event_descriptor}, {obj.timestamp}, lat: ___'
+        
     
     @thread_it
     def print_output(self):

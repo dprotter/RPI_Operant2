@@ -1,4 +1,8 @@
+'''INCOMPLETE
+UNTESTED'''
 
+
+from pickle import FALSE
 from RPI_Operant.hardware.box import Box
 import time
 import random
@@ -6,8 +10,8 @@ from pathlib import Path
 experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 # # For Running on the Raspberry Pi: 
-USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/laser_software.yaml'
+USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/autotrain.yaml'
 
 
 box = Box()
@@ -17,7 +21,7 @@ def run():
     box.setup(run_dict=RUNTIME_DICT, 
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
-              start_now=False, simulated = True)
+              start_now=False, simulated = False)
     
     if box.software_config['trigger_on_start']:
         
@@ -27,6 +31,8 @@ def run():
     lever = box.levers.food
     dispenser = box.dispensers.food
     speaker = box.speakers.speaker
+    
+    delay = box.get_delay()
     
     if box.software_config['trigger_on_start']:
         box.start_and_trigger([trigger_object])
@@ -48,19 +54,28 @@ def run():
         while phase.active() and not lever.presses_reached:
             '''waiting here for something to happen'''
         
-        if lever.presses_reached:
-            lever.retract()
-            speaker.play_tone(tone_name = 'pellet_tone')
-            dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])  
+            if lever.presses_reached:
+                lever.retract()
+                speaker.play_tone(tone_name = 'pellet_tone')
+                
+                timeout = box.timer.new_timeout(length = delay)
+                timeout.wait()
+                
+                dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])  
         
         #wait to the end of the first lever-out phase    
         phase.wait()
-        phase = box.timing.new_phase('lever_out_pt2', box.software_config['values']['lever_pt2'])
+
         
         #only dispense if not already dispensed
         if not lever.presses_reached:
+            lever.retract()
             speaker.play_tone(tone_name = 'pellet_tone')
-            dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])
+            
+            timeout = box.timer.new_timeout(length = delay)
+            timeout.wait()
+            
+            dispenser.dispense(on_retrieval_events = [retrieve_led_pulse]) 
         
         
         phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
@@ -74,24 +89,7 @@ def run():
 if __name__ == '__main__':
     run()
     
-    
-beambreak = box.beambreaks.beambreak_1
 
-lat_obj = box.doors.door_1.open()
-
-beambreak.monitor_beam_break(lat_obj)
-
-#wait for things to happen
-
-beambreak.stop_monitoring()
-
-
-
-
-phase = box.timing.new_phase(name = 'reward phase', length = 100)
-lat_obj = box.doors.door_1.open()
-
-beambreak.monitor_beam_break(lat_obj, end_with_phase = phase)
 
 
 

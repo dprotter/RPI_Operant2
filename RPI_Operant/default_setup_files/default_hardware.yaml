@@ -78,7 +78,11 @@ dispensers:
     pullup_pulldown: pullup
     dispense_timeout: 3
 
-
+buttons:
+  iti:
+    pin: 21
+    pullup_pulldown: pulldown
+    
 outputs:
   round_LED:
     type: HAT

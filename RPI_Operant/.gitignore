@@ -138,3 +138,5 @@ default_output_location/*
 default_setup_files/*local_hardware.yaml
 default_setup_files/*local_software.yaml
 default_setup_files/*local*.yaml 
+
+.DS_Store
