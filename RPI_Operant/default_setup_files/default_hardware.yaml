@@ -37,7 +37,7 @@ doors:
 
 levers:
   food:
-    servo: 4
+    servo: 3
     extended: 30
     retracted: 90
     pin: 27
