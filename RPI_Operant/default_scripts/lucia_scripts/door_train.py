@@ -110,7 +110,7 @@ def run():
         phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
         
         phase.wait()
-        rep += 1
+        
     
     
     box.shutdown()
