@@ -336,10 +336,7 @@ class Button:
     def simulate_unpressed(self):
         self.pressed = False
         
-    def wait_for_press(self):
-        print(f'button {self.name} is waiting to be pressed')
-        while not self.pressed:
-            time.sleep(0.05)
+
         
 class ButtonManager:
     
@@ -368,11 +365,13 @@ class ButtonManager:
         while not self.box.done:
             time.sleep(0.1)
             
-    def new_button(self, name, button_dict, box = None):
+    def new_button(self, name, button_dict, box = None, simulated = False):
         '''make a new button and add it to the button list'''
         if not box:
-            box = self.box
-        new_button_obj = Button(button_dict, name, box)
+            print(self)
+            new_button_obj = Button(button_dict, name, self.box)
+        else:
+            new_button_obj = Button(button_dict, name, box)
         self.buttons.append(new_button_obj)
         return new_button_obj
     
@@ -950,7 +949,7 @@ class Output:
         'create a premade pulse object that can be passed to on-press-event lists'
         return lambda: self.pulse_output(length, pulse_string)  
    
-    def prepare_trigger(self, length, pulse_string = None):
+    def prepare_trigger(self, length = 0, pulse_string = None):
         'create a premade trigger object that can be passed to on-press-event lists'
         if length == 0:
             return lambda: self.trigger_hold_high(pulse_string)
@@ -1226,7 +1225,32 @@ class ToneTrain(Tone):
             return False
         else:
             return True
+class Input:
+            
+    def __init__(self, name, input_config_dict, box, simulated = False):
+    
+        self.config_dict = input_config_dict
+        
+        self.box = box
+        self.pin = self.config_dict['pin'] #int
+        self.name = name #str
+        
+        switch_dict = {
+                        'pin':self.pin,
+                        'pullup_pulldown':self.config_dict['pullup_pulldown'],
+                    }
 
+        self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
+        
+        
+    def wait_for_press(self):
+        print(f'button {self.name} is waiting to be pressed')
+        while not self.switch.pressed:
+            time.sleep(0.05)
+    
+    def is_pressed(self):
+        return self.switch.pressed
+    
 class Beam:
     
     def __init__(self, name, beam_config_dict, box, simulated = False):
@@ -1506,7 +1530,7 @@ class Fake_GPIO:
 COMPONENT_LOOKUP = {
                     'doors':{'component_class':Door, 'label':'door'},
                     'levers':{'component_class':Lever, 'label':'lever'},
-                    'buttons':{'component_class':ButtonManager.new_button, 'label':'button'},
+                    'inputs':{'component_class':Input, 'label':'input'},
                     'dispensers':{'component_class':Dispenser, 'label':'dispenser'},
                     'positional_dispensers':{'component_class':PositionalDispenser, 'label':'positional_dispenser'},
                     'port_dispensers':{'component_class':PortDispenser, 'label':'port_dispenser'},

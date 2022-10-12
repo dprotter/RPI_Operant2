@@ -87,7 +87,7 @@ class Box:
         self.output_error_file_path = self.generate_error_output_path()
 
         #the manager for creating, adding, and monitoring new binary inputs
-        self.button_manager = ButtonManager(self, simulated = simulated)
+        self.button_manager = ButtonManager(box = self, simulated = simulated)
 
         ###############
 
@@ -322,12 +322,17 @@ class Box:
         print('worker queue empty')
 
     def reset(self):
+        if 'speakers' in self.__dict__.keys():
+            for speaker in self.speakers:
+                speaker.turn_off
         if 'levers' in self.__dict__.keys():
             for lever in self.levers:
                 lever.retract()
         if 'doors' in self.__dict__.keys():
             for door in self.doors:
-                door.close()
+                door.close(wait = True)
+        
+        
 
     
     def _interrupt_handler(self, signal, frame): 
@@ -342,9 +347,7 @@ class Box:
         self.done = True
         
         val = 0
-        for speaker in self.speakers:
-            print(self.speakers)
-            speaker.set_off()
+
         while not self.monitor_worker_future.done():
             time.sleep(0.05)
             val +=1
@@ -365,13 +368,13 @@ class Box:
         print('monitor_workers complete')
     
     def get_delay(self):
-        if not 'delay_by_day' or 'delay' in self.software_config.keys():
+        if not 'delay_by_day' or 'delay' in self.software_config['values'].keys():
             print('neither delay_by_day nor delay are present in the software config file, but were requested') 
-        if self.run_dict['day'] >= len( self.software_config['delay_by_day']):
+        if self.run_dict['day'] >= len( self.software_config['values']['delay_by_day']):
             print('day exceedes delay_by_day length. using final delay_by_day value')
-            return self.software_config['delay_by_day'][-1]
+            return self.software_config['values']['delay_by_day'][-1]
         else:
-            return self.software_config['delay_by_day'][int(self.run_dict['day']) - 1]
+            return self.software_config['values']['delay_by_day'][int(self.run_dict['day']) - 1]
     
     def shutdown(self):
         

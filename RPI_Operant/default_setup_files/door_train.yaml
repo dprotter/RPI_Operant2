@@ -2,14 +2,15 @@ output_path: '~/RPI_Operant_outputs/default_location'
 
 checks:
   save_timestamps: False
-
+  trigger_on_start: True
 values:
   delay_by_day: [0, 0, 1, 2, 3]
   lever_out: 60
   reps: 4
   sets: 2
-  reward_time: 60 
-  iti: 30
+  reward_length: 45
+  ITI_length: 45
+
 
 speaker_tones:
   speaker:
@@ -19,10 +20,10 @@ speaker_tones:
     pellet_tone:
       hz: 8000
       length: 1
-    door1_open:
+    door_1_open:
       hz: 12000
       length: 1
-    door2_open:
+    door_2_open:
       hz: 2500
       length: 1
     

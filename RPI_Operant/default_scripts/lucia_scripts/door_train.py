@@ -22,8 +22,9 @@ def run():
               user_hardware_config_file_path=USER_HARDWARE_CONFIG_PATH,
               user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
               start_now=False, simulated = False)
+    phase = box.timing.new_phase('setup_phase', length = 5)
     
-    if box.software_config['trigger_on_start']:
+    if box.software_config['checks']['trigger_on_start']:
         
         trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
     
@@ -35,9 +36,9 @@ def run():
     speaker = box.speakers.speaker
     delay = box.get_delay()
     
-    if box.software_config['trigger_on_start']:
+    if box.software_config['checks']['trigger_on_start']:
         box.start_and_trigger([trigger_object])
-    
+    box.reset()
     #get LED pulses to pass to other functions
     press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_press')
     
@@ -51,6 +52,7 @@ def run():
     next_tone = 'door_2_open'
     
     rep = 1
+    phase.end_phase()
     for i in range(1,box.software_config['values']['reps']*box.software_config['values']['sets']+1, 1):
         
         if rep > box.software_config['values']['reps']:
@@ -70,29 +72,33 @@ def run():
             
             
         
-        box.timing.new_round(length = box.software_config['values']['round_length'])
+        box.timing.new_round()
         
-        phase = box.timing.new_phase(lever.name + 'out', box.software_config['values']['lever_out'])
-        speaker.play_tone(tone_name = 'start_of_round')
-        press_latency = box.levers.food.extend()
+        lever_phase = box.timing.new_phase(lever.name + '_out', box.software_config['values']['lever_out'])
+        speaker.play_tone(tone_name = 'round_start')
+        press_latency = lever.extend()
         
         #start the actual lever-out phase
         lever.wait_for_n_presses(n=1, latency_obj = press_latency, on_press_events = [press_led_pulse])
-        while phase.active() and not lever.presses_reached:
+        while lever_phase.active():
             '''waiting here for something to happen'''
         
             if lever.presses_reached:
                 lever.retract()
                 speaker.play_tone(tone_name = tone)
                 
-                timeout = box.timer.new_timeout(length = delay)
+                timeout = box.timing.new_timeout(length = delay)
                 timeout.wait()
                 
-                phase.end_phase()
-                reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['reward_time'])
+                lever_phase.end_phase()
+                reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_length'])
                 
                 lat = door.open()
-                box.beams.door2_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=phase)
+                
+                if door.name == 'door_1':
+                    box.beams.door1_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=reward_phase)
+                else:
+                    box.beams.door2_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=reward_phase)
 
         #only dispense if not already dispensed
         if not lever.presses_reached:
@@ -105,12 +111,12 @@ def run():
         
         #if door was opened, wait until experimenter is ready to start ITI (has moved vole)
         if lever.presses_reached:
-            box.buttons.iti.wait_for_press()
+            box.inputs.iti.wait_for_press()
             
-        phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
+        phase = box.timing.new_phase(name='ITI', length = box.software_config['values']['ITI_length'])
         
         phase.wait()
-        
+        rep+=1
     
     
     box.shutdown()
