@@ -11,7 +11,7 @@ experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 # # For Running on the Raspberry Pi: 
 USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/door_train.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/door_choice.yaml'
 
 
 box = Box()
@@ -39,36 +39,11 @@ def run():
         box.start_and_trigger([trigger_object])
     
     #get LED pulses to pass to other functions
-    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_press')
-    
-    lever = lever_2
-    next_lever = lever_1
-    
-    door = door_1
-    next_door = door_2
-    
-    tone = 'door_1_open'
-    next_tone = 'door_2_open'
-    
-    rep = 1
-    for i in range(1,box.software_config['values']['reps']*box.software_config['values']['sets']+1, 1):
+    press_led_pulse_1 = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_1_press')
+    press_led_pulse_2 = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_2_press')
+
+    for i in range(1,box.software_config['values']['rounds']+1, 1):
         
-        if rep > box.software_config['values']['reps']:
-            rep = 1
-            d = door
-            l = lever
-            t = tone
-            
-            lever = next_lever
-            door = next_door
-            tone = next_tone
-            
-            next_lever = l
-            next_door = d
-            next_tone = t
-            
-            
-            
         
         box.timing.new_round(length = box.software_config['values']['round_length'])
         
@@ -77,13 +52,14 @@ def run():
         press_latency = box.levers.food.extend()
         
         #start the actual lever-out phase
-        lever.wait_for_n_presses(n=1, latency_obj = press_latency, on_press_events = [press_led_pulse])
-        while phase.active() and not lever.presses_reached:
+        lever_1.wait_for_n_presses(n=1, latency_obj = press_latency, on_press_events = [press_led_pulse_1])
+        while phase.active():
             '''waiting here for something to happen'''
         
-            if lever.presses_reached:
-                lever.retract()
-                speaker.play_tone(tone_name = tone)
+            if lever_1.presses_reached:
+                lever_1.retract()
+                lever_2.retract()
+                speaker.play_tone(tone_name = 'door_2')
                 
                 timeout = box.timer.new_timeout(length = delay)
                 timeout.wait()
@@ -91,17 +67,32 @@ def run():
                 phase.end_phase()
                 reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['reward_time'])
                 
-                lat = door.open()
+                lat = door_2.open()
                 box.beams.door2_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=phase)
+                
+            elif lever_2.presses_reached:
+                lever_1.retract()
+                lever_2.retract()
+                speaker.play_tone(tone_name = 'door_1')
+                
+                timeout = box.timer.new_timeout(length = delay)
+                timeout.wait()
+                
+                phase.end_phase()
+                reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['reward_time'])
+                
+                lat = door_1.open()
+                box.beams.door1_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=phase)
 
         #only dispense if not already dispensed
-        if not lever.presses_reached:
-            lever.retract()
-       
+        if not lever_1.presses_reached and not lever_2.presses_reached:
+            lever_1.retract()
+            lever_2.retract()
+            
         #if presses were reached, wait for reward phase
-        if lever.presses_reached:
-            reward_phase.wait()
-            door.close()
+        if box.timing.current_phase.name == 'reward_phase':
+            box.timing.current_phase.name.wait()
+            
         
         #if door was opened, wait until experimenter is ready to start ITI (has moved vole)
         if lever.presses_reached:
@@ -110,7 +101,7 @@ def run():
         phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
         
         phase.wait()
-        
+        rep += 1
     
     
     box.shutdown()

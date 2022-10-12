@@ -337,6 +337,7 @@ class Button:
         self.pressed = False
         
     def wait_for_press(self):
+        print(f'button {self.name} is waiting to be pressed')
         while not self.pressed:
             time.sleep(0.05)
         
