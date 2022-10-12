@@ -4,11 +4,7 @@ checks:
   save_timestamps: False
 
 values:
-  delay_by_day: - 0
-                - 0
-                - 1
-                - 2
-                - 3
+  delay_by_day: [0, 0, 1, 2, 3]
   lever_out: 60
   reps: 4
   sets: 2
@@ -16,38 +12,39 @@ values:
   iti: 30
 
 speaker_tones:
-  round_start:
-    hz: 5000
-    length: 1
-  pellet_tone:
-    hz: 8000
-    length: 1
-  door1_open:
-    hz: 12000
-    length: 1
-  door2_open:
-    hz: 2500
-    length: 1
-  
-    `click_on: 
-    tone_1:
-      hz: 900
-      length: 0.02
-    tone_2:
-      hz: 4000
-      length: 0.02
-    tone_3:
+  speaker:
+    round_start:
+      hz: 5000
+      length: 1
+    pellet_tone:
       hz: 8000
-      length: 0.02
+      length: 1
+    door1_open:
+      hz: 12000
+      length: 1
+    door2_open:
+      hz: 2500
+      length: 1
+    
+    click_on: 
+      tone_1:
+        hz: 900
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 8000
+        length: 0.02
 
-  click_off: 
-    tone_1:
-      hz: 8000
-      length: 0.02
-    tone_2:
-      hz: 4000
-      length: 0.02
-    tone_3:
-      hz: 900
-      length: 0.02
+    click_off: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
   

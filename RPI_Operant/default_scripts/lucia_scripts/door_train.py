@@ -105,7 +105,7 @@ def run():
         
         #if door was opened, wait until experimenter is ready to start ITI (has moved vole)
         if lever.presses_reached:
-            box.buttons.ITI.wait_for_press()
+            box.buttons.iti.wait_for_press()
             
         phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
         
