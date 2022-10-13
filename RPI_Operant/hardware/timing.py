@@ -280,12 +280,15 @@ class TimestampManager:
     
     def create_save_file(self):
         self.save_path = self.box.output_file_path + '.csv'
-        print(f'csv path: {self.save_path}')
+        
         if self.save_timestamps:
+            print(f'csv path: {self.save_path}')
             with open(self.save_path, 'w+') as file:
                 header = ['round','event','time','phase initialized','phase submitted','latency','duration','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
                 csv_writer.writerow(header)
+        else:
+            print('\nsoftware config file indicates NOT TO SAVE TIMESTAMPS\n')
                 
 
     def new_timestamp(self, description, modifiers = None):

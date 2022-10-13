@@ -33,11 +33,10 @@ except:
     from RPI_Operant.hardware.Fake_GPIO import Fake_pigpio as pigpio
 
 # Constants 
-DEFAULT_HARDWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_hardware.yaml')
-DEFAULT_SOFTWARE_CONFIG = os.path.join(os.getcwd(), 'RPI_Operant/default_setup_files/default_software.yaml')
-DEFAULT_OUTPUT_LOCATION = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location')
-ERROR_LOG_PATH = os.path.join(os.getcwd(), 'RPI_Operant/default_output_location/error_logs/')
-
+DEFAULT_HARDWARE_CONFIG = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
+DEFAULT_SOFTWARE_CONFIG =  '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
+DEFAULT_OUTPUT_LOCATION = '/home/pi/RPI_Operant2/RPI_Operant/default_output_location'
+ERROR_LOG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_output_location/error_logs'
 
 
 

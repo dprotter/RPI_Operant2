@@ -583,14 +583,14 @@ class Dispenser:
                     self.stop_servo()
                     pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, 
                                                                             modifiers = {'ID':self.name})
-                    self.monitor_pellet(pellet_latency, on_retrieve_events = on_retrieve_events)
+                    self.monitor_pellet(pellet_latency, on_retrieval_events = on_retrieval_events)
                     return None
             
             self.stop_servo()
             
     
     @thread_it
-    def monitor_pellet(self, pellet_latency, on_retrieve_events = None):
+    def monitor_pellet(self, pellet_latency, on_retrieval_events = None):
         '''track when a pellet is retrieved'''
         local_latency = copy.copy(pellet_latency)
         
@@ -602,8 +602,8 @@ class Dispenser:
         while not self.box.finished(): 
             if not self.pellet_state(): # stops looping as soon as pellet is gone from trough
                 local_latency.submit()
-                if on_retrieve_events:
-                    for event in on_retrieve_events:
+                if on_retrieval_events:
+                    for event in on_retrieval_events:
                         event()
                 return 
                 

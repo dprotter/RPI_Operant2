@@ -2,9 +2,45 @@
 from RPI_Operant.hardware.box import Box
 import time
 import random
+import argparse
+import os
+
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'test_dispenser'}
 USER_CONFIG_PATH = '/home/pi/Local/laser_local_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/anne_experiment/yaml_setup_files/magazine_software.yaml'
+parser = argparse.ArgumentParser(description='input io info')
+parser.add_argument('--config_hardware_in', '-i',type = str, 
+                    help = 'where is the hardware yaml file stored?',
+                    action = 'store',
+                    default = None)
+parser.add_argument('--config_software_in', '-s',type = str, 
+                    help = 'where is the software yaml file stored?',
+                    action = 'store',
+                    default = None)
+
+
+args = parser.parse_args()
+
+if args.config_hardware_in:
+    config_hardware_file = args.config_hardware_in
+else: 
+ 
+    config_hardware_file = USER_CONFIG_PATH
+
+
+if args.config_software_in: 
+    config_software_file = args.config_software_in
+else:
+    config_software_file = USER_SOFTWARE_CONFIG_PATH
+    
+
+if not os.path.isfile(config_hardware_file):
+    print(f'-config_hardware_file not a valid csvfile. double check that filepath! see ya.')
+    exit()
+
+if not os.path.isfile(config_software_file): 
+    print('-config_software_file not a valid csvfile. double check that filepath! see ya.')
+    exit()    
 
 def calibrate_stop(d):
     print('testing stop speed for d1.')
@@ -26,137 +62,24 @@ def calibrate_stop(d):
             d.servo.throttle = val
     print(f'stop speed for {d.name} should be {round(val,3)}')
 
-def rough_calibrate(dispenser):
-    d = dispenser
-    name = dispenser.name
-    print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
-    inp = input()
-    if not inp in ('s',):
-       
-        pass_test = False
-        while not pass_test:
-            start = time.time()
-            d.start_servo()
-            input()
-            stop_time = time.time()
+def calibrate_speed(d):
+    i = ''
+    while i != 's':
+        i = input('set throttle value ("s" to quit)')
+        if i !='s':
+            d.servo.throttle = float(i)
 
-            if stop_time - start < 7.5:
-                print(f'servo speed too fast., slowing down')
-                if d.config_dict['dispense'] > d1.config_dict['stop']:
-                    d.config_dict['dispense'] -= 0.01 * (7.5 - (stop_time - start))
-                    print(f'new speed {d.config_dict["dispense"]}')
-                
-                else:
-                    d.config_dict['dispense'] += 0.01 * (7.5 - (stop_time - start))
-                    print(f'new speed {d.config_dict["dispense"]}')
-
-
-            elif stop_time - start > 8.5:
-                print(f'servo speed too slow., speeding up')
-                if d.config_dict['dispense'] > d1.config_dict['stop']:
-                    d.config_dict['dispense'] += 0.01 * (7.5 - (stop_time - start))
-                    print(f'new speed {d.config_dict["dispense"]}')
-                
-                else:
-                    d.config_dict['dispense'] -= 0.01 * (7.5 - (stop_time - start))
-                    print(f'new speed {d.config_dict["dispense"]}')
-            else:
-                d.stop_servo()
-                pass_test = True
-                t = (stop_time - start)/4
-                print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and appx time = {t}')
-                d.config_dict['full_rotation_time'] = t
-            if not pass_test:
-                d.stop_servo()
-                print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
-                inp = input()
-                if inp == 's':
-                    pass_test = True
-                    t = (stop_time - start)/4
-                    print(f'calibration for {name} complete. servo speed = {d.config_dict["dispense"]}, and appx time = {t}')
-                    d.config_dict['full_rotation_time'] = t
-    
-    
-
-def fine_calibrate(dispenser):
-    d = dispenser
-    
-    rot_time = d.config_dict['full_rotation_time']
-    pass_test = False
-    while not pass_test:
-        input(f'please align calibration dots on {d.name}, then press enter')
-        start = time.time()
-        timeout = d.box.timing.new_timeout(rot_time)
-        d.start_servo()
-        timeout.wait()
-        d.stop_servo()
-
-        inp = float(input('how far off of the center of the dispensing hole is the dot? + for too far, - for not far enough.\n(ie +0.25 for a quart of a hole too far)\n0 to exit\n'))
-
-        if inp == 0.0:
-            pass_test = True
-        else:
-            rot_time_new = rot_time / ((inp+12)/12)
-            pass_test = False
-            print(f'old time:{rot_time}, new time: {rot_time_new}')
-            rot_time = rot_time_new
-            
-    d.config_dict['full_rotation_time'] = rot_time
-    print(f'rotation time for {d.name} is {rot_time}')
-            
-def test_steps(dispenser):
-    d = dispenser
-    name = dispenser.name
-    print(f'press enter to start rotation on {name}. press enter to stop after 4 full rotations. enter "s" to skip this dispenser.')
-    inp = input()
-    if not inp in ('s',):
-        inp = input('align calibration dots, and press enter to step through each position. enter "s" to exit')
-        
-        while not inp == 's':
-            inp = input()
-            d.next_position()
 
 box = Box()
 box.setup(run_dict=RUNTIME_DICT, 
-              user_hardware_config_file_path=USER_CONFIG_PATH,
-              user_software_config_file_path=USER_SOFTWARE_CONFIG_PATH,
+              user_hardware_config_file_path=config_hardware_file,
+              user_software_config_file_path=config_software_file,
               start_now=True, simulated = False)
 
-try:
-    for d in box.port_dispensers:
-        calibrate_stop(d)
-        rough_calibrate(d)
-        fine_calibrate(d)
-        test_steps(d)
-
-except AttributeError: 
-    for d in box.dispensers: 
-        calibrate_stop(d)
-        rough_calibrate(d)
-        fine_calibrate(d)
-        test_steps(d)
+for d in box.dispensers: 
+    calibrate_stop(d)
+    calibrate_speed(d)
         
-except:
-    
-    d1 = box.port_dispensers.dispenser_1
-    d2 = box.port_dispensers.dispenser_2
-    d3 = box.port_dispensers.dispenser_2
 
-    calibrate_stop(d1)
-    calibrate_stop(d2)
-    calibrate_stop(d3)
-
-    rough_calibrate(d1)
-    rough_calibrate(d2)
-    rough_calibrate(d3)
-
-
-    fine_calibrate(d1)
-    fine_calibrate(d2)
-    fine_calibrate(d3)
-
-    test_steps(d1)
-    test_steps(d2)
-    test_steps(d3)
 
 box.shutdown()

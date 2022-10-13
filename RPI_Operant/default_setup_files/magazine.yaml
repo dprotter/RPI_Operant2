@@ -1,7 +1,6 @@
-output_path: '~/RPI_Operant_outputs/default_location'
-
+output_path: 'default'
 checks:
-  save_timestamps: False
+  save_timestamps: True
   trigger_on_start: True
 
 values:
