@@ -85,7 +85,7 @@ def run():
         
             if lever.presses_reached:
                 lever.retract()
-                speaker.play_tone(tone_name = tone)
+                speaker.play_tone(tone_name = tone, wait = True)
                 
                 timeout = box.timing.new_timeout(length = delay)
                 timeout.wait()
