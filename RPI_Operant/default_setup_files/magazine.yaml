@@ -11,6 +11,10 @@ values:
   lever_out: 2
   lever_pt2: 2
   
+LED_pulses:
+  lever_press: 0.35
+  pellet_retrieved: 0.35
+  new_round: 0.5
 
 
 speaker_tones:

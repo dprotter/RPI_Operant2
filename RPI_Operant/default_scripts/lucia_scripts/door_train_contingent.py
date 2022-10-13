@@ -40,7 +40,9 @@ def run():
         box.start_and_trigger([trigger_object])
     box.reset()
     #get LED pulses to pass to other functions
-    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_press')
+    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = box.software_config['LED_pulses']['lever_press'], pulse_string = 'lever_press')
+    new_round_pulse = box.outputs.round_LED.prepare_pulse(length = box.software_config['LED_pulses']['new_round'], pulse_string = 'new_round')
+    
     
     lever = lever_2
     next_lever = lever_1
@@ -73,6 +75,7 @@ def run():
             
         
         box.timing.new_round()
+        new_round_pulse()
         
         lever_phase = box.timing.new_phase(lever.name + '_out', box.software_config['values']['lever_out'])
         speaker.play_tone(tone_name = 'round_start')

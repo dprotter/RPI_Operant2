@@ -32,12 +32,13 @@ def run():
         box.start_and_trigger([trigger_object])
     
     #get LED pulses to pass to other functions
-    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_press_food')
-    retrieve_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.7, pulse_string = 'pellet_retrieved')
-    
+    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = box.software_config['LED_pulses']['lever_press'], pulse_string = 'lever_press')
+    new_round_pulse = box.outputs.round_LED.prepare_pulse(length = box.software_config['LED_pulses']['new_round'], pulse_string = 'new_round')
+    retrieve_led_pulse = box.outputs.event_LED.prepare_pulse(length = box.software_config['LED_pulses']['pellet_retrieved'], pulse_string = 'pellet_retrieved')
     
     for i in range(1,box.software_config['values']['rounds']+1, 1):
         box.timing.new_round(length = box.software_config['values']['round_length'])
+        new_round_pulse()
         
         phase = box.timing.new_phase('lever_out', box.software_config['values']['lever_out'])
         speaker.play_tone(tone_name = 'round_start')
