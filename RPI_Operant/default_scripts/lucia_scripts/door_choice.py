@@ -39,13 +39,14 @@ def run():
         box.start_and_trigger([trigger_object])
     
     #get LED pulses to pass to other functions
-    press_led_pulse_1 = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_1_press')
-    press_led_pulse_2 = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_2_press')
+    press_led_pulse = box.outputs.event_LED.prepare_pulse(length = 0.35, pulse_string = 'lever_1_press')
+    round_start_LED = box.outputs.event_LED.prepare_pulse(length = 0.7, pulse_string = 'round_start')
 
     for i in range(1,box.software_config['values']['rounds']+1, 1):
         
         
         box.timing.new_round(length = box.software_config['values']['round_length'])
+        round_start_LED()
         
         phase = box.timing.new_phase('levers_out', box.software_config['values']['lever_out'])
         speaker.play_tone(tone_name = 'start_of_round')
@@ -53,10 +54,10 @@ def run():
         press_latency_2 = box.levers.lever_2.extend()
         
         #start the actual lever-out phase
-        lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1, on_press_events = [press_led_pulse_1])
-        lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_1, on_press_events = [press_led_pulse_1])
+        lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1, on_press_events = [press_led_pulse])
+        lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2, on_press_events = [press_led_pulse])
+        
         while phase.active():
-            '''waiting here for something to happen'''
         
             if lever_1.presses_reached:
                 lever_1.retract()
