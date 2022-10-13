@@ -563,10 +563,8 @@ class Dispenser:
         self.sensor.pressed = False
     
     @thread_it
-    def dispense(self, on_retrieve_events = None):
+    def dispense(self, on_retrieval_events = None):
         ''''''
-
-        print(' DISPENSING ')
 
         #check if pellet was retrieved or is still in trough
         if self.pellet_state():
