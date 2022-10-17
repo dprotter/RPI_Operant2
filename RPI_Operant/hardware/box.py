@@ -161,6 +161,7 @@ class Box:
         if any(returned_objs):
             
             self.shutdown_objects+= [obj for obj in returned_objs if obj]
+            print(f'shutdown_objects are {self.shutdown_objects}')
         
     def generate_output_fname(self):
         vole = self.run_dict['vole']
@@ -363,7 +364,8 @@ class Box:
             for laser in self.lasers: 
                 laser.turn_off()
 
-        
+        for obj in self.shutdown_objects:
+            obj.shutdown()
         print('monitor_workers complete')
     
     def get_delay(self):

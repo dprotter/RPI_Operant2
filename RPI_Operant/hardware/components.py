@@ -932,6 +932,7 @@ class Output:
     def shutdown(self):
         if self.active:
             self.deactivate()
+            print(f'deactivating {self.name}')
     
     def trigger_hold_high(self, pulse_string):
         if pulse_string:

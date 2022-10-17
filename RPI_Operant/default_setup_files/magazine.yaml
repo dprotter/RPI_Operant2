@@ -4,7 +4,7 @@ checks:
   trigger_on_start: True
 
 values:
-  rounds: 15
+  rounds: 20
   round_length: 60
   delay_by_day: [0]
   delay_default: 0

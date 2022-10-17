@@ -63,6 +63,8 @@ def run():
             speaker.play_tone(tone_name = 'pellet_tone')
             dispenser.dispense(on_retrieval_events = [retrieve_led_pulse])
         
+        phase.wait()
+        lever.retract()
         
         phase = box.timing.new_phase(name='ITI', length = box.timing.round_time_remaining())
         
