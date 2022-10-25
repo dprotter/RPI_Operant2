@@ -581,14 +581,25 @@ class Dispenser:
                 if read > 2:
                     '''timestamp put "pellet dispensed"'''
                     self.stop_servo()
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}', modifiers = {'ID':self.name})
                     pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, 
                                                                             modifiers = {'ID':self.name})
                     self.monitor_pellet(pellet_latency, on_retrieval_events = on_retrieval_events)
                     return None
             
             self.stop_servo()
-            
-    
+            timeout = self.box.timing.new_timeout(length = 1)
+            while timeout.active():
+                if self.pellet_state():
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_dispensed}_{self.name}', modifiers = {'ID':self.name})
+                    pellet_latency = self.box.timestamp_manager.new_latency(description = oes.pellet_retrieved, 
+                                                                            modifiers = {'ID':self.name})
+                    self.monitor_pellet(pellet_latency, on_retrieval_events = on_retrieval_events)
+                    return None
+                    
+            if not self.pellet_state():
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'{oes.pellet_failure}_{self.name}', modifiers = {'ID':self.name})
+                return None
     @thread_it
     def monitor_pellet(self, pellet_latency, on_retrieval_events = None):
         '''track when a pellet is retrieved'''

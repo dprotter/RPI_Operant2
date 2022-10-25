@@ -1,17 +1,14 @@
 output_path: '~/RPI_Operant_outputs/default_location'
 
 checks:
-  save_timestamps: False
+  save_timestamps: True
+  trigger_on_start: True
 
 values:
   rounds: 15
-  round_length: 60
-  delay_by_day: - 0
-                - 0
-                - 1
-                - 2
-                - 3
+  delay_by_day: [0, 0, 1, 2, 3]
   lever_out: 60
+  iti_length: 30
   
 
 

@@ -77,27 +77,3 @@ def run():
 if __name__ == '__main__':
     run()
     
-    
-beambreak = box.beambreaks.beambreak_1
-
-lat_obj = box.doors.door_1.open()
-
-beambreak.monitor_beam_break(lat_obj)
-
-#wait for things to happen
-
-beambreak.stop_monitoring()
-
-
-
-
-phase = box.timing.new_phase(name = 'reward phase', length = 100)
-lat_obj = box.doors.door_1.open()
-
-beambreak.monitor_beam_break(lat_obj, end_with_phase = phase)
-
-
-
-
-
-
