@@ -13,6 +13,7 @@ class OperantEventStrings:
     
     lever_extended = 'lever_extended_'
     lever_retracted = 'lever_retracted_'
+    start_lever_retract = 'start_lever_retract_'
     lever_pressed = 'lever_pressed_'
     presses_reached= 'presses_reached_'
     

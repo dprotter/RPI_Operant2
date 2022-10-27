@@ -194,7 +194,8 @@ class Lever:
         self.is_extended = True
         ts.submit()
         return lat
-        
+    
+    """"  
     @thread_it
     def retract(self):
         '''extend a lever and timestamp it'''
@@ -212,6 +213,33 @@ class Lever:
         time.sleep(0.05)
         self.servo.angle = self.retracted
         print(f'retracting {self.name}')
+        self.is_extended = False
+        ts.submit()  """
+        
+    @thread_it
+    def retract(self):
+        '''extend a lever and timestamp it'''
+        #note, make a ts object and submit later after successful retraction
+        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name},
+                                                      print_to_screen = False)
+        retract_start = min(180, self.retracted + self.wiggle)
+ 
+        #wait for the vole to get off the lever
+        timeout = self.box.timing.new_timeout(self.retraction_timeout)
+        while self.switch.pressed and timeout.active():
+            'hanging till lever not pressed'
+        
+        numsteps = 20
+        step = (self.retract_start-self.extended)/20
+        loc = self.extended
+        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
+                                                print_to_screen = False)
+        for i in range(20):
+            loc += step
+            self.servo.angle = loc
+            time.sleep(0.025)
+        time.sleep(0.05)
+        self.servo.angle = self.retracted
         self.is_extended = False
         ts.submit()
     
