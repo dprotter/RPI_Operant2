@@ -230,7 +230,7 @@ class Lever:
             'hanging till lever not pressed'
         
         numsteps = 20
-        step = (self.retract_start-self.extended)/20
+        step = (retract_start-self.extended)/20
         loc = self.extended
         self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
                                                 print_to_screen = False)
@@ -330,6 +330,8 @@ class Lever:
                         while not self.lever_press_queue.empty():
                             _ = self.lever_press_queue.get()
     def reset_lever(self):
+        while self.is_extended:
+            '''waiting for lever to be retracted before resetting'''
         self.monitoring = False
         self.presses_reached = False
         self.lever_presses = 0

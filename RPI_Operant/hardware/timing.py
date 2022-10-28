@@ -291,9 +291,9 @@ class TimestampManager:
             print('\nsoftware config file indicates NOT TO SAVE TIMESTAMPS\n')
                 
 
-    def new_timestamp(self, description, modifiers = None):
+    def new_timestamp(self, description, modifiers = None, print_to_screen = True):
         '''how to create a new timestamp object'''
-        return Timestamp(self, description, modifiers)
+        return Timestamp(self, description, modifiers, print_to_screen = print_to_screen)
 
     def create_and_submit_new_timestamp(self, description, modifiers = None, print_to_screen = True):
         '''create and immediately submit new timestamp'''

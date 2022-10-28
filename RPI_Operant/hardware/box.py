@@ -355,8 +355,12 @@ class Box:
                 print('waiting for shutdown')
                 val = 0
         
+        for obj in self.shutdown_objects:
+            obj.shutdown()
+            
         for l in self.levers:
             l.retract()
+        
         for speaker in self.speakers:
             print(self.speakers)
             speaker.set_off()
@@ -364,8 +368,7 @@ class Box:
             for laser in self.lasers: 
                 laser.turn_off()
 
-        for obj in self.shutdown_objects:
-            obj.shutdown()
+
         print('monitor_workers complete')
     
     def get_delay(self):
