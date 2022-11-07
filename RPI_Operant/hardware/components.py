@@ -180,12 +180,27 @@ class Lever:
         '''extend a lever and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
+        self._extend()
+
+        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
+                                                        modifiers = {'ID':self.name})
+    @thread_it
+    def _extend(self):
+
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
-        lat = self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
         extend_start = max(0, self.extended-self.wiggle)
-
+        numsteps = 30
+        step = (self.extended-extend_start)/numsteps
+        loc = self.extended
+        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
+                                                print_to_screen = False)
+        for i in range(60):
+            step = -step
+            loc += step
+            self.servo.angle = loc
+            time.sleep(0.01)
+        time.sleep(0.02)
         #first, extend past final value, then retract slightly to final value
         self.servo.angle = extend_start
         time.sleep(0.05)
@@ -193,28 +208,7 @@ class Lever:
         
         self.is_extended = True
         ts.submit()
-        return lat
-    
-    """"  
-    @thread_it
-    def retract(self):
-        '''extend a lever and timestamp it'''
-        #note, make a ts object and submit later after successful retraction
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name})
-        retract_start = min(180, self.retracted + self.wiggle)
- 
-        #wait for the vole to get off the lever
-        timeout = self.box.timing.new_timeout(self.retraction_timeout)
-        while self.switch.pressed and timeout.active():
-            'hanging till lever not pressed'
 
-        #retract further than expected, then extend to final position
-        self.servo.angle = retract_start
-        time.sleep(0.05)
-        self.servo.angle = self.retracted
-        print(f'retracting {self.name}')
-        self.is_extended = False
-        ts.submit()  """
         
     @thread_it
     def retract(self):
@@ -237,8 +231,8 @@ class Lever:
         for i in range(20):
             loc += step
             self.servo.angle = loc
-            time.sleep(0.025)
-        time.sleep(0.05)
+            time.sleep(0.02)
+        time.sleep(0.02)
         self.servo.angle = self.retracted
         self.is_extended = False
         ts.submit()
@@ -280,55 +274,66 @@ class Lever:
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
+            self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
             while phase.active() and not self.box.finished():
-                self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
+                '''wait'''
+
             self.reset_lever()
-        
+            
         #reset with new rounds waits to exit until the round has changed
         elif reset_with_new_round:
             r = self.box.timing.round
+            self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
             while r == self.box.timing.round and not self.box.finished():
-                self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
+                '''wait'''
             self.reset_lever()
+            print('resetting')
+            
         else:
+            self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
             while self.monitoring and not self.box.finished():
-                self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
+                '''wait'''
+        
         self.monitoring = False
     
     @thread_it
     def monitor_lever(self, n, latency_obj, on_press_events = None):
-        if not self.lever_press_queue.empty():
-                    print(f'{self.name} was pressed')
-                    while not self.lever_press_queue.empty():
-                        _ = self.lever_press_queue.get()
-                        self.lever_presses += 1
-                        
-                        #if there are on-press events, run them. they cannot take arguments at this time.
-                        if on_press_events:
-                            for event in on_press_events:
-                                event()
-                                
-                        if latency_obj:
-                            local_latency = copy.copy(latency_obj)
-                            local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
-                            local_latency.submit()
-                        else:
-                            self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
-                                                                                       modifiers = {'total_presses':self.total_presses, 'ID':self.name})
-                        
-                        if self.lever_presses >= n:
+        
+        while self.monitoring:
+            if not self.lever_press_queue.empty():
+                        print(f'{self.name} was pressed')
+                        while not self.lever_press_queue.empty() and self.monitoring:
+                            _ = self.lever_press_queue.get()
+                            self.lever_presses += 1
+                            
+                            #if there are on-press events, run them. they cannot take arguments at this time.
+                            if on_press_events:
+                                for event in on_press_events:
+                                    event()
+                                    
                             if latency_obj:
                                 local_latency = copy.copy(latency_obj)
-                                local_latency.event_descriptor = oes.presses_reached+self.name
                                 local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
                                 local_latency.submit()
                             else:
-                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name, 
-                                                                                           modifiers ={'n_press':self.lever_presses, 'ID':self.name})
-                            self.presses_reached = True
-                            self.monitoring = False
-                        while not self.lever_press_queue.empty():
-                            _ = self.lever_press_queue.get()
+                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
+                                                                                            modifiers = {'total_presses':self.total_presses, 'ID':self.name})
+                            
+                            if self.lever_presses >= n:
+                                if latency_obj:
+                                    local_latency = copy.copy(latency_obj)
+                                    local_latency.event_descriptor = oes.presses_reached+self.name
+                                    local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
+                                    local_latency.submit()
+                                else:
+                                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name, 
+                                                                                                modifiers ={'n_press':self.lever_presses, 'ID':self.name})
+                                self.presses_reached = True
+                                self.monitoring = False
+                            while not self.lever_press_queue.empty():
+                                _ = self.lever_press_queue.get()
+            time.sleep(0.005)
+        
     def reset_lever(self):
         while self.is_extended:
             '''waiting for lever to be retracted before resetting'''
@@ -1167,7 +1172,7 @@ class Speaker:
 
 
     @thread_it
-    def play_tone(self, tone_name):
+    def play_tone(self, tone_name, wait = False):
         '''use pigpio to play a tone, called by name from the dict imported from software config file'''
         if not tone_name in self.tone_dict.keys():
             raise KeyError(f'tone: {tone_name} was not defined in the softare dictionary')
@@ -1175,6 +1180,9 @@ class Speaker:
             hz = self.tone_dict[tone_name]['hz']
             length = self.tone_dict[tone_name]['length']
             self.tone_queue.put(Tone(hz, length, tone_name))
+        #not my favorite way to handle this as it is not directly tied to the behavior of the speaker, but it is close
+        #perhaps, integrate a .done() into Tone objs so that it can be queried. 
+        time.sleep(length)
 
 
     @thread_it

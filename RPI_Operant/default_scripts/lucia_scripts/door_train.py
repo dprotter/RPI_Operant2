@@ -11,7 +11,7 @@ experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 # # For Running on the Raspberry Pi: 
 USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/door_train.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/dave_miniscope_debug/setup_files/door_train.yaml'
 
 
 box = Box()
@@ -54,7 +54,7 @@ def run():
     
     rep = 1
     phase.end_phase()
-    for i in range(1,box.software_config['values']['reps']*box.software_config['values']['sets']+1, 1):
+    for i in range(1,box.software_config['values']['reps']*box.software_config['values']['sets']*2+1, 1):
         
         if rep > box.software_config['values']['reps']:
             rep = 1
@@ -104,6 +104,13 @@ def run():
 
         #only dispense if not already dispensed
         if not lever.presses_reached:
+            lever.retract()
+            speaker.play_tone(tone_name = tone, wait = True)
+                
+            timeout = box.timing.new_timeout(length = delay)
+            timeout.wait()
+            
+            lever_phase.end_phase()
             reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_length'])
             
             lat = door.open()
@@ -112,7 +119,7 @@ def run():
                 box.beams.door1_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=reward_phase)
             else:
                 box.beams.door2_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=reward_phase)
-            lever.retract()
+            
        
         
         reward_phase.wait()
