@@ -176,16 +176,16 @@ class Lever:
                 self.futures.remove(fut)
         
     
-    def extend(self):
+    def extend(self, wait = False):
         '''extend a lever and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
-        self._extend()
+        self._extend(wait = wait)
 
         return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
     @thread_it
-    def _extend(self):
+    def _extend(self, wait):
 
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
@@ -199,11 +199,11 @@ class Lever:
             step = -step
             loc += step
             self.servo.angle = loc
-            time.sleep(0.01)
-        time.sleep(0.02)
+            time.sleep(0.005)
+        time.sleep(0.01)
         #first, extend past final value, then retract slightly to final value
         self.servo.angle = extend_start
-        time.sleep(0.05)
+        time.sleep(0.01)
         self.servo.angle = self.extended
         
         self.is_extended = True
@@ -263,7 +263,12 @@ class Lever:
                            reset_with_new_round = True,
                            on_press_events = None, 
                            play_lever_tones = True):
-        'monitor lever and wait for n_presses before '
+        'monitor lever and wait for n_presses before'
+        if self.presses_reached:
+            print('trying to launch wait_for_n_presses, but presses already reached')
+            while self.presses_reached and not self.box.finished():
+                '''wait for lever to reset'''
+            print('lever successfully reset, launching wait for n presses')
         if latency_obj:
             latency_obj.add_modifier(key = 'presses_required', value = n)
         self.watch_lever_pin(play_lever_tones)

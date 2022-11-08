@@ -51,7 +51,7 @@ def run():
         
         speaker.play_tone(tone_name = 'round_start', wait = True)
         press_latency_1 = box.levers.lever_1.extend()
-        press_latency_2 = box.levers.lever_2.extend()
+        press_latency_2 = box.levers.lever_2.extend(wait = True)
         
         #start the actual lever-out phase
         lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1, on_press_events = [press_led_pulse])
@@ -98,8 +98,10 @@ def run():
                 door_1.close()
             elif door_2.is_open():
                 door_2.close()
+            box.outputs.round_LED.activate()
             box.inputs.iti.wait_for_press()
-            
+            box.outputs.round_LED.deactivate()
+
         phase = box.timing.new_phase(name='ITI', length =box.software_config['values']['ITI_length'])
         
         phase.wait()

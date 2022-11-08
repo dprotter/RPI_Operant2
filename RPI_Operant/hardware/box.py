@@ -362,9 +362,11 @@ class Box:
         for l in self.levers:
             l.retract()
         
-        for speaker in self.speakers:
-            print(self.speakers)
-            speaker.set_off()
+        try:
+            for speaker in self.speakers:
+                speaker.set_off()
+        except:
+            pass
         if hasattr(self, 'lasers'): # if lasers are in the box, shut off as well
             for laser in self.lasers: 
                 laser.turn_off()
