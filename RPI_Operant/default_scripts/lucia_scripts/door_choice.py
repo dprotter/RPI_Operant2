@@ -11,7 +11,7 @@ experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 # # For Running on the Raspberry Pi: 
 USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/dave_miniscope_debug/setup_files/door_choice.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/dave_miniscope_debug/setup_files/door_choice_testing.yaml'
 
 
 box = Box()
