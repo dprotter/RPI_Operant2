@@ -224,8 +224,9 @@ class Lever:
             'hanging till lever not pressed'
         
         numsteps = 20
-        step = (retract_start-self.extended)/20
-        loc = self.extended
+        loc = self.servo.angle
+        step = (retract_start-loc)/numsteps
+        
         self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
                                                 print_to_screen = False)
         for i in range(20):
