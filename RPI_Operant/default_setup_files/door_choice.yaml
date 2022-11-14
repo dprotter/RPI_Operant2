@@ -3,6 +3,9 @@ output_path: 'default'
 checks:
   save_timestamps: True
   trigger_on_start: True
+  click_on: True
+  click_off: False
+  
 values:
   rounds: 16
   delay_by_day: [3]
