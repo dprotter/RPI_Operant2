@@ -41,7 +41,7 @@ def run():
     #get LED pulses to pass to other functions
     press_led_pulse = box.outputs.event_LED.prepare_pulse(length = box.software_config['LED_pulses']['lever_press'], pulse_string = 'lever_press')
     new_round_pulse = box.outputs.round_LED.prepare_pulse(length = box.software_config['LED_pulses']['new_round'], pulse_string = 'new_round')
-    
+    FR = box.get_software_setting(location = 'values', setting_name='FR', default = 3)
     for i in range(1,box.software_config['values']['rounds']+1, 1):
 
         box.timing.new_round()
@@ -54,8 +54,8 @@ def run():
         press_latency_2 = box.levers.lever_2.extend(wait = True)
         
         #start the actual lever-out phase
-        lever_1.wait_for_n_presses(n=1, latency_obj = press_latency_1, on_press_events = [press_led_pulse])
-        lever_2.wait_for_n_presses(n=1, latency_obj = press_latency_2, on_press_events = [press_led_pulse])
+        lever_1.wait_for_n_presses(n=FR, latency_obj = press_latency_1, on_press_events = [press_led_pulse])
+        lever_2.wait_for_n_presses(n=FR, latency_obj = press_latency_2, on_press_events = [press_led_pulse])
         
         while phase.active():
         

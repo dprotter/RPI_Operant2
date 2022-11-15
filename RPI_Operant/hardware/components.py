@@ -251,7 +251,7 @@ class Lever:
                                                  default = True): 
                     self.speaker.click_on()
                 timeout = self.box.timing.new_timeout(self.retraction_timeout)
-                while self.switch.pressed and timeout.active():
+                while self.switch.pressed and timeout.active() and self.monitoring:
                     '''waiting for vole to get off lever. nothing necessary within loop'''
                 
                 if self.box.get_software_setting('checks', 
@@ -270,8 +270,7 @@ class Lever:
     def wait_for_n_presses(self, n = 1, reset_with_new_phase = False, 
                            latency_obj = None, 
                            reset_with_new_round = True,
-                           on_press_events = None, 
-                           play_lever_tones = True):
+                           on_press_events = None,):
         'monitor lever and wait for n_presses before'
         if self.presses_reached:
             print('trying to launch wait_for_n_presses, but presses already reached')
@@ -280,7 +279,7 @@ class Lever:
             print('lever successfully reset, launching wait for n presses')
         if latency_obj:
             latency_obj.add_modifier(key = 'presses_required', value = n)
-        self.watch_lever_pin(play_lever_tones)
+        self.watch_lever_pin()
         if reset_with_new_phase:
             print('reset with new phase')
             #get the current phase object
@@ -312,7 +311,9 @@ class Lever:
     
     @thread_it
     def monitor_lever(self, n, latency_obj, on_press_events = None):
-        
+        if latency_obj:
+            latency_obj.event_2 = oes.lever_pressed+self.name
+            latency_obj.reformat_event_descriptor()
         while self.monitoring:
             if not self.lever_press_queue.empty():
                         print(f'{self.name} was pressed')
@@ -326,9 +327,12 @@ class Lever:
                                     event()
                                     
                             if latency_obj:
+                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
+                                                                                            modifiers = {'total_presses':self.total_presses, 'ID':self.name})
                                 local_latency = copy.copy(latency_obj)
                                 local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
                                 local_latency.submit()
+                                
                             else:
                                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
                                                                                             modifiers = {'total_presses':self.total_presses, 'ID':self.name})
