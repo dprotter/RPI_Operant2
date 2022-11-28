@@ -171,7 +171,7 @@ class Timestamp:
         
     def submit(self): 
         t = time.time()
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name
         self.timestamp_manager.queue.put(format_ts(self))
         self.timestamp_manager.screen.print_queue.put(self)
@@ -205,8 +205,8 @@ class Duration:
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
         self.round = self.timestamp_manager.timing.round
-        self.duration = round(t - self.start_time, 2)
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.duration = round(t - self.start_time, 3)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase')
         self.timestamp_manager.queue.put(format_ts(self))
         self.timestamp_manager.screen.print_queue.put(self)
@@ -260,8 +260,8 @@ class Latency:
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
         self.round = self.timestamp_manager.timing.round
-        self.latency = round(t - self.start_time, 2)
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.latency = round(t - self.start_time, 3)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase')
         
         
