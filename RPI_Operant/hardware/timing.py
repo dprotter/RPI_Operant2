@@ -284,9 +284,13 @@ class TimestampManager:
         if self.save_timestamps:
             print(f'csv path: {self.save_path}')
             with open(self.save_path, 'w+') as file:
-                header = ['round','event','time','phase initialized','phase submitted','latency','duration','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
+                
+                header = [f'{k}|{v}' for k,v in sorted(self.box.run_dict.items())]
                 csv_writer.writerow(header)
+                data_header = ['round','event','time','phase initialized','phase submitted','latency','duration','modifiers','round timestamp initialized']
+                
+                csv_writer.writerow(data_header)
         else:
             print('\nsoftware config file indicates NOT TO SAVE TIMESTAMPS\n')
                 
