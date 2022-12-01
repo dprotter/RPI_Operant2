@@ -82,6 +82,7 @@ class Experiment:
         self.runtime_dict = self.generate_runtime_dict()
         self.load_module()
         self.check_setup_filepaths()
+        self.update_software_config()
         return True
     
     def check_setup_filepaths(self):

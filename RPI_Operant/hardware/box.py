@@ -71,6 +71,7 @@ class Box:
         else:
             self.software_config = load_config_file(DEFAULT_SOFTWARE_CONFIG)
 
+        self.update_software_config_from_runtime()
         
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
@@ -145,6 +146,8 @@ class Box:
         if start_now:
             self.timing.start_timing()
         self.setup_complete = True
+    
+    
     
     def start_and_trigger(self, obj_list):
         '''start timing and subsequently call any functions passed within obj list.
@@ -456,7 +459,11 @@ class Box:
         
         print('monitor_workers complete')
         
-
+    def update_software_config_from_runtime(self):
+        for k, v in sorted(self.run_dict.items()):
+            if k in self.software_config.keys():
+                print(f'updating software config {k} from runtime_dict (or CSV args column) from {self.software_config[k]} to {v}')
+                self.software_config[k] = v
         
 class ComponentContainer:
     
