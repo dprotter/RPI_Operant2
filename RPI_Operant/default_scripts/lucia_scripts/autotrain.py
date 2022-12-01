@@ -46,7 +46,11 @@ def run():
         new_round_pulse()
 
         phase = box.timing.new_phase('lever_out', box.software_config['values']['lever_out'])
-        speaker.play_tone(tone_name = 'round_start')
+        speaker.play_tone(tone_name = 'round_start', wait = True)
+        
+        pause = box.timing.new_timeout(length = 0.5)
+        pause.wait()
+        
         press_latency = box.levers.food.extend()
         
         #start the actual lever-out phase
