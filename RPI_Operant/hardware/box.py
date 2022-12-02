@@ -464,6 +464,9 @@ class Box:
             if k in self.software_config.keys():
                 print(f'updating software config {k} from runtime_dict (or CSV args column) from {self.software_config[k]} to {v}')
                 self.software_config[k] = v
+            else:
+                print(f'adding arg {k}:{v} from runtime_dict (or CSV args column) to software config')
+                self.software_config[k] = v
         
 class ComponentContainer:
     

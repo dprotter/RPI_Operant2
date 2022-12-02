@@ -22,7 +22,7 @@ def run():
     if box.software_config['checks']['trigger_on_start']:
         
         trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
-    
+    time.sleep(0.25)
     #simplifying hardware calls
     lever = box.levers.food
     dispenser = box.dispensers.dispenser

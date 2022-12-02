@@ -54,7 +54,7 @@ def run():
         press_latency = box.levers.food.extend()
         
         #start the actual lever-out phase
-        lever.wait_for_n_presses(n = 1, latency_obj = press_latency, on_press_events = [press_led_pulse])
+        lever.wait_for_n_presses(n = box.software_config['FR'], latency_obj = press_latency, on_press_events = [press_led_pulse])
         while phase.active():
             '''waiting here for something to happen'''
         
