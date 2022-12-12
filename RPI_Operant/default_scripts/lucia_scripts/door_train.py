@@ -76,8 +76,11 @@ def run():
         box.timing.new_round()
         new_round_pulse()
         
-        lever_phase = box.timing.new_phase(lever.name + '_out', box.software_config['values']['lever_out'])
-        speaker.play_tone(tone_name = 'round_start')
+        lever_phase = box.timing.new_phase(lever.name + '_out', 
+        box.software_config['values']['lever_out'])
+        speaker.play_tone(tone_name = 'round_start', wait = True)
+        pause = box.timing.new_timeout(length = 0.5)
+        pause.wait()
         press_latency = lever.extend()
         
         #start the actual lever-out phase
@@ -124,7 +127,12 @@ def run():
         
         reward_phase.wait()
         door.close()
+
+        box.outputs.round_LED.activate()
         box.inputs.iti.wait_for_press()
+        box.outputs.round_LED.deactivate()
+        lever.reset_lever()
+        
             
         phase = box.timing.new_phase(name='ITI', length = box.software_config['values']['ITI_length'])
         

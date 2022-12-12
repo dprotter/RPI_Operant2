@@ -384,7 +384,17 @@ class Box:
         print('monitor_workers complete')
     
     def get_delay(self):
-        if not 'delay_by_day' or 'delay' in self.software_config['values'].keys():
+        #delay in run_dict takes priority
+        if 'delay' in self.run_dict.keys():
+
+            if 'delay_by_day' in self.software_config['values'].keys() or 'delay' in self.software_config['values'].keys():
+                if 'delay_by_day' in self.software_config['values'].keys():
+                    print(f'"delay_by_day" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
+                else:
+                    print(f'"delay" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
+            return self.run_dict['delay']
+
+        if not 'delay_by_day' in self.software_config['values'].keys() or 'delay' in self.software_config['values'].keys():
             print('neither delay_by_day nor delay are present in the software config file, but were requested') 
         if self.run_dict['day'] >= len( self.software_config['values']['delay_by_day']):
             print('day exceedes delay_by_day length. using final delay_by_day value')
