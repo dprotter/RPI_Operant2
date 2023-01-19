@@ -7,8 +7,8 @@ from pathlib import Path
 experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 # # For Running on the Raspberry Pi: 
-USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/dave_miniscope_debug/setup_files/door_choice_RPE.yaml'
+USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware_fr2.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/door_choice_RPE.yaml'
 
 
 box = Box()
@@ -75,6 +75,8 @@ def run():
                 phase.end_phase()
                 
                 if door_2_press_count in door_2_RPE_list:
+                    box.timestamp_manager.create_and_submit_new_timestamp(description = 'error_trial_skipping_door', modifiers = {'ID':'door_2'})
+                    box.timing.new_phase('error_trial_time', length = box.software_config['values']['error_trial_time'])
                     break
                 
                 reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_time'])
@@ -93,6 +95,8 @@ def run():
                 
                 phase.end_phase()
                 if door_1_press_count in door_1_RPE_list:
+                    box.timestamp_manager.create_and_submit_new_timestamp(description = 'error_trial_skipping_door', modifiers = {'ID':'door_1'})
+                    box.timing.new_phase('error_trial_time', length = box.software_config['values']['error_trial_time'])
                     break
                 reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_time'])
                 
@@ -113,6 +117,8 @@ def run():
             box.outputs.round_LED.activate()
             box.inputs.iti.wait_for_press()
             box.outputs.round_LED.deactivate()
+        elif box.timing.current_phase.name == 'error_trial_time':
+            box.timing.current_phase.wait()
 
         phase = box.timing.new_phase(name='ITI', length =box.software_config['values']['ITI_length'])
         

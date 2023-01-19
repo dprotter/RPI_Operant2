@@ -62,7 +62,7 @@ def run():
             if lever_1.presses_reached:
                 lever_1.retract()
                 lever_2.retract()
-                speaker.play_tone(tone_name = 'door_2_open')
+                speaker.play_tone(tone_name = 'door_2_open', wait = True)
                 
                 timeout = box.timing.new_timeout(length = delay)
                 timeout.wait()
@@ -76,7 +76,7 @@ def run():
             elif lever_2.presses_reached:
                 lever_1.retract()
                 lever_2.retract()
-                speaker.play_tone(tone_name = 'door_1_open')
+                speaker.play_tone(tone_name = 'door_1_open', wait = True)
                 
                 timeout = box.timing.new_timeout(length = delay)
                 timeout.wait()

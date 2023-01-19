@@ -561,23 +561,23 @@ class Door:
             if self.override_open_button.pressed:
                 
                 self.servo.throttle = self.open_speed
+                self.overridden = True
                 while self.override_open_button.pressed:
-                    self.overridden = True
-                    time.sleep(0.05)
+                    time.sleep(0.01)
                 
                 self.servo.throttle = self.stop_speed
                 self.overridden = False
                 
             if self.override_close_button.pressed:
                 self.servo.throttle = self.close_speed
+                self.overridden = True
                 while self.override_close_button.pressed:
-                    self.overridden = True
-                    time.sleep(0.05)
+                    time.sleep(0.01)
                 
                 self.servo.throttle = self.stop_speed
                 self.overridden = False
 
-            time.sleep(0.1)
+            time.sleep(0.025)
 
 class Dispenser:
 
