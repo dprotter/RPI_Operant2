@@ -1,0 +1,61 @@
+output_path: 'default'
+
+checks:
+  save_timestamps: True
+  trigger_on_start: True
+  click_on: True
+  click_off: False
+  
+values:
+  door_1_RPE: [2,5,8,11,14]
+  door_2_RPE: [2,5,8,11,14]
+  error_trial_time: 15
+  delay_by_day: [3]
+  rounds: 16
+  lever_out: 10
+  reward_time: 5
+  ITI_length: 3
+  FR: 2
+  
+
+LED_pulses:
+  lever_press: 0.35
+  pellet_retrieved: 0.35
+  new_round: 0.5
+
+speaker_tones:
+  speaker:
+    round_start:
+      hz: 5000
+      length: 1
+    pellet_tone:
+      hz: 8000
+      length: 1
+    door_1_open:
+      hz: 12000
+      length: 1
+    door_2_open:
+      hz: 2500
+      length: 1
+    
+    click_on: 
+      tone_1:
+        hz: 900
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 8000
+        length: 0.02
+
+    click_off: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
