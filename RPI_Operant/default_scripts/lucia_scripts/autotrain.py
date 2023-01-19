@@ -47,10 +47,14 @@ def run():
 
         phase = box.timing.new_phase('lever_out', box.software_config['values']['lever_out'])
         speaker.play_tone(tone_name = 'round_start', wait = True)
+        
+        pause = box.timing.new_timeout(length = 0.5)
+        pause.wait()
+        
         press_latency = box.levers.food.extend()
         
         #start the actual lever-out phase
-        lever.wait_for_n_presses(n = 1, latency_obj = press_latency, on_press_events = [press_led_pulse])
+        lever.wait_for_n_presses(n = box.software_config['FR'], latency_obj = press_latency, on_press_events = [press_led_pulse])
         while phase.active():
             '''waiting here for something to happen'''
         

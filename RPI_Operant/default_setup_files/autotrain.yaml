@@ -9,7 +9,11 @@ values:
   delay_by_day: [0, 0, 1, 2, 3]
   lever_out: 60
   iti_length: 30
-  
+
+LED_pulses:
+  lever_press: 0.35
+  pellet_retrieved: 0.35
+  new_round: 0.5
 
 
 speaker_tones:

@@ -7,6 +7,8 @@ checks:
   click_off: False
   
 values:
+  door_1_RPE: [2,4,6,8,13,14,16]
+  door_2_RPE: [2,4,6,8,13,14,16]
   rounds: 16
   delay_by_day: [3]
   lever_out: 60
