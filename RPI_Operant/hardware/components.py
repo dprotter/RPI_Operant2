@@ -177,23 +177,29 @@ class Lever:
         
     
     def extend(self):
-        '''extend a lever and timestamp it
+        '''calls  threaded lever extend func.
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
-        lat = self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
-        extend_start = max(0, self.extended-self.wiggle)
-
-        #first, extend past final value, then retract slightly to final value
-        self.servo.angle = extend_start
-        time.sleep(0.05)
-        self.servo.angle = self.extended
         
-        self.is_extended = True
-        ts.submit()
-        return lat
+        self._extend()
+        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
+                                                        modifiers = {'ID':self.name})
+    
+    @thread_it
+    def _extend(self):
+        
+            ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
+                                                            modifiers = {'ID':self.name})
+            extend_start = max(0, self.extended-self.wiggle)
+
+            #first, extend past final value, then retract slightly to final value
+            self.servo.angle = extend_start
+            time.sleep(0.05)
+            self.servo.angle = self.extended
+            
+            self.is_extended = True
+            ts.submit()
+            
     
     """"  
     @thread_it
