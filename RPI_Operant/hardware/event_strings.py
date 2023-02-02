@@ -13,9 +13,12 @@ class OperantEventStrings:
     
     lever_extended = 'lever_extended_'
     lever_retracted = 'lever_retracted_'
+    start_lever_extend = 'start_lever_retract_'
     start_lever_retract = 'start_lever_retract_'
     lever_pressed = 'lever_pressed_'
     presses_reached= 'presses_reached_'
+    extend_interrupt = 'lever_extend_interrupted_'
+    retract_interrupt = 'lever_retract_interrupted_'
     
     tone_start = 'tone_start_'
     tone_stop = 'tone_stop_'
