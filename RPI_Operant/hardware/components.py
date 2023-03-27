@@ -205,10 +205,13 @@ class Lever:
         self.servo.angle = extend_start
         time.sleep(0.01)
         self.servo.angle = self.extended
-        
+        self.disable()
         self.is_extended = True
         ts.submit()
 
+    def disable(self):
+        self.servo._pwm_out.duty_cycle = 0
+        
         
     @thread_it
     def retract(self):
@@ -239,6 +242,7 @@ class Lever:
                 break
         time.sleep(0.02)
         self.servo.angle = self.retracted
+        self.disable()
         self.is_extended = False
         ts.submit()
     
@@ -483,6 +487,9 @@ class Door:
         #start the override function
         self.override(self)
     
+    def disable(self):
+        self.servo._pwm_out.duty_cycle = 0
+    
     def is_closed(self):
         return self.state_switch.pressed
     
@@ -542,8 +549,8 @@ class Door:
         while time.time() < (start_time + self.close_timeout) and not self.overridden and not self.state_switch.pressed:
             time.sleep(0.05)
         
-        self.servo.throttle = self.stop_speed
-
+        #self.servo.throttle = self.stop_speed
+        self.disable()
         if self.state_switch.pressed:
             print(f'{self.name} closed!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, 
@@ -565,7 +572,7 @@ class Door:
                 while self.override_open_button.pressed:
                     time.sleep(0.01)
                 
-                self.servo.throttle = self.stop_speed
+                self.disable()
                 self.overridden = False
                 
             if self.override_close_button.pressed:
@@ -574,7 +581,7 @@ class Door:
                 while self.override_close_button.pressed:
                     time.sleep(0.01)
                 
-                self.servo.throttle = self.stop_speed
+                self.disable()
                 self.overridden = False
 
             time.sleep(0.025)
@@ -607,7 +614,7 @@ class Dispenser:
         self.servo.throttle = self.config_dict['dispense']
 
     def stop_servo(self):
-        self.servo.throttle =  self.config_dict['stop']
+        self.servo._pwm_out.duty_cycle = 0
 
     def sensor_blocked(self):
         return self.sensor.pushed
