@@ -449,7 +449,7 @@ class Door:
             self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
         else:
             self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
-        self.stop_speed = self.config_dict['stop']
+
         self.close_speed = self.config_dict['close']
         self.open_speed = self.config_dict['open']
         self.open_time = self.config_dict['open_time']
@@ -525,7 +525,7 @@ class Door:
         while time.time() < (start_time + self.open_time) and not self.overridden:
             time.sleep(0.05)
         
-        self.servo.throttle = self.stop_speed
+        self.disable()
 
         if self.state_switch.pressed:
             print(f'{self.name} door failed to open!!!')
@@ -700,7 +700,7 @@ class PositionalDispenser:
         self.positions = self.calculate_positions()
         self.current_position_index = self.set_starting_index()
         self.current_position_angle = self.positions[self.current_position_index]
-        self.stop_speed = self.config_dict['stop']
+        
         self.dispense_timeout = self.config_dict['dispense_timeout']
         self.name = name
         self.pellet_state = False
@@ -713,6 +713,9 @@ class PositionalDispenser:
         self.sensor = self.box.button_manager.new_button(f'{self.name}_sensor', sensor_dict)
         self.overridden = False
 
+    def disable(self):
+        self.servo._pwm_out.duty_cycle = 0
+    
     def calculate_positions(self):
         start = self.config_dict['start']
         n = self.config_dict['n_spots']
@@ -787,7 +790,7 @@ class PositionalDispenser:
                         read+=1
                     if read > 2:
                         '''timestamp put "pellet dispensed"'''
-                        self.servo.throttle = self.stop_speed
+                        self.disable()
                         self.pellet_state = True
                         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed, 
                                                                                     modifiers = {'ID':self.name})
@@ -805,7 +808,7 @@ class PositionalDispenser:
                         read+=1
                     if read > 2:
                         '''timestamp put "pellet dispensed"'''
-                        self.servo.throttle = self.stop_speed
+                        self.disable()
                         self.pellet_state = True
                         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed, 
                                                                                 modifiers = {'ID':self.name})
@@ -823,7 +826,7 @@ class PositionalDispenser:
                         read+=1
                     if read > 2:
                         '''timestamp put "pellet dispensed"'''
-                        self.servo.throttle = self.stop_speed
+                        self.disable()
                         self.pellet_state = True
                         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.pellet_dispensed, 
                                                                                     modifiers = {'ID':self.name})
@@ -836,7 +839,7 @@ class PositionalDispenser:
             
     def stop(self): 
         print(f'STOPPING {self.name}')
-        self.servo.throttle = self.stop_speed
+        self.disable()
 
     @thread_it
     def monitor_pellet(self, pellet_latency):
