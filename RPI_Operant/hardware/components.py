@@ -174,7 +174,7 @@ class Lever:
         for fut in self.futures:
             if fut.done():
                 self.futures.remove(fut)
-        
+    
     
     def extend(self, wait = False):
         '''extend a lever and timestamp it
