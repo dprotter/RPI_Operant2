@@ -97,7 +97,10 @@ class Lever:
         self.retracted = self.config_dict['retracted'] #int, servo angle
         self.name = name #str
         self.is_extended = False #True = extended
-
+        self.control_loc = False
+        self.control_queue = queue.Queue()
+        self.angular_position = None
+        
         if simulated:
             self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
         else:
@@ -119,8 +122,6 @@ class Lever:
         self.interpress_timeout = self.config_dict['interpress_timeout'] if 'interpress_timeout' in self.config_dict.keys() else 0.5
         
         
-        
-        
         #attributes for tracking during runtime
         self.total_presses = 0
         self.presses_reached = False
@@ -130,7 +131,8 @@ class Lever:
         self.lever_press_queue = queue.Queue()
         self.lever_presses = 0
         
-        self.wiggle = 0
+        self.wiggle = 5
+        self.step_size = 5
     
     @thread_it
     def attatch_speaker(self):
@@ -175,16 +177,88 @@ class Lever:
         for fut in self.futures:
             if fut.done():
                 self.futures.remove(fut)
-        
-    
+    @thread_it
+    def _execute_move(self, wait = False):
+        if not self.control_queue.empty():
+            self.control_loc = True
+            while self.control_loc and not self.box.finished():
+                
+                #get the destination and all incoming timestamp objects
+                destination, init_ts, finish_ts, interrupt_ts  = self.control_queue.get()
+                steps = int((self.angular_position - destination)/self.step_size)
+                loc = self.angular_position
+                interrupt = False
+                
+                #determine step direction
+                if steps<0:
+                    steps = abs(steps)
+                    step = -self.step_size
+                else:
+                    step = self.step_size
+                
+                #submit start of move timestamp
+                init_ts.submit()
+                
+                for _ in range(steps):
+                    #step forward twice, back once, to help prevent binding
+                    loc+=step*2
+                    self.servo.angle = loc
+                    loc -= step
+                    self.servo.angle = loc
+                    self.angular_position = loc
+                    
+                    #exit this loop if a new command is found
+                    if not self.control_queue.empty():
+                        interrupt_ts.submit()
+                        interrupt = True
+                        break
+                    time.sleep(0.005)
+                
+                if not interrupt:
+                    self.angular_position = destination
+                    self.control_loc = False
+                    
+            finish_ts.submit()
+            if destination == self.extended:
+                self.is_extended = True
+            else:
+                self.is_extended = False
+                
     def extend(self, wait = False):
         '''extend a lever and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
+        destination = self.extended
+        start_ts = self.box.timestamp_manager.new_timestamp(description = oes.start_lever_extend + self.name, modifiers = {'ID':self.name}, 
+                                                print_to_screen = False)
         
-        self._extend(wait = wait)
-
+        finish_ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
+                                                        modifiers = {'ID':self.name})
+        
+        interrupt_ts = self.box.timestamp_manager.new_timestamp(description = oes.extend_interrupt+self.name, 
+                                                        modifiers = {'ID':self.name})
+        self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
+        if not self.control_lock:
+            self.execute_move(wait = wait)
+            
         return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
                                                         modifiers = {'ID':self.name})
+    def retract(self, wait = False):
+        '''retract a lever and timestamp it
+        returns a latency object that may be used to get the latency from lever-out to a second event'''
+        destination = self.extended
+        start_ts = self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
+                                                print_to_screen = False)
+        
+        finish_ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, 
+                                                        modifiers = {'ID':self.name})
+        
+        interrupt_ts = self.box.timestamp_manager.new_timestamp(description = oes.retract_interrupt+self.name, 
+                                                        modifiers = {'ID':self.name})
+        self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
+        if not self.control_lock:
+            self.execute_move(wait = wait)
+            
+        
     @thread_it
     def _extend(self, wait):
 
@@ -194,7 +268,7 @@ class Lever:
         numsteps = 30
         step = (self.extended-extend_start)/numsteps
         loc = self.extended
-        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
+        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_extend + self.name, modifiers = {'ID':self.name}, 
                                                 print_to_screen = False)
         for i in range(60):
             step = -step
@@ -214,9 +288,9 @@ class Lever:
         self.servo._pwm_out.duty_cycle = 0
         
         
-    @thread_it
+    '''@thread_it
     def retract(self):
-        '''extend a lever and timestamp it'''
+        'extend a lever and timestamp it'
         #note, make a ts object and submit later after successful retraction
         ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name},
                                                       print_to_screen = False)
@@ -245,7 +319,7 @@ class Lever:
         self.servo.angle = self.retracted
         self.disable()
         self.is_extended = False
-        ts.submit()
+        ts.submit()'''
     
     @thread_it
     def watch_lever_pin(self):
