@@ -177,7 +177,8 @@ class Lever:
         for fut in self.futures:
             if fut.done():
                 self.futures.remove(fut)
-"""     @thread_it
+    """ 
+    @thread_it
     def _execute_move(self, wait = False):
         if not self.control_queue.empty():
             self.control_loc = True
@@ -264,10 +265,10 @@ class Lever:
                                                         modifiers = {'ID':self.name})
         self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
         if not self.control_loc:
-            self._execute_move(wait = wait) """
+            self._execute_move(wait = wait) 
+            """
 
-            
-        
+
     @thread_it
     def _extend(self, wait):
 
