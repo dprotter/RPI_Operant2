@@ -125,6 +125,7 @@ class Lever:
         self.total_presses = 0
         self.presses_reached = False
         self.monitoring = False
+        self.pause_monitoring = False
         self.stop_threads = False
         self.lever_press_queue = queue.Queue()
         self.lever_presses = 0
@@ -251,34 +252,36 @@ class Lever:
         self.monitoring = True
         
         while self.monitoring:
-            if self.switch.pressed:
-                self.total_presses +=1
-                self.lever_press_queue.put(('pressed'))
-                if self.box.get_software_setting('checks', 
-                                                 'click_on',
-                                                 default = True): 
-                    self.speaker.click_on()
-                timeout = self.box.timing.new_timeout(self.retraction_timeout)
-                while self.switch.pressed and timeout.active() and self.monitoring:
-                    '''waiting for vole to get off lever. nothing necessary within loop'''
-                
-                if self.box.get_software_setting('checks', 
-                                                 'click_off',
-                                                 default = False): 
-                    self.speaker.click_off()
-                
-                
-                #wait to loop until inter-press interval is passed
-                ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
-                ipt_timeout.wait()
+            if not self.pause_monitoring:
+                if self.switch.pressed:
+                    self.total_presses +=1
+                    self.lever_press_queue.put(('pressed'))
+                    if self.box.get_software_setting('checks', 
+                                                    'click_on',
+                                                    default = True): 
+                        self.speaker.click_on()
+                    timeout = self.box.timing.new_timeout(self.retraction_timeout)
+                    while self.switch.pressed and timeout.active() and self.monitoring:
+                        '''waiting for vole to get off lever. nothing necessary within loop'''
+                    
+                    if self.box.get_software_setting('checks', 
+                                                    'click_off',
+                                                    default = False): 
+                        self.speaker.click_off()
+                    
+                    
+                    #wait to loop until inter-press interval is passed
+                    ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
+                    ipt_timeout.wait()
             time.sleep(0.015)
         #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
+    
     
     @thread_it
     def wait_for_n_presses(self, n = 1, reset_with_new_phase = False, 
                            latency_obj = None, 
                            reset_with_new_round = True,
-                           on_press_events = None,):
+                           on_press_events = None,inter_press_retraction = False):
         'monitor lever and wait for n_presses before'
         if self.presses_reached:
             print('trying to launch wait_for_n_presses, but presses already reached')
@@ -295,7 +298,7 @@ class Lever:
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
-            self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
+            self.monitor_lever(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_press_retraction)
             while phase.active() and not self.box.finished():
                 '''wait'''
 
@@ -304,21 +307,31 @@ class Lever:
         #reset with new rounds waits to exit until the round has changed
         elif reset_with_new_round:
             r = self.box.timing.round
-            self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
+            self.monitor_lever(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_press_retraction)
             while r == self.box.timing.round and not self.box.finished():
                 '''wait'''
             self.reset_lever()
             print('resetting')
             
         else:
-            self.monitor_lever(n, latency_obj, on_press_events=on_press_events)
+            self.monitor_lever(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_press_retraction)
             while self.monitoring and not self.box.finished():
                 '''wait'''
         
         self.monitoring = False
-    
     @thread_it
-    def monitor_lever(self, n, latency_obj, on_press_events = None):
+    def inter_press_retraction_func(self):
+        start = time.time()
+        
+        self.pause_monitoring = True
+        self.retract()
+        
+        self.box.timing.new_timeout(length = self.config_dict['inter_press_retraction_interview']).wait()
+        self.extend()
+        self.pause_monitoring = False
+        
+    @thread_it
+    def monitor_lever(self, n, latency_obj, on_press_events = None, inter_press_retraction = False):
         if latency_obj:
             latency_obj.event_2 = oes.lever_pressed+self.name
             latency_obj.reformat_event_descriptor()
@@ -328,7 +341,9 @@ class Lever:
                         while not self.lever_press_queue.empty() and self.monitoring:
                             _ = self.lever_press_queue.get()
                             self.lever_presses += 1
-                            
+                            if inter_press_retraction and self.lever_presses < n:
+                                self.inter_press_retraction_func()
+
                             #if there are on-press events, run them. they cannot take arguments at this time.
                             if on_press_events:
                                 for event in on_press_events:
@@ -365,6 +380,7 @@ class Lever:
         while self.is_extended:
             '''waiting for lever to be retracted before resetting'''
         self.monitoring = False
+        self.pause_monitoring = False
         self.presses_reached = False
         self.lever_presses = 0
         
