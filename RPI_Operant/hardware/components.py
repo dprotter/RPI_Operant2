@@ -185,6 +185,10 @@ class Lever:
                 
                 #get the destination and all incoming timestamp objects
                 destination, init_ts, finish_ts, interrupt_ts  = self.control_queue.get()
+                
+                if not self.angular_position:
+                    self.angular_position = self.retracted
+                    
                 steps = int((self.angular_position - destination)/self.step_size)
                 loc = self.angular_position
                 interrupt = False
@@ -245,7 +249,7 @@ class Lever:
     def retract(self, wait = False):
         '''retract a lever and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
-        destination = self.extended
+        destination = self.retracted
         start_ts = self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
                                                 print_to_screen = False)
         
