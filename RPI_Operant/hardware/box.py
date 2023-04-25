@@ -84,6 +84,7 @@ class Box:
 
         self.output_file_name = self.generate_output_fname()
         self.output_file_path = self.generate_output_path()
+        self.config_output_path = self.output_file_path + '_config'
         self.output_error_file_path = self.generate_error_output_path()
 
         #the manager for creating, adding, and monitoring new binary inputs
@@ -165,7 +166,7 @@ class Box:
             
             self.shutdown_objects+= [obj for obj in returned_objs if obj]
             print(f'shutdown_objects are {self.shutdown_objects}')
-        
+    
     def generate_output_fname(self):
         vole = self.run_dict['vole']
         day = self.run_dict['day']
@@ -180,7 +181,8 @@ class Box:
             fname = f'{vole}_{fdate}_{exp}_day_{day}'
         
         return fname
-        
+    
+
     
     def generate_output_path(self):
         
