@@ -921,7 +921,7 @@ class Output:
     
     
     def __init__(self, name, output_config_dict, box, simulated = False):
-        '''make a dispenser'''
+        '''make an output'''
         self.box = box
         self.config_dict = output_config_dict
         self.active = False
@@ -932,15 +932,15 @@ class Output:
             self.pin = self.config_dict['pin']
             
             GPIO.setup(self.pin, GPIO.OUT)
-            self.switch_active = self.set_active_GPIO
-            self.switch_inactive = self.set_inactive_GPIO
+            self.output_on = self.set_active_GPIO
+            self.output_off = self.set_inactive_GPIO
                 
 
         elif self.config_dict['type'] == 'HAT':
 
             self.channel = SERVO_KIT._pca.channels[self.config_dict['channel']]
-            self.switch_active = self.set_active_HAT
-            self.switch_inactive = self.set_inactive_HAT
+            self.output_on = self.set_active_HAT
+            self.output_off = self.set_inactive_HAT
             
         else:
             raise Exception(f'incorrect output type passed: {self.config_dict["type"]}\n must be "HAT" or "GPIO"')
@@ -1043,7 +1043,9 @@ class Laser:
         self.box = box 
         self.name = name 
         self.pin = speaker_dict['pin'] 
-        if not simulated: 
+        if not simulated:
+            
+            ##################3here is where I need to come in and change how this output is handled###################333 
             self.gpio = GPIO 
             GPIO.setup(self.pin, GPIO.OUT) # Connecting to Pi ! 
         else: 
@@ -1120,7 +1122,11 @@ class Speaker:
     def __init__(self, name, speaker_dict, box, simulated = False):
         self.box = box
         self.name = name
+
         self.pin = speaker_dict['pin']
+
+        
+            
         
         self.tone_dict = self.box.software_config['speaker_tones'][self.name]
         self.sim = simulated
@@ -1200,6 +1206,7 @@ class Speaker:
         self.pi.set_PWM_dutycycle(self.pin, 0)                  
                     
     def set_hz(self, hz):
+
         self.pi.set_PWM_frequency(self.pin, int(hz))
         self.hz = hz
 
