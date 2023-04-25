@@ -177,7 +177,7 @@ class Lever:
         for fut in self.futures:
             if fut.done():
                 self.futures.remove(fut)
-    @thread_it
+"""     @thread_it
     def _execute_move(self, wait = False):
         if not self.control_queue.empty():
             self.control_loc = True
@@ -208,7 +208,10 @@ class Lever:
                     loc+=step*2
                     self.servo.angle = loc
                     loc -= step
+                    
+                    
                     self.servo.angle = loc
+                    
                     self.angular_position = loc
                     
                     #exit this loop if a new command is found
@@ -228,6 +231,7 @@ class Lever:
             else:
                 self.is_extended = False
                 
+  
     def extend(self, wait = False):
         '''extend a lever and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
@@ -260,7 +264,8 @@ class Lever:
                                                         modifiers = {'ID':self.name})
         self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
         if not self.control_loc:
-            self._execute_move(wait = wait)
+            self._execute_move(wait = wait) """
+
             
         
     @thread_it
@@ -292,7 +297,7 @@ class Lever:
         self.servo._pwm_out.duty_cycle = 0
         
         
-    '''@thread_it
+    @thread_it
     def retract(self):
         'extend a lever and timestamp it'
         #note, make a ts object and submit later after successful retraction
@@ -323,7 +328,7 @@ class Lever:
         self.servo.angle = self.retracted
         self.disable()
         self.is_extended = False
-        ts.submit()'''
+        ts.submit()
     
     @thread_it
     def watch_lever_pin(self):
