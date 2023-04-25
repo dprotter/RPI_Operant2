@@ -237,7 +237,7 @@ class Lever:
         interrupt_ts = self.box.timestamp_manager.new_timestamp(description = oes.extend_interrupt+self.name, 
                                                         modifiers = {'ID':self.name})
         self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
-        if not self.control_lock:
+        if not self.control_loc:
             self.execute_move(wait = wait)
             
         return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
@@ -255,7 +255,7 @@ class Lever:
         interrupt_ts = self.box.timestamp_manager.new_timestamp(description = oes.retract_interrupt+self.name, 
                                                         modifiers = {'ID':self.name})
         self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
-        if not self.control_lock:
+        if not self.control_loc:
             self.execute_move(wait = wait)
             
         
