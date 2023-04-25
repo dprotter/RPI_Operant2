@@ -342,7 +342,7 @@ class Box:
         if 'doors' in self.__dict__.keys():
             for door in self.doors:
                 door.close(wait = True)
-        time.sleep(0.5)
+        time.sleep(1)
         
         
 

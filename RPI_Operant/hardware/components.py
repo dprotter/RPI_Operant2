@@ -132,7 +132,7 @@ class Lever:
         self.lever_presses = 0
         
         self.wiggle = 5
-        self.step_size = 5
+        self.step_size = 10
     
     @thread_it
     def attatch_speaker(self):
@@ -200,9 +200,9 @@ class Lever:
                 #determine step direction
                 if steps<0:
                     steps = abs(steps)
-                    step = -self.step_size
-                else:
                     step = self.step_size
+                else:
+                    step = -self.step_size
                 
                 #submit start of move timestamp
                 init_ts.submit()
@@ -220,6 +220,7 @@ class Lever:
                     if not self.control_queue.empty():
                         interrupt_ts.submit()
                         interrupt = True
+                        print('move interrupted!!!')
                         break
                     time.sleep(0.02)
                 
