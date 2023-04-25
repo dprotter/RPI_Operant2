@@ -326,7 +326,7 @@ class Lever:
         self.pause_monitoring = True
         self.retract()
         
-        self.box.timing.new_timeout(length = self.config_dict['inter_press_retraction_interview']).wait()
+        self.box.timing.new_timeout(length = self.config_dict['inter_press_retraction_interval']).wait()
         self.extend()
         self.pause_monitoring = False
         
@@ -562,9 +562,19 @@ class Door:
 
         start_time = time.time()
         
-        while time.time() < (start_time + self.close_timeout) and not self.overridden and not self.state_switch.pressed:
-            time.sleep(0.05)
-        
+        #keep trying to close
+        while time.time() < (start_time + self.close_timeout) and not self.state_switch.pressed:
+            #once the override has been triggered, keep trying to close. 
+            if self.overridden:
+                while self.overridden:
+                    time.sleep(0.05)
+                time.sleep(0.75)
+                self.servo.throttle = self.close_speed
+            else:
+                time.sleep(0.05)
+                
+            
+            
         #self.servo.throttle = self.stop_speed
         self.disable()
         if self.state_switch.pressed:
