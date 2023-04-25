@@ -268,7 +268,14 @@ class Lever:
             self._execute_move(wait = wait) 
             """
 
+    def extend(self, wait = False):
+        '''extend a lever and timestamp it
+        returns a latency object that may be used to get the latency from lever-out to a second event'''
+        
+        self._extend(wait = wait)
 
+        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
+                                                        modifiers = {'ID':self.name})
     @thread_it
     def _extend(self, wait):
 
