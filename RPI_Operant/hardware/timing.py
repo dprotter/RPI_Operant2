@@ -297,7 +297,7 @@ class TimestampManager:
             print('\nsoftware config file indicates NOT TO SAVE TIMESTAMPS\n')
     
     def save_config_state(self):
-        self.save_path = self.box.config_output_file_path + '.yaml'
+        self.save_path = self.box.output_file_path + '.yaml'
         
         out = {'software':self.box.software_config, 'hardware':self.box.config,'runtime_dict':self.box.run_dict}
         
