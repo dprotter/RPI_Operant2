@@ -15,7 +15,7 @@ import sys
 import csv
 import socket
 from .software_functions import ScreenPrinter
-import yaml as yml
+import yaml
 
 def format_ts(timestamp_obj):
     
@@ -297,15 +297,11 @@ class TimestampManager:
             print('\nsoftware config file indicates NOT TO SAVE TIMESTAMPS\n')
     
     def save_config_state(self):
-        self.save_path = self.box.output_file_path + '.yaml'
+        self.config_save_path = self.box.output_file_path + '.yaml'
         
         out = {'software':self.box.software_config, 'hardware':self.box.config,'runtime_dict':self.box.run_dict}
-        
-        try:
-            _ = yml.dump(out, Dumper=yml.CDumper)
-        except:
-            _ = yml.dump(out, Dumper=yml.Dumper)
-       
+        with open(self.config_save_path, 'w') as out_file:
+            yaml.dump(out, out_file)
 
     def new_timestamp(self, description, modifiers = None, print_to_screen = True):
         '''how to create a new timestamp object'''
