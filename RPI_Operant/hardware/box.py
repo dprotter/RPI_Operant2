@@ -332,6 +332,10 @@ class Box:
             time.sleep(0.25)
         print('worker queue empty')
 
+    def check_error_log(self):
+        if not os.path.getsize(self.output_error_file_path) > 0:
+            os.remove(self.output_error_file_path)
+    
     def reset(self):
         if 'speakers' in self.__dict__.keys():
             for speaker in self.speakers:
@@ -440,6 +444,7 @@ class Box:
             pass
         
         print('monitor_workers complete')
+        self.check_error_log()
         self.completed = True
         
     def finished(self):

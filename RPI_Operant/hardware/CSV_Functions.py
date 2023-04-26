@@ -222,6 +222,7 @@ class Experiment:
                 pass
         if self.module.box.successfully_run():
             self.experiment_finished()
+            
         else:
             self.experiment_failed()
         

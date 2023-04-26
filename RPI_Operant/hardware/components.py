@@ -135,6 +135,11 @@ class Lever:
         self.step_size = 10
     
     @thread_it
+    def _raise_test_error(self, wait = True):
+        '''use this to test errors are recorded properly'''
+        raise Exception('this error is a test for logging.')
+    
+    @thread_it
     def attatch_speaker(self):
         success = False 
         timeout = self.box.timing.new_timeout(length = 2)
@@ -187,7 +192,7 @@ class Lever:
                 
                 #get the destination and all incoming timestamp objects
                 destination, init_ts, finish_ts, interrupt_ts  = self.control_queue.get()
-                print(f'lever {self.name} moving to destination {destination}')
+                #print(f'lever {self.name} moving to destination {destination}')
                 if not self.angular_position:
                     self.angular_position = abs(self.retracted - self.extended) / 2
                     
@@ -434,10 +439,11 @@ class Lever:
             latency_obj.reformat_event_descriptor()
         while self.monitoring:
             if not self.lever_press_queue.empty():
-                        print(f'{self.name} was pressed')
+                        
                         while not self.lever_press_queue.empty() and self.monitoring:
                             _ = self.lever_press_queue.get()
                             self.lever_presses += 1
+                            print(f'\n{self.name} was pressed (press {self.lever_presses} of {n} required)\n')
                             if inter_press_retraction and self.lever_presses < n:
                                 self.inter_press_retraction_func()
 
