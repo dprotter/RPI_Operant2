@@ -308,7 +308,7 @@ class Lever:
         
 class Button:
     
-    def __init__(self, button_dict, name, box):
+    def __init__(self, button_dict, name, box, simulated = False):
 
         #may not need this, but brings it into line with other inits
         self.box = box
@@ -367,7 +367,7 @@ class ButtonManager:
         while not self.box.done:
             time.sleep(0.1)
             
-    def new_button(self, name, button_dict, box = None):
+    def new_button(self, name, button_dict, box = None, simulated = False):
         '''make a new button and add it to the button list'''
         if not box:
             box = self.box

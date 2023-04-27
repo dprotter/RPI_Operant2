@@ -3,7 +3,7 @@ from RPI_Operant.hardware.box import Box
 import time
 import random
 
-USER_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_hardware.yaml'
+USER_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/local_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 box = Box()    
