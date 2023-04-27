@@ -43,6 +43,7 @@ def run():
     press_led_pulse = box.outputs.event_LED.prepare_pulse(length = box.software_config['LED_pulses']['lever_press'], pulse_string = 'lever_press')
     new_round_pulse = box.outputs.round_LED.prepare_pulse(length = box.software_config['LED_pulses']['new_round'], pulse_string = 'new_round')
     
+    
     lever = lever_2
     next_lever = lever_1
     
@@ -76,8 +77,7 @@ def run():
         box.timing.new_round()
         new_round_pulse()
         
-        lever_phase = box.timing.new_phase(lever.name + '_out', 
-        box.software_config['values']['lever_out'])
+        lever_phase = box.timing.new_phase(lever.name + '_out', box.software_config['values']['lever_out'])
         speaker.play_tone(tone_name = 'round_start', wait = True)
         pause = box.timing.new_timeout(length = 0.5)
         pause.wait()
@@ -108,31 +108,18 @@ def run():
         #only dispense if not already dispensed
         if not lever.presses_reached:
             lever.retract()
-            speaker.play_tone(tone_name = tone, wait = True)
-                
-            timeout = box.timing.new_timeout(length = delay)
-            timeout.wait()
-            
-            lever_phase.end_phase()
-            reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_length'])
-            
-            lat = door.open()
-            
-            if door.name == 'door_1':
-                box.beams.door1_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=reward_phase)
-            else:
-                box.beams.door2_ir.monitor_beam_break(latency_to_first_beambreak = lat, end_with_phase=reward_phase)
-            
        
+        #if presses were reached, wait for reward phase
+        if lever.presses_reached:
+            reward_phase.wait()
+            door.close()
         
-        reward_phase.wait()
-        door.close()
-
-        box.outputs.round_LED.activate()
-        box.inputs.iti.wait_for_press()
-        box.outputs.round_LED.deactivate()
-        lever.reset_lever()
-        
+        #if door was opened, wait until experimenter is ready to start ITI (has moved vole)
+        if lever.presses_reached:
+            box.outputs.round_LED.activate()
+            box.inputs.iti.wait_for_press()
+            box.outputs.round_LED.deactivate()
+            lever.reset_lever()
             
         phase = box.timing.new_phase(name='ITI', length = box.software_config['values']['ITI_length'])
         
