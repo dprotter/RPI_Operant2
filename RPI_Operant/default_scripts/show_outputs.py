@@ -8,8 +8,8 @@ import argparse
 import os
 
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_magazine', 'side':1}
-USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware_fr2.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/magazine.yaml'
+USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/local_hardware.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 parser = argparse.ArgumentParser(description='input io info')
 parser.add_argument('--config_hardware_in', '-i',type = str, 
