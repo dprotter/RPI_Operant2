@@ -192,7 +192,7 @@ class Lever:
                 
                 #get the destination and all incoming timestamp objects
                 destination, init_ts, finish_ts, interrupt_ts  = self.control_queue.get()
-                #print(f'lever {self.name} moving to destination {destination}')
+                print(f'lever {self.name} moving to destination {destination}')
                 if not self.angular_position:
                     self.angular_position = abs(self.retracted - self.extended) / 2
                     
@@ -230,15 +230,19 @@ class Lever:
                     time.sleep(0.02)
                 
                 if not interrupt:
+                    self.servo.angle = destination
                     self.angular_position = destination
                     self.control_loc = False
                     
             finish_ts.submit()
-            self.disable()
+            
             if destination == self.extended:
                 self.is_extended = True
             else:
                 self.is_extended = False
+            print(f'lever {self.name} at {self.angular_position}')
+            time.sleep(0.25)
+            self.disable()
                 
   
     def extend(self, wait = False):

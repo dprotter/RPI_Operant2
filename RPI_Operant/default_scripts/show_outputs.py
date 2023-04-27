@@ -78,10 +78,10 @@ def print_pin_status(bm):
 try:
     while True:
         print_pin_status(box.button_manager)
-        time.sleep(0.05)
+        time.sleep(0.05) 
 
 except KeyboardInterrupt:
     print('\n\ncleaning up')
-    for lever in box.levers():
-        lever.retract()
-    box.shutdown()
+for lever in box.levers():
+    lever.retract(wait = True)
+box.shutdown()
