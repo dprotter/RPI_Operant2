@@ -493,7 +493,7 @@ class Lever:
         
 class Button:
     
-    def __init__(self, button_dict, name, box):
+    def __init__(self, button_dict, name, box, simulated = False):
 
         #may not need this, but brings it into line with other inits
         self.box = box
