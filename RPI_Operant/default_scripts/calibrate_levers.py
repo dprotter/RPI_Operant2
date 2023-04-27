@@ -15,6 +15,7 @@ box.setup(user_hardware_config_file_path=USER_CONFIG_PATH,
 def calibrate_lever(lever):
     l = lever
 
+    # Test extended value
     inp =input(f'press enter to extend lever:{l.name} or "s" to skip\n')
     if not inp == 's':
         print(f'lever extended val is {l.config_dict["extended"]}. try a new value. enter "s" to exit.\n')
@@ -32,17 +33,6 @@ def calibrate_lever(lever):
     if not inp == 's':
         print(f'lever retracted val is {l.config_dict["retracted"]}. try a new value. enter "s" to exit.\n')
         l.servo.angle = l.config_dict["retracted"]
-        while not inp == 's':
-            inp = input()
-            if not inp == 's':
-                try:
-                    l.servo.angle = int(inp)
-                except:
-                    print('out of range')
-
-    inp =input(f'press enter to retract lever:{l.name} or "s" to skip\n')
-    if not inp == 's':
-        print(f'lever retracted val is {l.config_dict["retracted"]}. try a new value. enter "s" to exit.\n')
         while not inp == 's':
             inp = input()
             if not inp == 's':

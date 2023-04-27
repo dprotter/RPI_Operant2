@@ -192,7 +192,7 @@ class Lever:
                 
                 #get the destination and all incoming timestamp objects
                 destination, init_ts, finish_ts, interrupt_ts  = self.control_queue.get()
-                print(f'lever {self.name} moving to destination {destination}')
+                #print(f'lever {self.name} moving to destination {destination}')
                 if not self.angular_position:
                     self.angular_position = abs(self.retracted - self.extended) / 2
                     
@@ -240,7 +240,7 @@ class Lever:
                 self.is_extended = True
             else:
                 self.is_extended = False
-            print(f'lever {self.name} at {self.angular_position}')
+            
             time.sleep(0.25)
             self.disable()
                 
@@ -493,7 +493,7 @@ class Lever:
         
 class Button:
     
-    def __init__(self, button_dict, name, box):
+    def __init__(self, button_dict, name, box, simulated = False):
 
         #may not need this, but brings it into line with other inits
         self.box = box
@@ -702,18 +702,20 @@ class Door:
                 
                 self.servo.throttle = self.open_speed
                 self.overridden = True
+                #print(f'{self.name} overriden open -> speed to {self.servo.throttle} -> aiming for {self.open_speed}')
                 while self.override_open_button.pressed:
                     time.sleep(0.01)
-                
+                #print(f'{self.name} overriden open over')
                 self.disable()
                 self.overridden = False
                 
             if self.override_close_button.pressed:
                 self.servo.throttle = self.close_speed
                 self.overridden = True
+                #print(f'{self.name} overriden close')
                 while self.override_close_button.pressed:
                     time.sleep(0.01)
-                
+                #print(f'{self.name} overriden close over')
                 self.disable()
                 self.overridden = False
 

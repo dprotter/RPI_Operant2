@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 import argparse
 import os
 
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'cooperant_magazine', 'side':1}
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'show_outputs', 'side':1}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/local_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
