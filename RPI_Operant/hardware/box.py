@@ -238,7 +238,7 @@ class Box:
         if  location in self.software_config.keys():
             if setting_name in self.software_config[location].keys():
                 return self.software_config[location][setting_name]
-        print(f'could not find {location}:{setting_name} in software_config')
+        #print(f'could not find {location}:{setting_name} in software_config')
         return default
     def get_component(self, component_type, component_name):
         attr_dict = self.__dict__
