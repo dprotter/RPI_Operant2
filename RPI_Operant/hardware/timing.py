@@ -132,7 +132,7 @@ class Phase:
                 self.is_active = False
                 return False
             else:
-                time.sleep(0.0025)
+                time.sleep(0.0005)
                 return True
         else:
             return False

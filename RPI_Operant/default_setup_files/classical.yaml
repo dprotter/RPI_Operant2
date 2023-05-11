@@ -20,16 +20,16 @@ speaker_tones:
       hz: 3000
       #milliseconds
       on_time: 100
-      off_time: 200
+      off_time: 25
       #seconds
       length: 2
     
     novel:
       type: structured
-      hz: 8000
+      hz: 6000
       #milliseconds
-      on_time: 400
-      off_time: 200
+      on_time: 1000
+      off_time: 25
       #seconds
       length: 2
 

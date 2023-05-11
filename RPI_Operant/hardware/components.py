@@ -1429,7 +1429,7 @@ class Structured_Tone:
         self.tone_dict = tone_dict
         self.speaker = speaker_instance
     
-    def play(self):
+    """def play(self):
         '''leaving off "thread_it" intentionally as this will be called by
         a threaded function. that also means that the parent function will
         wait on this play function until it finishes. good to keep in mind.'''
@@ -1446,8 +1446,20 @@ class Structured_Tone:
             self.speaker.set_off()
             off_time = self.speaker.box.timing.new_timeout(off)
             while off_time.active() and length.active():
-                '''wait'''
-        
+                '''wait''' """
+    def play(self):
+        '''leaving off "thread_it" intentionally as this will be called by
+        a threaded function. that also means that the parent function will
+        wait on this play function until it finishes. good to keep in mind.'''
+        on = self.tone_dict['on_time'] / 1000
+        off = self.tone_dict['off_time'] / 1000
+        self.speaker.set_hz(self.tone_dict['hz'])
+        length = self.speaker.box.timing.new_timeout(self.tone_dict['length'])
+        while length.active():
+            self.speaker.set_on()
+            time.sleep(on)
+            self.speaker.set_off()
+            time.sleep(off)
             
 class ToneTrain(Tone):
     def __init__(self, name):
