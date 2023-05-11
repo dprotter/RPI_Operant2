@@ -16,7 +16,7 @@ import sys
 from .event_strings import OperantEventStrings as oes
 import inspect
 import copy
-
+import serial as ser
 
 
 
@@ -1351,10 +1351,25 @@ class Speaker:
         '''use pigpio to play a tone, called by name from the dict imported from software config file'''
         if not tone_name in self.tone_dict.keys():
             raise KeyError(f'tone: {tone_name} was not defined in the softare dictionary')
+        elif 'type' in self.tone_dict[tone_name]:
+            if self.tone_dict[tone_name]['type'] == 'structured':
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
+                Structured_Tone(self.tone_dict[tone_name], self).play()
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
+                length = 0
+            elif self.tone_dict[tone_name]['type'] == 'continuous':
+                hz = self.tone_dict[tone_name]['hz']
+                length = self.tone_dict[tone_name]['length']
+                self.tone_queue.put(Tone(hz, length, tone_name))
+            else:
+                hz = self.tone_dict[tone_name]['hz']
+                length = self.tone_dict[tone_name]['length']
+                self.tone_queue.put(Tone(hz, length, tone_name))
         else:
             hz = self.tone_dict[tone_name]['hz']
             length = self.tone_dict[tone_name]['length']
             self.tone_queue.put(Tone(hz, length, tone_name))
+        
         #not my favorite way to handle this as it is not directly tied to the behavior of the speaker, but it is close
         #perhaps, integrate a .done() into Tone objs so that it can be queried. 
         time.sleep(length)
@@ -1409,7 +1424,31 @@ class Tone:
     
     def complete(self):
         return time.time() >= self.stop_time
-
+class Structured_Tone:
+    def __init__(self, tone_dict, speaker_instance):
+        self.tone_dict = tone_dict
+        self.speaker = speaker_instance
+    
+    def play(self):
+        '''leaving off "thread_it" intentionally as this will be called by
+        a threaded function. that also means that the parent function will
+        wait on this play function until it finishes. good to keep in mind.'''
+        on = self.tone_dict['on_time'] / 1000
+        off = self.tone_dict['off_time'] / 1000
+        self.speaker.set_hz(self.tone_dict['hz'])
+        length = self.speaker.box.timing.new_timeout(self.tone_dict['length'])
+        while length.active():
+            on_time = self.speaker.box.timing.new_timeout(on)
+            
+            self.speaker.set_on()
+            while on_time.active() and length.active():
+                '''wait'''
+            self.speaker.set_off()
+            off_time = self.speaker.box.timing.new_timeout(off)
+            while off_time.active() and length.active():
+                '''wait'''
+        
+            
 class ToneTrain(Tone):
     def __init__(self, name):
         self.tone_list = []
@@ -1736,7 +1775,98 @@ class Beam:
     
     def end_monitoring(self):
         self.monitor = False
+class BonsaiSender:
+
+    # SENDER is the object that sends information to Bonsai which includes timestamps and information on what event has occured. The arduino will take the serial commands and turn them into the correct signals for Bonsai.
+    # INPUTS: port (str) - path of the serial port to connect to, defaults to GPIO serial of the pi
+    #         baud (int) - Baud rate that the serial port runs on (default 9600 to match arduino)
+    #         commandFile (str) - path of the commands.csv file where the commands are located
+
+    def __init__(self, port = '/dev/serial0', baud = 9600, commandFile = '~/RPI_operant/home_base/bonsai_commands.csv'):
+        # Set the initial properties
+        print('initializing sender')
+        self.finished = False
+        self.sending = False
         
+        self.port        = port
+        self.baudRate    = baud
+        self.history     = queue.Queue()
+        self.commandFile = commandFile
+        self.command_stack = queue.Queue()
+        self.timeout = 2
+        # Initialize the port
+        try:
+            self.ser = ser.Serial(self.port, self.baudRate)
+            self.command_dict = self.get_commands() # Assign the commands property
+
+            start = time.time() 
+            self.send_data('startup_test')
+            
+            while self.sending and time.time() - start < self.timeout:
+                time.sleep(0.05)
+            finished = time.time()
+            if finished - start > self.timeout:
+                print('serial sender failed to send test message ')
+        except:
+            print('serial sender failed setup. If not sending serial data for Bonsai integration, ignore this warning.')
+        
+        self.active = True
+
+
+    def busy(self):
+        return self.sending
+
+    def shutdown(self):
+        self.finished = True
+
+    def running(self):
+        return self.active
+    @thread_it
+    def run(self):
+        while not self.finished:
+            
+            if not self.command_stack.empty():
+                command = self.command_stack.get()
+                
+                self._send_data(command)
+                
+            time.sleep(0.05)
+
+        while not self.command_stack.empty():
+            
+            command = self.command_stack.get()
+            self._send_data(command)
+            self.sleep(0.05)
+        self.active = False
+
+    def send_data(self, command):
+        self.command_stack.put(command)
+     
+
+
+    def _send_data(self, command):
+        # SEND_DATA sends the data through the associated serial port, and then logs all the commands that have been send to the self.history queue object.
+        self.sending = True
+        if not command in self.command_dict.keys():
+            print(f'WARNING: "{command}" is not a valid command being sent, will not be read by the Arduino and Bonsai')
+            print(self.command_dict.keys())
+            return 
+        elif not self.command_dict[command]['send to bonsai']:
+            print(f'WARNING: command {command} was passed to the serial encoder, but attribute "send to bonsai" is FALSE. This will not be sent off the pi.') 
+            return
+        else:
+            formatted = command + '\r'
+            formatted = formatted.encode('ascii')
+            
+            self.ser.write(formatted)
+        print(f'\n\nserial message sent: {command}\n\n')
+        self.sending = False
+    
+    def get_commands(self):
+        # GET_COMMANDS gets the list of possible command names from a previously defined file in csv format. 
+
+        commDict = pd.read_csv(self.commandFile, index_col=0).to_dict('index')
+        return commDict       
 class Fake_GPIO:
     def __init__(self):
         self.IN = 1
