@@ -17,15 +17,15 @@ from .event_strings import OperantEventStrings as oes
 import inspect
 import copy
 
-
-
-
-try:
+try: 
     from adafruit_servokit import ServoKit
     SERVO_KIT = ServoKit(channels=16)
-except:
-    print('adafruit_servokit not found')
+except Exception as e:
+    print(e)
+    print('servokit not found')
     SERVO_KIT = None
+
+
 
 def get_servo(ID, servo_type):
     '''take a servo positional ID on the adafruit board, and the servo type, and return a servo_kit obj'''
