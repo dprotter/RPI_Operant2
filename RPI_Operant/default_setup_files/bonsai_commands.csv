@@ -1,0 +1,11 @@
+command,description,send to bonsai,pulse length (ms)
+lever_out_food,food lever extended,TRUE,25
+lever_out_door_1,partner lever extended,TRUE,50
+lever_out_door_2,novel lever extended,TRUE,100
+lever_press_food,food lever pressed,TRUE,150
+lever_press_door_1,partner lever pressed,TRUE,200
+lever_press_door_2,novel lever pressed,TRUE,250
+cross_door_1,test animal has entered the partner chamber,TRUE,300
+cross_door_2,test animal has entered the novel chamber,TRUE,350
+pellet_retrieved,test animal has taken a pellet,TRUE,400
+startup_test,setup serial sender test,TRUE,450

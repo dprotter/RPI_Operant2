@@ -1,0 +1,62 @@
+output_path: 'default'
+
+checks:
+  save_timestamps: True
+  trigger_on_start: False
+values:
+  isi: 5
+  order: []
+  reward_length: 10
+  ITI_length: 30
+
+
+speaker_tones:
+  speaker:
+      partner:
+        type: structured
+        hz: 3000
+        #milliseconds
+        on_time: 100
+        off_time: 200
+        #seconds
+        length: 2
+      
+      novel:
+        type: structured
+        hz: 8000
+        #milliseconds
+        on_time: 400
+        off_time: 200
+        #seconds
+        length: 2
+
+      minus:
+        type: continuous
+        hz: 5000
+        #seconds
+        length: 2
+  
+
+    click_on: 
+      tone_1:
+        hz: 900
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 8000
+        length: 0.02
+
+    click_off: 
+      tone_1:
+        hz: 8000
+        length: 0.02
+      tone_2:
+        hz: 4000
+        length: 0.02
+      tone_3:
+        hz: 900
+        length: 0.02
+
+    
