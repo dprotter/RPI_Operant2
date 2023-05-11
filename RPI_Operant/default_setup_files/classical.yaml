@@ -5,37 +5,39 @@ checks:
   trigger_on_start: False
 values:
   isi: 5
-  order: []
+  order: [1]
   reward_length: 10
   ITI_length: 30
 
 
 speaker_tones:
   speaker:
-      partner:
-        type: structured
-        hz: 3000
-        #milliseconds
-        on_time: 100
-        off_time: 200
-        #seconds
-        length: 2
-      
-      novel:
-        type: structured
+    pellet:
         hz: 8000
-        #milliseconds
-        on_time: 400
-        off_time: 200
-        #seconds
-        length: 2
+        length: 1
+    partner:
+      type: structured
+      hz: 3000
+      #milliseconds
+      on_time: 100
+      off_time: 200
+      #seconds
+      length: 2
+    
+    novel:
+      type: structured
+      hz: 8000
+      #milliseconds
+      on_time: 400
+      off_time: 200
+      #seconds
+      length: 2
 
-      minus:
-        type: continuous
-        hz: 5000
-        #seconds
-        length: 2
-  
+    minus:
+      type: continuous
+      hz: 5000
+      #seconds
+      length: 2
 
     click_on: 
       tone_1:
