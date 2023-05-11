@@ -1,6 +1,3 @@
-'''INCOMPLETE
-UNTESTED'''
-
 
 from pickle import FALSE
 from RPI_Operant.hardware.box import Box
@@ -10,8 +7,8 @@ from pathlib import Path
 experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 # # For Running on the Raspberry Pi: 
-USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware.yaml'
-USER_SOFTWARE_CONFIG_PATH = '/home/pi/dave_miniscope_debug/setup_files/door_choice_testing.yaml'
+USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/default_hardware_fr2.yaml'
+USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/door_choice_RPE.yaml'
 
 
 box = Box()
@@ -27,6 +24,8 @@ def run():
         
         trigger_object = box.outputs.miniscope_trigger.prepare_trigger()
     
+    door_1_RPE_list = box.software_config['values']['door_1_RPE']
+    door_2_RPE_list = box.software_config['values']['door_2_RPE']
     #simplifying hardware calls
     door_1 = box.doors.door_1
     door_2 = box.doors.door_2
@@ -34,6 +33,9 @@ def run():
     lever_2 = box.levers.lever_2
     speaker = box.speakers.speaker
     delay = box.get_delay()
+    
+    door_1_press_count = 0
+    door_2_press_count = 0
     
     if box.software_config['checks']['trigger_on_start']:
         box.start_and_trigger([trigger_object])
@@ -60,14 +62,23 @@ def run():
         while phase.active():
         
             if lever_1.presses_reached:
+                
                 lever_1.retract()
                 lever_2.retract()
-                speaker.play_tone(tone_name = 'door_2_open', wait = True)
+                
+                speaker.play_tone(tone_name = 'door_2_open')
+                door_2_press_count +=1
                 
                 timeout = box.timing.new_timeout(length = delay)
                 timeout.wait()
                 
                 phase.end_phase()
+                
+                if door_2_press_count in door_2_RPE_list:
+                    box.timestamp_manager.create_and_submit_new_timestamp(description = 'error_trial_skipping_door', modifiers = {'ID':'door_2'})
+                    box.timing.new_phase('error_trial_time', length = box.software_config['values']['error_trial_time'])
+                    break
+                
                 reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_time'])
                 
                 lat = door_2.open()
@@ -76,12 +87,17 @@ def run():
             elif lever_2.presses_reached:
                 lever_1.retract()
                 lever_2.retract()
-                speaker.play_tone(tone_name = 'door_1_open', wait = True)
+                speaker.play_tone(tone_name = 'door_1_open')
+                door_1_press_count +=1
                 
                 timeout = box.timing.new_timeout(length = delay)
                 timeout.wait()
                 
                 phase.end_phase()
+                if door_1_press_count in door_1_RPE_list:
+                    box.timestamp_manager.create_and_submit_new_timestamp(description = 'error_trial_skipping_door', modifiers = {'ID':'door_1'})
+                    box.timing.new_phase('error_trial_time', length = box.software_config['values']['error_trial_time'])
+                    break
                 reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_time'])
                 
                 lat = door_1.open()
@@ -101,6 +117,8 @@ def run():
             box.outputs.round_LED.activate()
             box.inputs.iti.wait_for_press()
             box.outputs.round_LED.deactivate()
+        elif box.timing.current_phase.name == 'error_trial_time':
+            box.timing.current_phase.wait()
 
         phase = box.timing.new_phase(name='ITI', length =box.software_config['values']['ITI_length'])
         

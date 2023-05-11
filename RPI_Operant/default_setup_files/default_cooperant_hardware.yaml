@@ -19,8 +19,8 @@ levers:
 
   lever_2: 
     servo: 0
-    extended: 48
-    retracted: 150
+    extended: 20
+    retracted: 115
     pin: 27
     pullup_pulldown: pullup
     servo_type: positional

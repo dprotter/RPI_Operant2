@@ -7,12 +7,21 @@ checks:
   click_off: False
   
 values:
-  rounds: 16
+  door_1_RPE: [2,5,8,11,14]
+  door_2_RPE: [2,5,8,11,14]
+  error_trial_time: 15
   delay_by_day: [3]
-  lever_out: 60
-  reward_length: 60
-  ITI_length: 45
+  rounds: 16
+  lever_out: 10
+  reward_time: 5
+  ITI_length: 3
+  FR: 2
+  
 
+LED_pulses:
+  lever_press: 0.35
+  pellet_retrieved: 0.35
+  new_round: 0.5
 
 speaker_tones:
   speaker:

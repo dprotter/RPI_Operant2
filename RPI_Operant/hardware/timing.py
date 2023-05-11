@@ -15,6 +15,7 @@ import sys
 import csv
 import socket
 from .software_functions import ScreenPrinter
+import yaml
 
 def format_ts(timestamp_obj):
     
@@ -70,6 +71,7 @@ class TimeManager:
             self.round_start_time = time.time()
             self.box.timestamp_manager.create_save_file()
             self.box.timestamp_manager.screen.print_output()
+            self.box.timestamp_manager.save_config_state()
 
     def restart_timing(self):
         self.start_time = time.time()
@@ -171,7 +173,7 @@ class Timestamp:
         
     def submit(self): 
         t = time.time()
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase').name
         self.timestamp_manager.queue.put(format_ts(self))
         self.timestamp_manager.screen.print_queue.put(self)
@@ -205,8 +207,8 @@ class Duration:
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
         self.round = self.timestamp_manager.timing.round
-        self.duration = round(t - self.start_time, 2)
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.duration = round(t - self.start_time, 3)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase')
         self.timestamp_manager.queue.put(format_ts(self))
         self.timestamp_manager.screen.print_queue.put(self)
@@ -260,8 +262,8 @@ class Latency:
         # self.timestamp = "{:.2f}".format(self.timestamp)
         t = time.time()
         self.round = self.timestamp_manager.timing.round
-        self.latency = round(t - self.start_time, 2)
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 2)
+        self.latency = round(t - self.start_time, 3)
+        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase')
         
         
@@ -284,12 +286,22 @@ class TimestampManager:
         if self.save_timestamps:
             print(f'csv path: {self.save_path}')
             with open(self.save_path, 'w+') as file:
-                header = ['round','event','time','phase initialized','phase submitted','latency','duration','modifiers','round timestamp initialized']
                 csv_writer = csv.writer(file, delimiter = ',')
+                
+                header = [f'{k}|{v}' for k,v in sorted(self.box.run_dict.items())]
                 csv_writer.writerow(header)
+                data_header = ['round','event','time','phase initialized','phase submitted','latency','duration','modifiers','round timestamp initialized']
+                
+                csv_writer.writerow(data_header)
         else:
             print('\nsoftware config file indicates NOT TO SAVE TIMESTAMPS\n')
-                
+    
+    def save_config_state(self):
+        self.config_save_path = self.box.output_file_path + '.yaml'
+        
+        out = {'software':self.box.software_config, 'hardware':self.box.config,'runtime_dict':self.box.run_dict}
+        with open(self.config_save_path, 'w') as out_file:
+            yaml.dump(out, out_file)
 
     def new_timestamp(self, description, modifiers = None, print_to_screen = True):
         '''how to create a new timestamp object'''

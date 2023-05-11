@@ -58,15 +58,17 @@ class Experiment:
 
     def parse_args(self):
         if pd.isna(self.current_row['args']):
+            print('\n\nno args to parse\n\n')
             out = {}
         else:
+            print('\n\nparsing args\n\n')
             vals = self.current_row['args'].split('|')
             out = {}
             for v in vals:
                 if ':' in v:
                     k, v = v.split(':')
                     v_interpreted = yaml.safe_load(v)
-                    out[k.lower()] = v_interpreted
+                    out[k] = v_interpreted
         return out
     
     def next_experiment(self):
@@ -220,6 +222,7 @@ class Experiment:
                 pass
         if self.module.box.successfully_run():
             self.experiment_finished()
+            
         else:
             self.experiment_failed()
         

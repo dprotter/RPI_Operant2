@@ -71,6 +71,7 @@ class Box:
         else:
             self.software_config = load_config_file(DEFAULT_SOFTWARE_CONFIG)
 
+        self.update_software_config_from_runtime()
         
         
         #self.timing is in charge tracking start time, making new timeouts, latencies, etc
@@ -83,6 +84,7 @@ class Box:
 
         self.output_file_name = self.generate_output_fname()
         self.output_file_path = self.generate_output_path()
+        self.config_output_path = self.output_file_path + '_config'
         self.output_error_file_path = self.generate_error_output_path()
 
         #the manager for creating, adding, and monitoring new binary inputs
@@ -146,6 +148,8 @@ class Box:
             self.timing.start_timing()
         self.setup_complete = True
     
+    
+    
     def start_and_trigger(self, obj_list):
         '''start timing and subsequently call any functions passed within obj list.
            be cautious with things that must be triggered very close to initiation, as functions that 
@@ -162,7 +166,7 @@ class Box:
             
             self.shutdown_objects+= [obj for obj in returned_objs if obj]
             print(f'shutdown_objects are {self.shutdown_objects}')
-        
+    
     def generate_output_fname(self):
         vole = self.run_dict['vole']
         day = self.run_dict['day']
@@ -177,7 +181,8 @@ class Box:
             fname = f'{vole}_{fdate}_{exp}_day_{day}'
         
         return fname
-        
+    
+
     
     def generate_output_path(self):
         
@@ -228,7 +233,13 @@ class Box:
         self.timing.new_round()
         self.timestamp_manager.create_and_submit_new_timestamp()
         
-
+    def get_software_setting(self, location, setting_name, default):
+        
+        if  location in self.software_config.keys():
+            if setting_name in self.software_config[location].keys():
+                return self.software_config[location][setting_name]
+        #print(f'could not find {location}:{setting_name} in software_config')
+        return default
     def get_component(self, component_type, component_name):
         attr_dict = self.__dict__
         if component_type not in attr_dict.keys():
@@ -321,6 +332,10 @@ class Box:
             time.sleep(0.25)
         print('worker queue empty')
 
+    def check_error_log(self):
+        if not os.path.getsize(self.output_error_file_path) > 0:
+            os.remove(self.output_error_file_path)
+    
     def reset(self):
         if 'speakers' in self.__dict__.keys():
             for speaker in self.speakers:
@@ -331,6 +346,7 @@ class Box:
         if 'doors' in self.__dict__.keys():
             for door in self.doors:
                 door.close(wait = True)
+        time.sleep(1)
         
         
 
@@ -361,9 +377,11 @@ class Box:
         for l in self.levers:
             l.retract()
         
-        for speaker in self.speakers:
-            print(self.speakers)
-            speaker.set_off()
+        try:
+            for speaker in self.speakers:
+                speaker.set_off()
+        except:
+            pass
         if hasattr(self, 'lasers'): # if lasers are in the box, shut off as well
             for laser in self.lasers: 
                 laser.turn_off()
@@ -372,7 +390,17 @@ class Box:
         print('monitor_workers complete')
     
     def get_delay(self):
-        if not 'delay_by_day' or 'delay' in self.software_config['values'].keys():
+        #delay in run_dict takes priority
+        if 'delay' in self.run_dict.keys():
+
+            if 'delay_by_day' in self.software_config['values'].keys() or 'delay' in self.software_config['values'].keys():
+                if 'delay_by_day' in self.software_config['values'].keys():
+                    print(f'"delay_by_day" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
+                else:
+                    print(f'"delay" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
+            return self.run_dict['delay']
+
+        if not 'delay_by_day' in self.software_config['values'].keys() or 'delay' in self.software_config['values'].keys():
             print('neither delay_by_day nor delay are present in the software config file, but were requested') 
         if self.run_dict['day'] >= len( self.software_config['values']['delay_by_day']):
             print('day exceedes delay_by_day length. using final delay_by_day value')
@@ -416,6 +444,7 @@ class Box:
             pass
         
         print('monitor_workers complete')
+        self.check_error_log()
         self.completed = True
         
     def finished(self):
@@ -447,7 +476,14 @@ class Box:
         
         print('monitor_workers complete')
         
-
+    def update_software_config_from_runtime(self):
+        for k, v in sorted(self.run_dict.items()):
+            if k in self.software_config.keys():
+                print(f'updating software config {k} from runtime_dict (or CSV args column) from {self.software_config[k]} to {v}')
+                self.software_config[k] = v
+            else:
+                print(f'adding arg {k}:{v} from runtime_dict (or CSV args column) to software config')
+                self.software_config[k] = v
         
 class ComponentContainer:
     
