@@ -1168,7 +1168,10 @@ class Output:
             return lambda: self.trigger_hold_high(pulse_string)
         return lambda: self.trigger(length, pulse_string)
     
-    
+    def prepare_serial_trigger(self, message, pulse_string = None):
+        'create a premade trigger object that can be passed to on-press-event lists'
+        
+        return lambda: 
     
     
 class Laser: 
@@ -1275,10 +1278,11 @@ class Speaker:
         self.tone_list = []
         self.hz = 0
         self.on = False
-        self.speaker_queue_handler()
+        self.handler_running = False
     
     @thread_it
     def speaker_queue_handler(self):
+        self.handler_running = True
         while not self.box.finished():
             if not self.tone_queue.empty():
 
@@ -1332,7 +1336,7 @@ class Speaker:
             
             #if no tone are left, turn off speaker
             if len(self.tone_list) == 0:
-                
+                self.handler_running = False
                 self.set_off()
             
             
@@ -1361,14 +1365,20 @@ class Speaker:
                 hz = self.tone_dict[tone_name]['hz']
                 length = self.tone_dict[tone_name]['length']
                 self.tone_queue.put(Tone(hz, length, tone_name))
+                if not self.handler_running:
+                    self.speaker_queue_handler()
             else:
                 hz = self.tone_dict[tone_name]['hz']
                 length = self.tone_dict[tone_name]['length']
                 self.tone_queue.put(Tone(hz, length, tone_name))
+                if not self.handler_running:
+                    self.speaker_queue_handler()
         else:
             hz = self.tone_dict[tone_name]['hz']
             length = self.tone_dict[tone_name]['length']
             self.tone_queue.put(Tone(hz, length, tone_name))
+            if not self.handler_running:
+                    self.speaker_queue_handler()
         
         #not my favorite way to handle this as it is not directly tied to the behavior of the speaker, but it is close
         #perhaps, integrate a .done() into Tone objs so that it can be queried. 
@@ -1395,7 +1405,7 @@ class Speaker:
             self.set_on()
             time.sleep(length)
         
-        self.set_off
+        self.set_off()
 
 
     def set_on(self):
@@ -1424,6 +1434,7 @@ class Tone:
     
     def complete(self):
         return time.time() >= self.stop_time
+    
 class Structured_Tone:
     def __init__(self, tone_dict, speaker_instance):
         self.tone_dict = tone_dict
@@ -1787,6 +1798,7 @@ class Beam:
     
     def end_monitoring(self):
         self.monitor = False
+        
 class BonsaiSender:
 
     # SENDER is the object that sends information to Bonsai which includes timestamps and information on what event has occured. The arduino will take the serial commands and turn them into the correct signals for Bonsai.
@@ -1822,7 +1834,7 @@ class BonsaiSender:
         except:
             print('serial sender failed setup. If not sending serial data for Bonsai integration, ignore this warning.')
         
-        self.active = True
+        self.active = False
 
 
     def busy(self):
@@ -1835,24 +1847,19 @@ class BonsaiSender:
         return self.active
     @thread_it
     def run(self):
+        self.active = True
         while not self.finished:
-            
-            if not self.command_stack.empty():
+            while not self.command_stack.empty():
                 command = self.command_stack.get()
-                
                 self._send_data(command)
-                
-            time.sleep(0.05)
+                time.sleep(0.005)
 
-        while not self.command_stack.empty():
-            
-            command = self.command_stack.get()
-            self._send_data(command)
-            self.sleep(0.05)
         self.active = False
-
+    
     def send_data(self, command):
         self.command_stack.put(command)
+        if not self.active:
+            self.run()
      
 
 

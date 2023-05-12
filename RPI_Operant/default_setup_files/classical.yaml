@@ -9,6 +9,7 @@ values:
   reward_length: 10
   ITI_length: 30
 
+serial_sender: True
 
 speaker_tones:
   speaker:
@@ -20,7 +21,7 @@ speaker_tones:
       hz: 3000
       #milliseconds
       on_time: 100
-      off_time: 25
+      off_time: 10
       #seconds
       length: 2
     
@@ -28,14 +29,14 @@ speaker_tones:
       type: structured
       hz: 6000
       #milliseconds
-      on_time: 1000
-      off_time: 25
+      on_time: 250
+      off_time: 200
       #seconds
       length: 2
 
     minus:
       type: continuous
-      hz: 5000
+      hz: 1000
       #seconds
       length: 2
 

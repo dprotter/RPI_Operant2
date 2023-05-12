@@ -16,7 +16,7 @@ import os
 import traceback
 import signal
 import sys
-from RPI_Operant.hardware.components import COMPONENT_LOOKUP, ButtonManager
+from RPI_Operant.hardware.components import COMPONENT_LOOKUP, ButtonManager, BonsaiSender
 
 from .timing import TimeManager, TimestampManager
 from concurrent.futures import ThreadPoolExecutor
@@ -107,7 +107,7 @@ class Box:
             #component object
             component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
             for name, comp_dict in group_dict.items():
-                print(f'adding {name} to {component_class}')
+                #print(f'adding {name} to {component_class}')
                 
                 #this is where we instantiate our component (IE a new Door)
                 component = component_class(name, comp_dict, self, simulated = simulated)
@@ -143,7 +143,9 @@ class Box:
         if not self.monitor_worker_future.running:
             if self.monitor_worker_future.exception():
                 print(self.monitor_worker_future.exception())
-
+        
+        if 'serial_sender' in self.software_config and self.software_config['serial_sender']:
+            self.serial_sender = BonsaiSender()
         if start_now:
             self.timing.start_timing()
         self.setup_complete = True

@@ -57,25 +57,10 @@ box.setup(run_dict=RUNTIME_DICT,
 #box.speakers.speaker.play_tone('partner', wait = True)
 tone_dict = box.software_config['speaker_tones']['speaker']['novel']
 speaker = box.speakers.speaker
-on = 1
-off =  0.025
-speaker.set_hz(3000)
-length =  box.timing.new_timeout(3)
 
-speaker.set_on()
+box.speakers.speaker.play_tone('partner', wait = True)
 time.sleep(1)
-speaker.set_off()
-time.sleep(off)
-speaker.set_on()
+box.speakers.speaker.play_tone('novel', wait = True)
 time.sleep(1)
-speaker.set_off()
-time.sleep(off)
-speaker.set_on()
-time.sleep(1)
-speaker.set_off()
-time.sleep(off)
-#time.sleep(1)
-#box.speakers.speaker.play_tone('novel', wait = True)
-#time.sleep(1)
-#box.speakers.speaker.play_tone('minus', wait = True)
+box.speakers.speaker.play_tone('minus', wait = True)
 box.shutdown()
