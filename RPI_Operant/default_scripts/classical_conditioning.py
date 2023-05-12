@@ -29,5 +29,5 @@ def run():
     
     delay = box.get_delay()
     
-    if box.software_config['checks']['trigger_on_start']:
-        box.start_and_trigger([trigger_object])
+    
+    subox.start_and_trigger([trigger_object])
