@@ -87,6 +87,8 @@ class TimeManager:
     def new_round(self, length = None): 
         self.round = self.round + 1 
         self.round_start_time = time.time()
+        if self.box.software_config['serial_send']['new_round']:
+                    self.box.serial_sender.send_data(f'round {self.round} start')
         if length:
             self.round_length = length
     

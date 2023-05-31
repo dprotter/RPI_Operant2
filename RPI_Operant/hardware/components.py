@@ -644,6 +644,9 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
                                                                    modifiers = {'ID':self.name})
+        if self.box.software_config['serial_send'][self.name]:
+            self.box.serial_sender.send_data(f'{self.name} open start')
+            
         start_time = time.time()
         while time.time() < (start_time + self.open_time) and not self.overridden:
             time.sleep(0.05)
@@ -665,6 +668,9 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name,
                                                                      modifiers = {'ID':self.name})
+        if self.box.software_config['serial_send'][self.name]:
+            self.box.serial_sender.send_data(f'{self.name} close start')
+            
         self.servo.throttle = self.close_speed
 
         start_time = time.time()
@@ -688,6 +694,8 @@ class Door:
             print(f'{self.name} closed!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
+            if self.box.software_config['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} close finish')
             
         else:
             print(f'{self.name} door failed to close!!!')
@@ -1291,7 +1299,8 @@ class Speaker:
                 new_tone.start()
                 self.tone_list.insert(0, new_tone)
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name, modifiers = {'ID':self.name})
-            
+                if self.box.software_config['serial_send'][self.name]:
+                    self.box.serial_sender.send_data(f'{self.name} {new_tone.name} start')
             pop_list = []
             
             #we will visit each tone from most recent to least recent. recent tones take precedence.
@@ -1358,7 +1367,10 @@ class Speaker:
         elif 'type' in self.tone_dict[tone_name]:
             if self.tone_dict[tone_name]['type'] == 'structured':
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
+                if self.box.software_config['serial_send'][self.name]:
+                    self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
                 Structured_Tone(self.tone_dict[tone_name], self).play()
+                
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
                 length = 0
             elif self.tone_dict[tone_name]['type'] == 'continuous':
@@ -1799,41 +1811,88 @@ class Beam:
     def end_monitoring(self):
         self.monitor = False
         
+import time
+import pandas as pd
+import queue
+import serial as ser
+from concurrent.futures import ThreadPoolExecutor
+import inspect 
+
+
+def thread_it(func):
+        '''simple decorator to pass function to our thread distributor via a queue. 
+        these 4 lines took about 4 hours of googling and trial and error.
+        the returned 'future' object has some useful features, such as its own task-done monitor. '''
+        
+        def pass_to_thread(self, *args, **kwargs):
+            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
+            bound_args.apply_defaults()
+            bound_args_dict = bound_args.arguments
+
+            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
+            #print(f'submitting {func}')
+            future = self.thread_executor.submit(func,self, **new_kwargs)
+            return future
+        return pass_to_thread
+
+import time
+import pandas as pd
+import queue
+import serial as ser
+from concurrent.futures import ThreadPoolExecutor
+import inspect 
+
+
+def thread_it(func):
+        '''simple decorator to pass function to our thread distributor via a queue. 
+        these 4 lines took about 4 hours of googling and trial and error.
+        the returned 'future' object has some useful features, such as its own task-done monitor. '''
+        
+        def pass_to_thread(self, *args, **kwargs):
+            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
+            bound_args.apply_defaults()
+            bound_args_dict = bound_args.arguments
+
+            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
+            #print(f'submitting {func}')
+            future = self.thread_executor.submit(func,self, **new_kwargs)
+            return future
+        return pass_to_thread
+
 class BonsaiSender:
 
-    # SENDER is the object that sends information to Bonsai which includes timestamps and information on what event has occured. The arduino will take the serial commands and turn them into the correct signals for Bonsai.
+    # SENDER is the object that sends information to Bonsai which includes timestamps and information on what event has occured.
+    #        The arduino will send analog signals via Firmata on the specified pin. Those values can be between 
     # INPUTS: port (str) - path of the serial port to connect to, defaults to GPIO serial of the pi
     #         baud (int) - Baud rate that the serial port runs on (default 9600 to match arduino)
     #         commandFile (str) - path of the commands.csv file where the commands are located
 
-    def __init__(self, port = '/dev/serial0', baud = 9600, commandFile = '~/RPI_operant/home_base/bonsai_commands.csv'):
+    def __init__(self, port = '/dev/serial0', baud = 9600, timestamp_manager = None):
         # Set the initial properties
         print('initializing sender')
+        self.thread_executor = ThreadPoolExecutor(max_workers = 5)
         self.finished = False
         self.sending = False
         
         self.port        = port
         self.baudRate    = baud
-        self.history     = queue.Queue()
-        self.commandFile = commandFile
         self.command_stack = queue.Queue()
         self.timeout = 2
+        if timestamp_manager:
+            self.timestamp_manager = timestamp_manager
         # Initialize the port
         try:
             self.ser = ser.Serial(self.port, self.baudRate)
-            self.command_dict = self.get_commands() # Assign the commands property
-
-            start = time.time() 
-            self.send_data('startup_test')
-            
-            while self.sending and time.time() - start < self.timeout:
-                time.sleep(0.05)
-            finished = time.time()
-            if finished - start > self.timeout:
-                print('serial sender failed to send test message ')
-        except:
+            time.sleep(1)
+            self.ser.write('test_com_line 1 of 3\r'.encode('ascii'))
+            time.sleep(0.25)
+            self.ser.write('test_com_line 2 of 3\r'.encode('ascii'))
+            time.sleep(0.25)
+            self.ser.write('test_com_line 3 of 3\r'.encode('ascii'))
+            time.sleep(0.25)
+        except Exception as e:
             print('serial sender failed setup. If not sending serial data for Bonsai integration, ignore this warning.')
-        
+            print(e)
         self.active = False
 
 
@@ -1845,47 +1904,51 @@ class BonsaiSender:
 
     def running(self):
         return self.active
+    
     @thread_it
     def run(self):
         self.active = True
-        while not self.finished:
+        
+        if not self.command_stack.empty():
+            command = self.command_stack.get()
+            self._send_data(command)
             while not self.command_stack.empty():
                 command = self.command_stack.get()
                 self._send_data(command)
-                time.sleep(0.005)
-
         self.active = False
+
+    def prepare_message(self, string):
+        '''use this to pass a callable function that can be triggered'''
+        return lambda: send_data(string)    
     
-    def send_data(self, command):
-        self.command_stack.put(command)
+    def send_data(self, string):
+        
+        self.command_stack.put(string)
         if not self.active:
             self.run()
-     
-
-
+            
+    def _send_string(self, string):
+        
+        #add termination char
+        formatted = string + '\r'
+        formatted = formatted.encode('ascii')
+        
+        self.ser.write(formatted)
+        print(f'\n\nserial message sent: {string}\n\n')
+        
     def _send_data(self, command):
         # SEND_DATA sends the data through the associated serial port, and then logs all the commands that have been send to the self.history queue object.
-        self.sending = True
-        if not command in self.command_dict.keys():
-            print(f'WARNING: "{command}" is not a valid command being sent, will not be read by the Arduino and Bonsai')
-            print(self.command_dict.keys())
-            return 
-        elif not self.command_dict[command]['send to bonsai']:
-            print(f'WARNING: command {command} was passed to the serial encoder, but attribute "send to bonsai" is FALSE. This will not be sent off the pi.') 
-            return
-        else:
-            formatted = command + '\r'
-            formatted = formatted.encode('ascii')
-            
-            self.ser.write(formatted)
-        print(f'\n\nserial message sent: {command}\n\n')
-        self.sending = False
-    
-    def get_commands(self):
-        # GET_COMMANDS gets the list of possible command names from a previously defined file in csv format. 
+        
 
-        commDict = pd.read_csv(self.commandFile, index_col=0).to_dict('index')
-        return commDict       
+        #add termination char
+        formatted = command + '\r'
+        formatted = formatted.encode('ascii')
+        if self.timestamp_manager:
+            self.timestamp_manager.create_and_submit_new_timestamp(description = f'serial_send: {command}', print_to_screen = False)
+        self.ser.write(formatted)
+        
+    
+    
 class Fake_GPIO:
     def __init__(self):
         self.IN = 1
