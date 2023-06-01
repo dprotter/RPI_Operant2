@@ -58,8 +58,10 @@ def run():
             door_2.close()
         else:
             reward_phase = box.timing.new_phase('reward_phase',length = box.software_config['values']['reward_length']['minus'])
-    
-    
+            reward_phase.wait()
+            
+        iti_phase = box.timing.new_phase('ITI', length = box.software_config['values']['ITI_length'])
+        iti_phase.wait()
     box.shutdown()
 
 if __name__ == '__main__':

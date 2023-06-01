@@ -1,9 +1,7 @@
 
 import time
 import sys
-from tkinter import E
-from turtle import setundobuffer
-
+from concurrent.futures import ThreadPoolExecutor
 try:
     import RPi.GPIO as GPIO
     GPIO.setmode(GPIO.BCM)
@@ -17,8 +15,6 @@ from .event_strings import OperantEventStrings as oes
 import inspect
 import copy
 import serial as ser
-
-
 
 try: 
     from adafruit_servokit import ServoKit
@@ -1115,7 +1111,7 @@ class Output:
         
     def activate(self):
         
-        self.switch_active()
+        self.output_on()
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', 
                                                                     modifiers = {'ID':self.name}, 
                                                                     print_to_screen = False)
@@ -1123,7 +1119,7 @@ class Output:
          
     def deactivate(self):
         
-        self.switch_inactive()
+        self.output_off()
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_deactivated', 
                                                                     modifiers = {'ID':self.name}, 
                                                                     print_to_screen = False)
@@ -1812,53 +1808,7 @@ class Beam:
     def end_monitoring(self):
         self.monitor = False
         
-import time
-import pandas as pd
-import queue
-import serial as ser
-from concurrent.futures import ThreadPoolExecutor
-import inspect 
 
-
-def thread_it(func):
-        '''simple decorator to pass function to our thread distributor via a queue. 
-        these 4 lines took about 4 hours of googling and trial and error.
-        the returned 'future' object has some useful features, such as its own task-done monitor. '''
-        
-        def pass_to_thread(self, *args, **kwargs):
-            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
-            bound_args.apply_defaults()
-            bound_args_dict = bound_args.arguments
-
-            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
-            #print(f'submitting {func}')
-            future = self.thread_executor.submit(func,self, **new_kwargs)
-            return future
-        return pass_to_thread
-
-import time
-import pandas as pd
-import queue
-import serial as ser
-from concurrent.futures import ThreadPoolExecutor
-import inspect 
-
-
-def thread_it(func):
-        '''simple decorator to pass function to our thread distributor via a queue. 
-        these 4 lines took about 4 hours of googling and trial and error.
-        the returned 'future' object has some useful features, such as its own task-done monitor. '''
-        
-        def pass_to_thread(self, *args, **kwargs):
-            bound_args = inspect.signature(func).bind(self, *args, **kwargs)
-            bound_args.apply_defaults()
-            bound_args_dict = bound_args.arguments
-
-            new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
-            #print(f'submitting {func}')
-            future = self.thread_executor.submit(func, self, **new_kwargs)
-            return future
-        return pass_to_thread
 
 class BonsaiSender:
 
@@ -1868,10 +1818,9 @@ class BonsaiSender:
     #         baud (int) - Baud rate that the serial port runs on (default 9600 to match arduino)
     #         commandFile (str) - path of the commands.csv file where the commands are located
 
-    def __init__(self, port = '/dev/serial0', baud = 9600, timestamp_manager = None):
+    def __init__(self, port = '/dev/serial0', baud = 9600, box = None):
         # Set the initial properties
         print('initializing sender')
-        self.thread_executor = ThreadPoolExecutor(max_workers = 5)
         self.finished = False
         self.sending = False
         
@@ -1879,8 +1828,8 @@ class BonsaiSender:
         self.baudRate    = baud
         self.command_stack = queue.Queue()
         self.timeout = 2
-        if timestamp_manager:
-            self.timestamp_manager = timestamp_manager
+        if box:
+            self.box = box
         # Initialize the port
         try:
             self.ser = ser.Serial(self.port, self.baudRate)
@@ -1944,8 +1893,8 @@ class BonsaiSender:
         #add termination char
         formatted = command + '\r'
         formatted = formatted.encode('ascii')
-        if self.timestamp_manager:
-            self.timestamp_manager.create_and_submit_new_timestamp(description = f'serial_send: {command}', print_to_screen = False)
+        if self.box:
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'serial_send: {command}', print_to_screen = False)
         self.ser.write(formatted)
         
     

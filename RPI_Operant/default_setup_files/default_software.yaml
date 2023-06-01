@@ -12,7 +12,7 @@ values:
   lever_out_time: 60
   
 speaker_tones:
-  speaker1:
+  speaker:
     round_start:
       hz: 5000
       length: 1

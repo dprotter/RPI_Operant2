@@ -86,7 +86,9 @@ class Box:
         self.output_file_path = self.generate_output_path()
         self.config_output_path = self.output_file_path + '_config'
         self.output_error_file_path = self.generate_error_output_path()
-
+        if 'serial_send' in self.software_config['checks']:
+            print('creating serial sender')
+            self.serial_sender = BonsaiSender(box = self)
         #the manager for creating, adding, and monitoring new binary inputs
         self.button_manager = ButtonManager(box = self, simulated = simulated)
 
@@ -144,8 +146,7 @@ class Box:
             if self.monitor_worker_future.exception():
                 print(self.monitor_worker_future.exception())
         
-        if 'serial_sender' in self.software_config and self.software_config['serial_sender']:
-            self.serial_sender = BonsaiSender()
+        
         if start_now:
             self.timing.start_timing()
         self.setup_complete = True
@@ -400,11 +401,13 @@ class Box:
                     print(f'"delay_by_day" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
                 else:
                     print(f'"delay" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
+                    
             return self.run_dict['delay']
 
         #check if delay or delay_by_day present in software config file
-        if not 'delay_by_day' in self.software_config['values'].keys() or 'delay' in self.software_config['values'].keys():
-            print('neither delay_by_day nor delay are present in the software config file, but were requested') 
+        if not 'delay_by_day' in self.software_config['values'].keys() and not 'delay' in self.software_config['values'].keys():
+            print('!!!!!!!!\nneither delay_by_day nor delay are present in the software config file, but were requested!!!!!!\n') 
+            return 0
         #if yes, check if delay_by_day is
         elif 'delay_by_day' in self.software_config['values'].keys():
             #get delay based on the day. if day exceeds length of delay_by_day list, use final day
