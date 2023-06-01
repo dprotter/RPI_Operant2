@@ -1856,7 +1856,7 @@ def thread_it(func):
 
             new_kwargs = {k:v for k, v in bound_args_dict.items() if k not in ('self')}
             #print(f'submitting {func}')
-            future = self.thread_executor.submit(func,self, **new_kwargs)
+            future = self.thread_executor.submit(func, self, **new_kwargs)
             return future
         return pass_to_thread
 

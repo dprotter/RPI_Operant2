@@ -26,7 +26,7 @@ def run():
     door_1 = box.doors.door_1
     door_2 = box.doors.door_2
 
-    speaker = box.speakers.speaker1
+    speaker = box.speakers.speaker
     delay = box.get_delay()
     
     box.reset()
