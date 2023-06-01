@@ -402,13 +402,19 @@ class Box:
                     print(f'"delay" from setup file overriden by delay argument in run_dict, likely from CSV\ndelay set to:{self.run_dict["delay"]}')
             return self.run_dict['delay']
 
+        #check if delay or delay_by_day present in software config file
         if not 'delay_by_day' in self.software_config['values'].keys() or 'delay' in self.software_config['values'].keys():
             print('neither delay_by_day nor delay are present in the software config file, but were requested') 
-        if self.run_dict['day'] >= len( self.software_config['values']['delay_by_day']):
-            print('day exceedes delay_by_day length. using final delay_by_day value')
-            return self.software_config['values']['delay_by_day'][-1]
+        #if yes, check if delay_by_day is
+        elif 'delay_by_day' in self.software_config['values'].keys():
+            #get delay based on the day. if day exceeds length of delay_by_day list, use final day
+            if self.run_dict['day'] >= len( self.software_config['values']['delay_by_day']):
+                print('day exceedes delay_by_day length. using final delay_by_day value')
+                return self.software_config['values']['delay_by_day'][-1]
+            else:
+                return self.software_config['values']['delay_by_day'][int(self.run_dict['day']) - 1]
         else:
-            return self.software_config['values']['delay_by_day'][int(self.run_dict['day']) - 1]
+            return self.software_config['values']['delay']
     
     def shutdown(self):
         

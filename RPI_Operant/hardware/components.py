@@ -644,7 +644,7 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
                                                                    modifiers = {'ID':self.name})
-        if self.box.software_config['serial_send'][self.name]:
+        if self.box.software_config['checks']['serial_send'][self.name]:
             self.box.serial_sender.send_data(f'{self.name} open start')
             
         start_time = time.time()
@@ -668,7 +668,7 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name,
                                                                      modifiers = {'ID':self.name})
-        if self.box.software_config['serial_send'][self.name]:
+        if self.box.software_config['checks']['serial_send'][self.name]:
             self.box.serial_sender.send_data(f'{self.name} close start')
             
         self.servo.throttle = self.close_speed
@@ -694,7 +694,7 @@ class Door:
             print(f'{self.name} closed!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
-            if self.box.software_config['serial_send'][self.name]:
+            if self.box.software_config['checks']['serial_send'][self.name]:
                 self.box.serial_sender.send_data(f'{self.name} close finish')
             
         else:
@@ -1175,11 +1175,7 @@ class Output:
         if length == 0:
             return lambda: self.trigger_hold_high(pulse_string)
         return lambda: self.trigger(length, pulse_string)
-    
-    def prepare_serial_trigger(self, message, pulse_string = None):
-        'create a premade trigger object that can be passed to on-press-event lists'
-        
-        return lambda: 
+
     
     
 class Laser: 
@@ -1280,8 +1276,10 @@ class Speaker:
             self.pi = self.FakeSpeaker()
         else:
             self.pi = self.box.pi
-        self.click_on_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_on'].items()]
-        self.click_off_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_off'].items()]
+        if 'click_on' in self.tone_dict:
+            self.click_on_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_on'].items()]
+        if 'click_off' in self.tone_dict:
+            self.click_off_train = [(tone_values['hz'], tone_values['length']) for _, tone_values in self.tone_dict['click_off'].items()]
         self.tone_queue = queue.Queue()
         self.tone_list = []
         self.hz = 0
@@ -1299,7 +1297,7 @@ class Speaker:
                 new_tone.start()
                 self.tone_list.insert(0, new_tone)
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name, modifiers = {'ID':self.name})
-                if self.box.software_config['serial_send'][self.name]:
+                if self.box.software_config['checks']['serial_send'][self.name]:
                     self.box.serial_sender.send_data(f'{self.name} {new_tone.name} start')
             pop_list = []
             
@@ -1367,7 +1365,7 @@ class Speaker:
         elif 'type' in self.tone_dict[tone_name]:
             if self.tone_dict[tone_name]['type'] == 'structured':
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
-                if self.box.software_config['serial_send'][self.name]:
+                if self.box.software_config['checks']['serial_send'][self.name]:
                     self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
                 Structured_Tone(self.tone_dict[tone_name], self).play()
                 
