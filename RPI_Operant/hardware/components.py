@@ -1467,6 +1467,7 @@ class Structured_Tone:
             off_time = self.speaker.box.timing.new_timeout(off)
             while off_time.active() and length.active():
                 '''wait''' """
+    
     def play(self):
         '''leaving off "thread_it" intentionally as this will be called by
         a threaded function. that also means that the parent function will
