@@ -137,7 +137,7 @@ class Box:
         # 
         # THREADING 
         # 
-        self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = True)
+        self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = False)
         
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
