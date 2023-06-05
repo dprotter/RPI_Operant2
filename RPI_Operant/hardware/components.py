@@ -1345,9 +1345,8 @@ class Speaker:
             if len(self.tone_list) == 0:
                 self.handler_running = False
                 self.set_off()
-            
-            
-
+                break
+ 
     def turn_off(self):
         self.pi.set_PWM_dutycycle(self.pin, 0)                  
                     
@@ -1462,7 +1461,7 @@ class Structured_Tone:
             self.speaker.set_on()
             precise_sleeper(on)
             self.speaker.set_off()
-            precise_sleeper.sleep(off)
+            precise_sleeper(off)
             
 class ToneTrain(Tone):
     def __init__(self, name):

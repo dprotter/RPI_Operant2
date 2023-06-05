@@ -280,18 +280,18 @@ class Box:
             if not self.worker_queue.empty():
                 #receive worker, parent function, round of initiation
                 worker_and_info = self.worker_queue.get()
+
+                #if we have an identically named worker, we will need to modify this tuple
+                workers += [worker_and_info]
                 if verbose:
                     ''''''
+                    print('\nvvvvvvvvvvvvvvvvvv')
+                    print(f'currently {len(workers)} threads running via pool executor')
+                    print(workers)
+                    print('\n\n^^^^^^^^^^^^^^^')
                     #print(f'worker queue received worker {worker_and_info}')
-                #if we have an identically named worker, we will need to modify this tuple
                 
-                workers += [worker_and_info]
-                
-                print('\nvvvvvvvvvvvvvvvvvv')
-                print(f'currently {len(workers)} threads running via pool executor')
-                print(workers)
-                print('\n\n^^^^^^^^^^^^^^^')
-
+           
             for element in workers:
                 worker, name= element
                 '''print(f'checking {element}')'''
@@ -316,7 +316,8 @@ class Box:
                         workers.remove(element)
                     else:
                         pass
-                    #print(f'$$$$$$$$$$$$ currently {len(workers)} threads running via pool executor $$$$$$$$$$$$')
+                    if verbose:
+                        print(f'$$$$$$$$$$$$ currently {len(workers)} threads running via pool executor $$$$$$$$$$$$')
                 
             time.sleep(0.025)
         
