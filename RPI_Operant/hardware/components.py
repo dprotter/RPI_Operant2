@@ -643,8 +643,9 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
                                                                    modifiers = {'ID':self.name})
-        if self.box.software_config['checks']['serial_send'][self.name]:
-            self.box.serial_sender.send_data(f'{self.name} open start')
+        if 'serial_send' in self.box.software_config['checks'].keys():
+            if self.box.software_config['checks']['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} open start')
             
         start_time = time.time()
         while time.time() < (start_time + self.open_time) and not self.overridden:
@@ -667,8 +668,9 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name,
                                                                      modifiers = {'ID':self.name})
-        if self.box.software_config['checks']['serial_send'][self.name]:
-            self.box.serial_sender.send_data(f'{self.name} close start')
+        if 'serial_send' in self.box.software_config['checks'].keys():
+            if self.box.software_config['checks']['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} close start')
             
         self.servo.throttle = self.close_speed
 
@@ -693,8 +695,9 @@ class Door:
             print(f'{self.name} closed!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
-            if self.box.software_config['checks']['serial_send'][self.name]:
-                self.box.serial_sender.send_data(f'{self.name} close finish')
+            if 'serial_send' in self.box.software_config['checks'].keys():
+                if self.box.software_config['checks']['serial_send'][self.name]:
+                    self.box.serial_sender.send_data(f'{self.name} close finish')
             
         else:
             print(f'{self.name} door failed to close!!!')
@@ -1297,8 +1300,9 @@ class Speaker:
                 new_tone.start()
                 self.tone_list.insert(0, new_tone)
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name, modifiers = {'ID':self.name})
-                if self.box.software_config['checks']['serial_send'][self.name]:
-                    self.box.serial_sender.send_data(f'{self.name} {new_tone.name} start')
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {new_tone.name} start')
             pop_list = []
             
             #we will visit each tone from most recent to least recent. recent tones take precedence.
@@ -1364,8 +1368,9 @@ class Speaker:
         elif 'type' in self.tone_dict[tone_name]:
             if self.tone_dict[tone_name]['type'] == 'structured':
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
-                if self.box.software_config['checks']['serial_send'][self.name]:
-                    self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
                 Structured_Tone(self.tone_dict[tone_name], self).play()
                 
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
