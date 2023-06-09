@@ -276,7 +276,8 @@ class Lever:
                                                         modifiers = {'ID':self.name})
         self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
         self._execute_move(wait = wait) 
-            
+        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_retracted+self.name, 
+                                                        modifiers = {'ID':self.name})
 
     """     
     def extend(self, wait = False):
@@ -1577,6 +1578,7 @@ class Beam:
         self.get_beam_broken_durations(reset_on_call=True)
     def stop_getting_beam_broken_durations(self): 
         self.get_durations = False 
+    
     @thread_it 
     def get_beam_broken_durations(self, reset_on_call=False): 
 
@@ -1586,7 +1588,7 @@ class Beam:
         if reset_on_call: 
             self.total_beam_breaks = 0
 
-        while self.monitor and self.get_durations: 
+        while self.monitor and self.get_durations and not self.box.finished(): 
 
             if self.switch.pressed: 
                 self.total_beam_breaks += 1 
@@ -1594,17 +1596,17 @@ class Beam:
                 print(f'total beam breaks: {self.total_beam_breaks} ')
 
                 # create duration object 
-                duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone+self.name, modifiers={'ID':self.name}, event_1=f'entered interaction zone')
+                duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone+self.name, modifiers={'ID':self.name}, event_1=f'entered_interaction_zone_{self.name}')
 
-                while self.monitor and self.switch.pressed: 
+                while self.monitor and self.switch.pressed and not self.box.finished(): 
                     '''wait for state change/unpress to occur'''
                 
                 if not self.switch.pressed: 
-                    duration.event_2 = 'exited interaction zone'
+                    duration.event_2 = f'exited_interaction_zone_{self.name}'
                     duration.submit()
                 else: 
                     # monitoring stopped 
-                    duration.event_2 = 'stopped monitoring while vole still in interaction zone'
+                    duration.event_2 = f'stopped monitoring while vole still in interaction zone_{self.name}'
                     duration.submit()
     
     ''' Interaction Zone Monitoring, Version 2: Assumes vole is small enough that it will run completely passed the ir beam, so requires some extra work to become aware of where the vole is positioned.'''
@@ -1613,6 +1615,7 @@ class Beam:
         # using the total number of beam breaks that have been recorded, returns True/False to represent if a vole is in the interaction zone or not 
         if self.total_beam_breaks%2 != 0:  return True 
         else:  return False 
+    
     @thread_it
     def get_interaction_zone_durations( self, door_object = None ): 
         '''
@@ -1641,10 +1644,10 @@ class Beam:
             state = False 
             duration = None 
 
-        while self.monitor and self.get_durations: 
+        while self.monitor and self.get_durations and not self.box.finished(): 
             
             # Wait to continue until inInteractionZone changes states 
-            while self.monitor and self.get_durations:
+            while self.monitor and self.get_durations and not self.box.finished():
                 ''' do nothing until total_beam_breaks has been incremented '''
                 if breaks_prev != self.total_beam_breaks: 
                     break 

@@ -211,8 +211,10 @@ class Duration:
         t = time.time()
         self.round = self.timestamp_manager.timing.round
         self.duration = round(t - self.start_time, 3)
-        self.timestamp = round(t - self.timestamp_manager.timing.start_time, 3)
+        #timestamp with when the event STARTED. duration is when event FINISHED
+        self.timestamp = round(self.start_time - self.timestamp_manager.timing.start_time, 3)
         self.phase_submitted = self.timestamp_manager.timing.current_phase.name if self.timestamp_manager.timing.current_phase else Phase(name = 'NoPhase')
+        self.reformat_event_descriptor()
         self.timestamp_manager.queue.put(format_ts(self))
         self.timestamp_manager.screen.print_queue.put(self)
 

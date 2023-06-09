@@ -47,7 +47,7 @@ class Box:
 
     def setup(self, run_dict = {'vole':000, 'day':1, 'experiment':'none'}, user_hardware_config_file_path=None, 
                  user_software_config_file_path = None, 
-                 start_now = True, simulated = False): 
+                 start_now = True, simulated = False, verbose = False): 
         
         #threading        
         self.thread_executor = ThreadPoolExecutor(max_workers = 20)
@@ -137,7 +137,7 @@ class Box:
         # 
         # THREADING 
         # 
-        self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = False)
+        self.monitor_worker_future = self.thread_executor.submit(self.monitor_workers, verbose = verbose)
         
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
