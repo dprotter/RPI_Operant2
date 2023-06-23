@@ -1376,6 +1376,15 @@ class Speaker:
                 
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
                 length = 0
+            elif self.tone_dict[tone_name]['type'] == 'tone_train':
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
+                ToneTrain(self.tone_dict[tone_name], self).play()
+                
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
+                length = 0
             elif self.tone_dict[tone_name]['type'] == 'continuous':
                 hz = self.tone_dict[tone_name]['hz']
                 length = self.tone_dict[tone_name]['length']
@@ -1456,7 +1465,7 @@ class Structured_Tone:
         self.speaker = speaker_instance
     
     def play(self):
-        '''leaving off "thread_it" intentionally as this will be called by
+        '''leaving off "thread_it" intentionally as this will be called from
         a threaded function. that also means that the parent function will
         wait on this play function until it finishes. good to keep in mind.'''
         on = self.tone_dict['on_time'] / 1000
@@ -1469,44 +1478,51 @@ class Structured_Tone:
             self.speaker.set_off()
             precise_sleeper(off)
             
-class ToneTrain(Tone):
-    def __init__(self, name):
-        self.tone_list = []
-        self.name = name
-        self.position = 0
-        self.total_duration = 0
+class ToneTrain:
+    class ToneGenerator:
+        def __init__(self, tone_train):
+            self.tt = tone_train
+            self.tone_list = self.make_tone_list(self.tt['tones'])
+            self.length = len(self.tone_list)
+            self.position = 0
 
-    def start(self):
-        self.tone_list[self.position].start()
+        def make_tone_list(self, tone_dict):
+            out_list = []
+            for tone in sorted(tone_dict.keys()):
+                out_list+=[(tone_dict[tone]['hz'], tone_dict[tone]['on_time'], tone_dict[tone]['off_time'])]
 
-    def add_tone(self, tone):
-        self.tone_list.append(tone)
-        self.total_duration += tone.duration
-        
+
+
+    def __init__(self, tone_dict, speaker_instance):
+        self.tone_dict = tone_dict
+        self.speaker = speaker_instance
+        self.tone_generator = ToneGenerator(self)
     
-    def check_tone_list(self):
-        
-        if self.tone_list[self.position].complete():
-            self.position+=1
-            if self.position < len(self.tone_list):
-                self.tone_list[self.position].start()
-                return True
-            else:
-                return False
+    def __iter__(self):
+        return self
 
-            
-    def get_hz(self):
-        tones_remain = self.check_tone_list()
-        if tones_remain:
-            return self.tone_list[self.position].get_hz()
-        else:
-            return 0
+    def __next__(self):
+        return self.next()
     
-    def complete(self):
-        if self.check_tone_list():
-            return False
-        else:
-            return True
+    def next(self):
+        
+        current, self.position = self.tone_list[self.position%self.length], self.position + 1
+        return current
+
+
+    def play(self):
+        '''leaving off "thread_it" intentionally as this will be called from
+        a threaded function. that also means that the parent function will
+        wait on this play function until it finishes. good to keep in mind.'''
+        length = self.speaker.box.timing.new_timeout(self.tone_dict['length'])
+        while length.active():
+            hz, t_on, t_off = self.tone_generator.next()
+            self.speaker.set_hz(hz)
+            self.speaker.set_on()
+            precise_sleeper(t_on)
+            self.speaker.set_off()
+            precise_sleeper(t_off)
+
 class Input:
             
     def __init__(self, name, input_config_dict, box, simulated = False):
