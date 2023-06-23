@@ -1479,7 +1479,7 @@ class Structured_Tone:
             precise_sleeper(off)
             
 class ToneTrain:
-    class ToneGenerator:
+    class ToneGenerator(object):
         def __init__(self, tone_train):
             self.tt = tone_train
             self.tone_list = self.make_tone_list(self.tt['tones'])
@@ -1489,25 +1489,27 @@ class ToneTrain:
         def make_tone_list(self, tone_dict):
             out_list = []
             for tone in sorted(tone_dict.keys()):
-                out_list+=[(tone_dict[tone]['hz'], tone_dict[tone]['on_time'], tone_dict[tone]['off_time'])]
+                out_list+=[(tone_dict[tone]['hz'], tone_dict[tone]['on_time']/1000, tone_dict[tone]['off_time']/1000)]
+            return out_list
+        
+        def __iter__(self):
+            return self
 
+        def __next__(self):
+            return self.next()
+        
+        def next(self):
+            
+            current, self.position = self.tone_list[self.position%self.length], self.position + 1
+            return current
 
 
     def __init__(self, tone_dict, speaker_instance):
         self.tone_dict = tone_dict
         self.speaker = speaker_instance
-        self.tone_generator = ToneGenerator(self)
+        self.tone_generator = self.ToneGenerator(self.tone_dict)
     
-    def __iter__(self):
-        return self
 
-    def __next__(self):
-        return self.next()
-    
-    def next(self):
-        
-        current, self.position = self.tone_list[self.position%self.length], self.position + 1
-        return current
 
 
     def play(self):
@@ -1516,7 +1518,7 @@ class ToneTrain:
         wait on this play function until it finishes. good to keep in mind.'''
         length = self.speaker.box.timing.new_timeout(self.tone_dict['length'])
         while length.active():
-            hz, t_on, t_off = self.tone_generator.next()
+            hz, t_on, t_off = next(self.tone_generator)
             self.speaker.set_hz(hz)
             self.speaker.set_on()
             precise_sleeper(t_on)
