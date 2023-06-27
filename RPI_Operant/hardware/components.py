@@ -1811,6 +1811,7 @@ class BonsaiSender:
         self.baudRate    = baud
         self.command_stack = queue.Queue()
         self.timeout = 2
+        self.up = False
         if box:
             self.box = box
         # Initialize the port
@@ -1826,6 +1827,7 @@ class BonsaiSender:
         except Exception as e:
             print('serial sender failed setup. If not sending serial data for Bonsai integration, ignore this warning.')
             print(e)
+        self.up = True
         self.active = False
 
 

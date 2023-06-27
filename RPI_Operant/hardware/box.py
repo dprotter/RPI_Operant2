@@ -152,7 +152,11 @@ class Box:
         self.setup_complete = True
     
     
-    
+    def serial_up(self):
+        if 'serial_send' in self.software_config['checks']:  
+            return self.serial_sender.up
+        else:
+            return False
     def start_and_trigger(self, obj_list):
         '''start timing and subsequently call any functions passed within obj list.
            be cautious with things that must be triggered very close to initiation, as functions that 
