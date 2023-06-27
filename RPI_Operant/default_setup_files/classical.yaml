@@ -26,11 +26,18 @@ speaker_tones:
       length: 2
     
     novel:
-      type: structured
-      hz: 6000
-      #milliseconds
-      on_time: 250
-      off_time: 200
+      type: tone_train
+      tones:
+        1:
+          hz: 6000
+          #milliseconds
+          on_time: 500
+          off_time: 0
+        2:
+          hz: 2000
+          #milliseconds
+          on_time: 500
+          off_time: 0
       #seconds
       length: 2
 

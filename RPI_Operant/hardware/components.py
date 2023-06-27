@@ -276,7 +276,8 @@ class Lever:
                                                         modifiers = {'ID':self.name})
         self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
         self._execute_move(wait = wait) 
-            
+        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_retracted+self.name, 
+                                                        modifiers = {'ID':self.name})
 
     """     
     def extend(self, wait = False):
@@ -643,8 +644,9 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
                                                                    modifiers = {'ID':self.name})
-        if self.box.software_config['checks']['serial_send'][self.name]:
-            self.box.serial_sender.send_data(f'{self.name} open start')
+        if 'serial_send' in self.box.software_config['checks'].keys():
+            if self.box.software_config['checks']['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} open start')
             
         start_time = time.time()
         while time.time() < (start_time + self.open_time) and not self.overridden:
@@ -667,8 +669,9 @@ class Door:
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name,
                                                                      modifiers = {'ID':self.name})
-        if self.box.software_config['checks']['serial_send'][self.name]:
-            self.box.serial_sender.send_data(f'{self.name} close start')
+        if 'serial_send' in self.box.software_config['checks'].keys():
+            if self.box.software_config['checks']['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} close start')
             
         self.servo.throttle = self.close_speed
 
@@ -693,8 +696,9 @@ class Door:
             print(f'{self.name} closed!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
-            if self.box.software_config['checks']['serial_send'][self.name]:
-                self.box.serial_sender.send_data(f'{self.name} close finish')
+            if 'serial_send' in self.box.software_config['checks'].keys():
+                if self.box.software_config['checks']['serial_send'][self.name]:
+                    self.box.serial_sender.send_data(f'{self.name} close finish')
             
         else:
             print(f'{self.name} door failed to close!!!')
@@ -1297,8 +1301,9 @@ class Speaker:
                 new_tone.start()
                 self.tone_list.insert(0, new_tone)
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + new_tone.name, modifiers = {'ID':self.name})
-                if self.box.software_config['checks']['serial_send'][self.name]:
-                    self.box.serial_sender.send_data(f'{self.name} {new_tone.name} start')
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {new_tone.name} start')
             pop_list = []
             
             #we will visit each tone from most recent to least recent. recent tones take precedence.
@@ -1345,9 +1350,8 @@ class Speaker:
             if len(self.tone_list) == 0:
                 self.handler_running = False
                 self.set_off()
-            
-            
-
+                break
+ 
     def turn_off(self):
         self.pi.set_PWM_dutycycle(self.pin, 0)                  
                     
@@ -1365,9 +1369,19 @@ class Speaker:
         elif 'type' in self.tone_dict[tone_name]:
             if self.tone_dict[tone_name]['type'] == 'structured':
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
-                if self.box.software_config['checks']['serial_send'][self.name]:
-                    self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
                 Structured_Tone(self.tone_dict[tone_name], self).play()
+                
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
+                length = 0
+            elif self.tone_dict[tone_name]['type'] == 'tone_train':
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
+                ToneTrain(self.tone_dict[tone_name], self).play()
                 
                 self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
                 length = 0
@@ -1451,7 +1465,7 @@ class Structured_Tone:
         self.speaker = speaker_instance
     
     def play(self):
-        '''leaving off "thread_it" intentionally as this will be called by
+        '''leaving off "thread_it" intentionally as this will be called from
         a threaded function. that also means that the parent function will
         wait on this play function until it finishes. good to keep in mind.'''
         on = self.tone_dict['on_time'] / 1000
@@ -1462,46 +1476,55 @@ class Structured_Tone:
             self.speaker.set_on()
             precise_sleeper(on)
             self.speaker.set_off()
-            precise_sleeper.sleep(off)
+            precise_sleeper(off)
             
-class ToneTrain(Tone):
-    def __init__(self, name):
-        self.tone_list = []
-        self.name = name
-        self.position = 0
-        self.total_duration = 0
+class ToneTrain:
+    class ToneGenerator(object):
+        def __init__(self, tone_train):
+            self.tt = tone_train
+            self.tone_list = self.make_tone_list(self.tt['tones'])
+            self.length = len(self.tone_list)
+            self.position = 0
 
-    def start(self):
-        self.tone_list[self.position].start()
-
-    def add_tone(self, tone):
-        self.tone_list.append(tone)
-        self.total_duration += tone.duration
+        def make_tone_list(self, tone_dict):
+            out_list = []
+            for tone in sorted(tone_dict.keys()):
+                out_list+=[(tone_dict[tone]['hz'], tone_dict[tone]['on_time']/1000, tone_dict[tone]['off_time']/1000)]
+            return out_list
         
-    
-    def check_tone_list(self):
-        
-        if self.tone_list[self.position].complete():
-            self.position+=1
-            if self.position < len(self.tone_list):
-                self.tone_list[self.position].start()
-                return True
-            else:
-                return False
+        def __iter__(self):
+            return self
 
+        def __next__(self):
+            return self.next()
+        
+        def next(self):
             
-    def get_hz(self):
-        tones_remain = self.check_tone_list()
-        if tones_remain:
-            return self.tone_list[self.position].get_hz()
-        else:
-            return 0
+            current, self.position = self.tone_list[self.position%self.length], self.position + 1
+            return current
+
+
+    def __init__(self, tone_dict, speaker_instance):
+        self.tone_dict = tone_dict
+        self.speaker = speaker_instance
+        self.tone_generator = self.ToneGenerator(self.tone_dict)
     
-    def complete(self):
-        if self.check_tone_list():
-            return False
-        else:
-            return True
+
+
+
+    def play(self):
+        '''leaving off "thread_it" intentionally as this will be called from
+        a threaded function. that also means that the parent function will
+        wait on this play function until it finishes. good to keep in mind.'''
+        length = self.speaker.box.timing.new_timeout(self.tone_dict['length'])
+        while length.active():
+            hz, t_on, t_off = next(self.tone_generator)
+            self.speaker.set_hz(hz)
+            self.speaker.set_on()
+            precise_sleeper(t_on)
+            self.speaker.set_off()
+            precise_sleeper(t_off)
+
 class Input:
             
     def __init__(self, name, input_config_dict, box, simulated = False):
@@ -1573,6 +1596,7 @@ class Beam:
         self.get_beam_broken_durations(reset_on_call=True)
     def stop_getting_beam_broken_durations(self): 
         self.get_durations = False 
+    
     @thread_it 
     def get_beam_broken_durations(self, reset_on_call=False): 
 
@@ -1582,7 +1606,7 @@ class Beam:
         if reset_on_call: 
             self.total_beam_breaks = 0
 
-        while self.monitor and self.get_durations: 
+        while self.monitor and self.get_durations and not self.box.finished(): 
 
             if self.switch.pressed: 
                 self.total_beam_breaks += 1 
@@ -1590,17 +1614,17 @@ class Beam:
                 print(f'total beam breaks: {self.total_beam_breaks} ')
 
                 # create duration object 
-                duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone+self.name, modifiers={'ID':self.name}, event_1=f'entered interaction zone')
+                duration = self.box.timestamp_manager.new_duration(description = oes.inside_interaction_zone+self.name, modifiers={'ID':self.name}, event_1=f'entered_interaction_zone_{self.name}')
 
-                while self.monitor and self.switch.pressed: 
+                while self.monitor and self.switch.pressed and not self.box.finished(): 
                     '''wait for state change/unpress to occur'''
                 
                 if not self.switch.pressed: 
-                    duration.event_2 = 'exited interaction zone'
+                    duration.event_2 = f'exited_interaction_zone_{self.name}'
                     duration.submit()
                 else: 
                     # monitoring stopped 
-                    duration.event_2 = 'stopped monitoring while vole still in interaction zone'
+                    duration.event_2 = f'stopped monitoring while vole still in interaction zone_{self.name}'
                     duration.submit()
     
     ''' Interaction Zone Monitoring, Version 2: Assumes vole is small enough that it will run completely passed the ir beam, so requires some extra work to become aware of where the vole is positioned.'''
@@ -1609,6 +1633,7 @@ class Beam:
         # using the total number of beam breaks that have been recorded, returns True/False to represent if a vole is in the interaction zone or not 
         if self.total_beam_breaks%2 != 0:  return True 
         else:  return False 
+    
     @thread_it
     def get_interaction_zone_durations( self, door_object = None ): 
         '''
@@ -1637,10 +1662,10 @@ class Beam:
             state = False 
             duration = None 
 
-        while self.monitor and self.get_durations: 
+        while self.monitor and self.get_durations and not self.box.finished(): 
             
             # Wait to continue until inInteractionZone changes states 
-            while self.monitor and self.get_durations:
+            while self.monitor and self.get_durations and not self.box.finished():
                 ''' do nothing until total_beam_breaks has been incremented '''
                 if breaks_prev != self.total_beam_breaks: 
                     break 
