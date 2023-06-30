@@ -681,7 +681,7 @@ class Door:
         while time.time() < (start_time + self.close_timeout) and not self.state_switch.pressed:
             #once the override has been triggered, keep trying to close. 
             if self.overridden:
-                while self.overridden:
+                while time.time() < (start_time + self.close_timeout) and self.overridden:
                     time.sleep(0.05)
                 time.sleep(0.75)
                 self.servo.throttle = self.close_speed
