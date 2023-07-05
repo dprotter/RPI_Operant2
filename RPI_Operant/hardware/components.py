@@ -506,8 +506,6 @@ class NosePoke:
         self.is_active = False #True = extended
 
 
-        self.target_name = self.config_dict['target_name']
-        self.target_type = self.config_dict['target_type']
         
         self.attatch_speaker()
         
@@ -519,20 +517,18 @@ class NosePoke:
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
         
         #where should these defaults live so they dont take up unnecessary space? might also put pu_pd there
-        self.interpress_timeout = self.config_dict['interpoke_timeout'] if 'interpoke_timeout' in self.config_dict.keys() else 0.5
+        self.interpoke_timeout = self.config_dict['interpoke_timeout'] if 'interpoke_timeout' in self.config_dict.keys() else 0.25
         
         
         #attributes for tracking during runtime
-        self.total_presses = 0
-        self.presses_reached = False
+        self.total_pokes = 0
+        self.pokes_reached = False
         self.monitoring = False
         self.pause_monitoring = False
         self.stop_threads = False
-        self.lever_press_queue = queue.Queue()
-        self.lever_presses = 0
-        
-        self.wiggle = 5
-        self.step_size = 10
+        self.poke_queue = queue.Queue()
+        self.pokes = 0
+
     
     @thread_it
     def _raise_test_error(self, wait = True):
@@ -554,7 +550,7 @@ class NosePoke:
                 except AttributeError as e: 
                     pass
     
-    def simulate_lever_press(self):
+    def simulate_nose_poke(self):
         self.simulate_pressed()
         time.sleep(0.1)
         self.simulate_unpressed()
@@ -568,207 +564,37 @@ class NosePoke:
         print('simulating unpressed')
         self.switch.pressed = False
         
-    
-    def setup_target(self): 
-        self.target = self.box.get_component(self.target_type, self.target_name)
-        
-    def current_thread_numbers(self):
-        '''return the number of current threads running, based on length of futures'''
-        self.clean_futures_array()
-        return len(self.futures)
-    
-    def clean_futures_array(self):
-        '''iterate over futures as clear any that are done'''
-        for fut in self.futures:
-            if fut.done():
-                self.futures.remove(fut)
 
-    @thread_it
-    def _execute_move(self, wait = False):
-        if not self.control_queue.empty():
-
-            self.control_loc = True
-            while self.control_loc and not self.box.finished():
-                
-                #get the destination and all incoming timestamp objects
-                destination, init_ts, finish_ts, interrupt_ts  = self.control_queue.get()
-                #print(f'lever {self.name} moving to destination {destination}')
-                if not self.angular_position:
-                    self.angular_position = abs(self.retracted - self.extended) / 2
-                    
-                steps = int((self.angular_position - destination)/self.step_size)
-                
-                #where is the lever
-                loc = self.angular_position
-                interrupt = False
-                
-                #determine step direction
-                if steps<0:
-                    steps = abs(steps)
-                    step = self.step_size
-                else:
-                    step = -self.step_size
-                
-                #submit start of move timestamp
-                init_ts.submit()
-                
-                for _ in range(steps):
-                    #step slowly
-                    loc+=step
-                    try:
-                        self.servo.angle = loc
-                    except:
-                        print(f'{self.name} tried moving past allowable range. target:{loc}')
-                    self.angular_position = loc
-                    
-                    #exit this loop if a new command is found
-                    if not self.control_queue.empty():
-                        interrupt_ts.submit()
-                        interrupt = True
-                        print('move interrupted!!!')
-                        break
-                    time.sleep(0.02)
-                
-                if not interrupt:
-                    self.servo.angle = destination
-                    self.angular_position = destination
-                    self.control_loc = False
-                    
-            finish_ts.submit()
-            
-            if destination == self.extended:
-                self.is_extended = True
-            else:
-                self.is_extended = False
-            
-            time.sleep(0.25)
-            self.disable()
-                
-  
-    def extend(self, wait = False):
-        '''extend a lever and timestamp it
-        returns a latency object that may be used to get the latency from lever-out to a second event'''
-        destination = self.extended
-        start_ts = self.box.timestamp_manager.new_timestamp(description = oes.start_lever_extend + self.name, modifiers = {'ID':self.name}, 
-                                                print_to_screen = False)
-        
-        finish_ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
-        
-        interrupt_ts = self.box.timestamp_manager.new_timestamp(description = oes.extend_interrupt+self.name, 
-                                                        modifiers = {'ID':self.name})
-        self.control_queue.put((destination, start_ts, finish_ts, interrupt_ts))
-        self._execute_move(wait = wait)
-            
-        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
-    
-    def retract(self, wait = False):
-        '''retract a lever and timestamp it
-        returns a latency object that may be used to get the latency from lever-out to a second event'''
-        destination = self.retracted
-        start_ts = self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
-                                                print_to_screen = False)
-        
-        finish_ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, 
-                                                        modifiers = {'ID':self.name})
-        
-        interrupt_ts = self.box.timestamp_manager.new_timestamp(description = oes.retract_interrupt+self.name, 
-                                                        modifiers = {'ID':self.name})
-        self.control_queue.put((destination,start_ts, finish_ts, interrupt_ts))
-        self._execute_move(wait = wait) 
-        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_retracted+self.name, 
-                                                        modifiers = {'ID':self.name})
-
-    """     
-    def extend(self, wait = False):
-        '''extend a lever and timestamp it
+    def activate(self, wait = False):
+        '''activate a port and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
-        self._extend(wait = wait)
-
-        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
+        self._set_active(wait = wait)
+            
+        return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_active+self.name, 
                                                         modifiers = {'ID':self.name})
-    @thread_it
-    def _extend(self, wait):
-
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
+    
+    def inactivate(self, wait = False):
+        '''inactivate a port and timestamp it
+        returns a latency object that may be used to get the latency from lever-out to a second event'''
+        
+        return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_inactive+self.name, 
                                                         modifiers = {'ID':self.name})
-        extend_start = max(0, self.extended-self.wiggle)
-        numsteps = 30
-        step = (self.extended-extend_start)/numsteps
-        loc = self.extended
-        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_extend + self.name, modifiers = {'ID':self.name}, 
-                                                print_to_screen = False)
-        for i in range(60):
-            step = -step
-            loc += step
-            self.servo.angle = loc
-            time.sleep(0.005)
-        time.sleep(0.01)
-        #first, extend past final value, then retract slightly to final value
-        self.servo.angle = extend_start
-        time.sleep(0.01)
-        self.servo.angle = self.extended
-        self.disable()
-        self.is_extended = True
-        ts.submit() """
 
-    def disable(self):
-        self.servo._pwm_out.duty_cycle = 0
-        
-    """     
     @thread_it
-    def retract(self):
-        'retract a lever and timestamp it'
-        #note, make a ts object and submit later after successful retraction
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name},
-                                                      print_to_screen = False)
-        retract_start = min(180, self.retracted + self.wiggle)
-        
-        #wait for the vole to get off the lever
-        timeout = self.box.timing.new_timeout(self.retraction_timeout)
-        while self.switch.pressed and timeout.active():
-            'hanging till lever not pressed'
-        
-        numsteps = 20
-        loc = self.servo.angle
-        if not loc:
-            print(f'servo {self.name} returned None for self.servo.angle')
-            loc = abs(self.extended - self.retracted) / 2
-        step = (retract_start-loc)/numsteps
-        
-        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
-                                                print_to_screen = False)
-        for i in range(20):
-            try:
-                loc += step
-                self.servo.angle = loc
-                time.sleep(0.02)
-            except:
-                print(f'trying to retract past angle allowed.{loc}')
-                break
-        time.sleep(0.02)
-        self.servo.angle = self.retracted
-        self.disable()
-        self.is_extended = False
-        ts.submit()
-     """
-    @thread_it
-    def watch_lever_pin(self):
+    def watch_port(self):
         self.monitoring = True
         
         while self.monitoring:
             if not self.pause_monitoring:
                 if self.switch.pressed:
-                    self.total_presses +=1
-                    self.lever_press_queue.put(('pressed'))
+                    self.total_pokes +=1
+                    self.poke_queue.put(('poked'))
                     if self.box.get_software_setting('checks', 
                                                     'click_on',
                                                     default = True): 
                         self.speaker.click_on()
-                    timeout = self.box.timing.new_timeout(self.retraction_timeout)
-                    while self.switch.pressed and timeout.active() and self.monitoring:
+                    while self.switch.pressed and self.monitoring:
                         '''waiting for vole to get off lever. nothing necessary within loop'''
                     
                     if self.box.get_software_setting('checks', 
@@ -778,26 +604,26 @@ class NosePoke:
                     
                     
                     #wait to loop until inter-press interval is passed
-                    ipt_timeout = self.box.timing.new_timeout(self.interpress_timeout)
+                    ipt_timeout = self.box.timing.new_timeout(self.interpoke_timeout)
                     ipt_timeout.wait()
             time.sleep(0.015)
         #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
     
     
     @thread_it
-    def wait_for_n_presses(self, n = 1, reset_with_new_phase = False, 
+    def wait_for_n_pokes(self, n = 1, reset_with_new_phase = False, 
                            latency_obj = None, 
                            reset_with_new_round = True,
-                           on_press_events = None,inter_press_retraction = False):
+                           on_press_events = None, inter_poke_inactivation = False):
         'monitor lever and wait for n_presses before'
-        if self.presses_reached:
-            print('trying to launch wait_for_n_presses, but presses already reached')
-            while self.presses_reached and not self.box.finished():
-                '''wait for lever to reset'''
-            print('lever successfully reset, launching wait for n presses')
+        if self.pokes_reached:
+            print('trying to launch wait_for_n_pokes, but pokes already reached')
+            while self.pokes_reached and not self.box.finished():
+                '''wait for port to reset'''
+            print('port successfully reset, launching wait for n pokes')
         if latency_obj:
-            latency_obj.add_modifier(key = 'presses_required', value = n)
-        self.watch_lever_pin()
+            latency_obj.add_modifier(key = 'pokes_required', value = n)
+        self.watch_port()
         if reset_with_new_phase:
             print('reset with new phase')
             #get the current phase object
@@ -805,7 +631,7 @@ class NosePoke:
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
-            self.monitor_lever(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_press_retraction)
+            self.monitor_port(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_poke_inactivation)
             while phase.active() and not self.box.finished():
                 '''wait'''
 
@@ -814,83 +640,83 @@ class NosePoke:
         #reset with new rounds waits to exit until the round has changed
         elif reset_with_new_round:
             r = self.box.timing.round
-            self.monitor_lever(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_press_retraction)
+            self.monitor_port(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_poke_inactivation)
             while r == self.box.timing.round and not self.box.finished():
                 '''wait'''
-            self.reset_lever()
+            self.reset_port()
             print('resetting')
             
         else:
-            self.monitor_lever(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_press_retraction)
+            self.monitor_port(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_poke_inactivation)
             while self.monitoring and not self.box.finished():
                 '''wait'''
         
         self.monitoring = False
     @thread_it
-    def inter_press_retraction_func(self):
-        start = time.time()
+    def inter_poke_inactivation_func(self):
         
         self.pause_monitoring = True
-        self.retract()
+        self.inactivate()
         
-        self.box.timing.new_timeout(length = self.config_dict['inter_press_retraction_interval']).wait()
-        self.extend()
+        self.box.timing.new_timeout(length = self.config_dict['inter_poke_inactiation_interval']).wait()
+        self.activate()
         self.pause_monitoring = False
         
     @thread_it
-    def monitor_lever(self, n, latency_obj, on_press_events = None, inter_press_retraction = False):
+    def monitor_port(self, n, latency_obj, on_poke_events = None, inter_poke_inactivation = False):
         if latency_obj:
-            latency_obj.event_2 = oes.lever_pressed+self.name
+            latency_obj.event_2 = oes.poke+self.name
             latency_obj.reformat_event_descriptor()
         while self.monitoring:
             if not self.lever_press_queue.empty():
                         
-                        while not self.lever_press_queue.empty() and self.monitoring:
-                            _ = self.lever_press_queue.get()
+                        while not self.poke_queue.empty() and self.monitoring:
+                            _ = self.poke_queue.get()
                             self.lever_presses += 1
                             print(f'\n{self.name} was pressed (press {self.lever_presses} of {n} required)\n')
-                            if inter_press_retraction and self.lever_presses < n:
-                                self.inter_press_retraction_func()
+                            if inter_poke_inactivation and self.lever_presses < n:
+                                self.inter_poke_inactivation_func()
 
                             #if there are on-press events, run them. they cannot take arguments at this time.
-                            if on_press_events:
-                                for event in on_press_events:
+                            if on_poke_events:
+                                for event in on_poke_events:
                                     event()
                                     
                             if latency_obj:
-                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
-                                                                                            modifiers = {'total_presses':self.total_presses, 'ID':self.name})
+                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
+                                                                                            modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
                                 local_latency = copy.copy(latency_obj)
                                 local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
                                 local_latency.submit()
                                 
                             else:
-                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.lever_pressed+self.name, 
-                                                                                            modifiers = {'total_presses':self.total_presses, 'ID':self.name})
+                                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
+                                                                                            modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
                             
-                            if self.lever_presses >= n:
+                            if self.pokes >= n:
                                 if latency_obj:
                                     local_latency = copy.copy(latency_obj)
-                                    local_latency.event_descriptor = oes.presses_reached+self.name
-                                    local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
+                                    local_latency.event_descriptor = oes.pokes_reached+self.name
+                                    local_latency.add_modifier(key = 'n_pokes', value = self.pokes)
                                     local_latency.submit()
                                 else:
-                                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.presses_reached+self.name, 
-                                                                                                modifiers ={'n_press':self.lever_presses, 'ID':self.name})
-                                self.presses_reached = True
+                                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.pokes_reached+self.name, 
+                                                                                                modifiers ={'n_pokes':self.pokes, 'ID':self.name})
+                                self.pokes_reached = True
                                 self.monitoring = False
-                            while not self.lever_press_queue.empty():
-                                _ = self.lever_press_queue.get()
+                            while not self.poke_queue.empty():
+                                _ = self.poke_queue.get()
             time.sleep(0.005)
         
-    def reset_lever(self):
+    def reset_port(self):
 
         while self.is_extended:
             '''waiting for lever to be retracted before resetting'''
         self.monitoring = False
         self.pause_monitoring = False
-        self.presses_reached = False
-        self.lever_presses = 0
+        self.pokes_reached = False
+        self.pokes = 0
+
 class Button:
     
     def __init__(self, button_dict, name, box, simulated = False):
