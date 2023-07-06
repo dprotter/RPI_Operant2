@@ -528,6 +528,11 @@ class NosePoke:
         self.stop_threads = False
         self.poke_queue = queue.Queue()
         self.pokes = 0
+        if 'LED' in self.config_dict:
+            self.LED = Output(name = f"{self.name}_port_LED",
+                              output_config_dict = self.config_dict['LED'],
+                              box = self.box,
+                              simulated = simulated)
 
     
     @thread_it
@@ -565,19 +570,28 @@ class NosePoke:
         self.switch.pressed = False
         
 
-    def activate(self, wait = False):
-        '''activate a port and timestamp it
+    def activate_LED(self, wait = False):
+        '''activates a ports LED and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
-        self._set_active(wait = wait)
-            
+       
+        try:
+            self.LED.activate()
+        except:
+            print(f'{self.name} does not have an attached LED, but tried to activate one')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_active')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_active+self.name, 
-                                                        modifiers = {'ID':self.name})
-    
-    def inactivate(self, wait = False):
+                                                      modifiers = {'ID':self.name})
+        
+        
+    def deactivate_LED(self, wait = False):
         '''inactivate a port and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
-        
+        try:
+            self.LED.deactivate()
+        except:
+            print(f'{self.name} does not have an attached LED, but tried to activate one')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_active')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_inactive+self.name, 
                                                         modifiers = {'ID':self.name})
 
@@ -614,7 +628,7 @@ class NosePoke:
     def wait_for_n_pokes(self, n = 1, reset_with_new_phase = False, 
                            latency_obj = None, 
                            reset_with_new_round = True,
-                           on_press_events = None, inter_poke_inactivation = False):
+                           on_poke_events = None, inter_poke_inactivation = False):
         'monitor lever and wait for n_presses before'
         if self.pokes_reached:
             print('trying to launch wait_for_n_pokes, but pokes already reached')
@@ -631,7 +645,7 @@ class NosePoke:
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
-            self.monitor_port(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_poke_inactivation)
+            self.monitor_port(n, latency_obj, on_press_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
             while phase.active() and not self.box.finished():
                 '''wait'''
 
@@ -640,26 +654,27 @@ class NosePoke:
         #reset with new rounds waits to exit until the round has changed
         elif reset_with_new_round:
             r = self.box.timing.round
-            self.monitor_port(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_poke_inactivation)
+            self.monitor_port(n, latency_obj, on_poke_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
             while r == self.box.timing.round and not self.box.finished():
                 '''wait'''
             self.reset_port()
             print('resetting')
             
         else:
-            self.monitor_port(n, latency_obj, on_press_events=on_press_events, inter_press_retraction=inter_poke_inactivation)
+            self.monitor_port(n, latency_obj, on_poke_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
             while self.monitoring and not self.box.finished():
                 '''wait'''
         
         self.monitoring = False
+    
     @thread_it
     def inter_poke_inactivation_func(self):
         
         self.pause_monitoring = True
-        self.inactivate()
+        self.deactivate_LED()
         
         self.box.timing.new_timeout(length = self.config_dict['inter_poke_inactiation_interval']).wait()
-        self.activate()
+        self.activate_LED()
         self.pause_monitoring = False
         
     @thread_it
@@ -668,13 +683,13 @@ class NosePoke:
             latency_obj.event_2 = oes.poke+self.name
             latency_obj.reformat_event_descriptor()
         while self.monitoring:
-            if not self.lever_press_queue.empty():
+            if not self.poke_queue.empty():
                         
                         while not self.poke_queue.empty() and self.monitoring:
                             _ = self.poke_queue.get()
-                            self.lever_presses += 1
-                            print(f'\n{self.name} was pressed (press {self.lever_presses} of {n} required)\n')
-                            if inter_poke_inactivation and self.lever_presses < n:
+                            self.pokes += 1
+                            print(f'\n{self.name} was poked (poke {self.pokes} of {n} required)\n')
+                            if inter_poke_inactivation and self.pokes < n:
                                 self.inter_poke_inactivation_func()
 
                             #if there are on-press events, run them. they cannot take arguments at this time.
@@ -2164,5 +2179,6 @@ COMPONENT_LOOKUP = {
                     'outputs':{'component_class':Output, 'label':'output'},
                     'speakers':{'component_class':Speaker, 'label':'speaker'}, 
                     'lasers':{'component_class':Laser, 'label':'laser'}, 
-                    'beams': {'component_class':Beam, 'label':'beam'}
+                    'beams': {'component_class':Beam, 'label':'beam'},
+                    'nose_pokes': {'component_class':NosePoke, 'label':'nose_poke'}
                     }

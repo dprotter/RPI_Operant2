@@ -381,10 +381,12 @@ class Box:
         
         for obj in self.shutdown_objects:
             obj.shutdown()
-            
-        for l in self.levers:
-            l.retract()
-        
+        if hasattr(self, 'levers'):
+            for l in self.levers:
+                l.retract()
+        if hasattr(self, 'outputs'):
+            for output in self.outputs:
+                output.deactivate()
         try:
             for speaker in self.speakers:
                 speaker.set_off()

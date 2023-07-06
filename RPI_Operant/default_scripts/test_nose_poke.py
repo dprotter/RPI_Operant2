@@ -1,15 +1,17 @@
+
 from RPI_Operant.hardware.box import Box
 import time
 import random
-from tabulate import tabulate
-import RPi.GPIO as GPIO
-
+from pathlib import Path
 import argparse
 import os
 
-RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'show_outputs', 'side':1}
-USER_HARDWARE_CONFIG_PATH ='/home/pi/local_rpi_files/nose_poke_hardware.yaml'
+experiment_name = Path(__file__).stem
+RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
+# # For Running on the Raspberry Pi: 
+USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/nose_poke_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
+
 
 parser = argparse.ArgumentParser(description='input io info')
 parser.add_argument('--config_hardware_in', '-i',type = str, 
@@ -45,45 +47,27 @@ if not os.path.isfile(config_software_file):
     exit()    
 
 
-
-
 box = Box()
 box.setup(run_dict=RUNTIME_DICT, 
             user_hardware_config_file_path=config_hardware_file,
             user_software_config_file_path=config_software_file,
             start_now=True)
-try:
-    for lever in box.levers:
-        lever.extend()
-except:
-    pass
-print(f'{len(box.button_manager.buttons)} buttons')
-time.sleep(1)
-def print_pin_status(bm):
-    num_buttons = len(bm.buttons)
+phase = box.timing.new_phase('testing', length = 1000)
 
-    print("\033c", end="")
-    
-    status = []
-    for i in range(0,num_buttons,2):
-        
-        if i+1<num_buttons:
-            b1 = bm.buttons[i]
-            b2 = bm.buttons[i+1]
-            status += [[b1.name, b1.pressed, b2.name, b2.pressed]]
-        else:
-            b1 = bm.buttons[i]
-            status += [[b1.name, b1.pressed, '', '']]
-    print(tabulate(status, headers = ['button', 'status', 'button', 'status']))
-    time.sleep(0.05)
+port = box.nose_pokes.nose_port_2
+port.activate_LED()
+port.wait_for_n_pokes(n = 5)
 
 try:
-    while True:
-        print_pin_status(box.button_manager)
-        time.sleep(0.05) 
-
+    while phase.active():
+        ''''''
+        if port.pokes_reached:
+            print('wow! we poked our way to success!')
+            break
 except KeyboardInterrupt:
     print('\n\ncleaning up')
-for lever in box.levers():
-    lever.retract(wait = True)
-box.shutdown()
+    phase.finished()
+    for door in box.doors:
+        door.close()
+    
+    box.shutdown()
