@@ -12,6 +12,8 @@ RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name}
 USER_HARDWARE_CONFIG_PATH = '/home/pi/local_rpi_files/nose_poke_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
+def a_test_event():
+    print('wow! im a test event!')
 
 parser = argparse.ArgumentParser(description='input io info')
 parser.add_argument('--config_hardware_in', '-i',type = str, 
@@ -54,16 +56,30 @@ box.setup(run_dict=RUNTIME_DICT,
             start_now=True)
 phase = box.timing.new_phase('testing', length = 1000)
 
-port = box.nose_pokes.nose_port_2
-port.activate_LED()
-port.wait_for_n_pokes(n = 5)
 
+
+port = box.nose_pokes.nose_port_2
+lat = port.activate_LED()
+port.begin_monitoring()
+port.set_poke_target(n = 5, latency_object = lat, on_poke_events = [a_test_event], reset_with_new_phase = True)
+
+
+while phase.active():
+    ''''''
+    if port.pokes_reached:
+        print('wow! we poked our way to success!')
+        phase.end_phase()
+    
+
+phase = box.timing.new_phase('testing2', length = 1000)
+port.set_poke_target(n = 4, latency_object = lat, on_poke_events = [a_test_event], reset_with_new_phase = True)      
+port.wait_for_reset()
 try:
     while phase.active():
-        ''''''
+
         if port.pokes_reached:
-            print('wow! we poked our way to success!')
-            break
+            print('wow! we poked our way to success! AGAIN')
+            port.reset_port()
 except KeyboardInterrupt:
     print('\n\ncleaning up')
     phase.finished()

@@ -279,80 +279,6 @@ class Lever:
         return self.box.timestamp_manager.new_latency(event_1 = oes.lever_retracted+self.name, 
                                                         modifiers = {'ID':self.name})
 
-    """     
-    def extend(self, wait = False):
-        '''extend a lever and timestamp it
-        returns a latency object that may be used to get the latency from lever-out to a second event'''
-        
-        self._extend(wait = wait)
-
-        return self.box.timestamp_manager.new_latency(event_1 = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
-    @thread_it
-    def _extend(self, wait):
-
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_extended+self.name, 
-                                                        modifiers = {'ID':self.name})
-        extend_start = max(0, self.extended-self.wiggle)
-        numsteps = 30
-        step = (self.extended-extend_start)/numsteps
-        loc = self.extended
-        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_extend + self.name, modifiers = {'ID':self.name}, 
-                                                print_to_screen = False)
-        for i in range(60):
-            step = -step
-            loc += step
-            self.servo.angle = loc
-            time.sleep(0.005)
-        time.sleep(0.01)
-        #first, extend past final value, then retract slightly to final value
-        self.servo.angle = extend_start
-        time.sleep(0.01)
-        self.servo.angle = self.extended
-        self.disable()
-        self.is_extended = True
-        ts.submit() """
-
-    def disable(self):
-        self.servo._pwm_out.duty_cycle = 0
-        
-    """     
-    @thread_it
-    def retract(self):
-        'retract a lever and timestamp it'
-        #note, make a ts object and submit later after successful retraction
-        ts = self.box.timestamp_manager.new_timestamp(description = oes.lever_retracted+self.name, modifiers = {'ID':self.name},
-                                                      print_to_screen = False)
-        retract_start = min(180, self.retracted + self.wiggle)
-        
-        #wait for the vole to get off the lever
-        timeout = self.box.timing.new_timeout(self.retraction_timeout)
-        while self.switch.pressed and timeout.active():
-            'hanging till lever not pressed'
-        
-        numsteps = 20
-        loc = self.servo.angle
-        if not loc:
-            print(f'servo {self.name} returned None for self.servo.angle')
-            loc = abs(self.extended - self.retracted) / 2
-        step = (retract_start-loc)/numsteps
-        
-        self.box.timestamp_manager.new_timestamp(description = oes.start_lever_retract + self.name, modifiers = {'ID':self.name}, 
-                                                print_to_screen = False)
-        for i in range(20):
-            try:
-                loc += step
-                self.servo.angle = loc
-                time.sleep(0.02)
-            except:
-                print(f'trying to retract past angle allowed.{loc}')
-                break
-        time.sleep(0.02)
-        self.servo.angle = self.retracted
-        self.disable()
-        self.is_extended = False
-        ts.submit()
-     """
     @thread_it
     def watch_lever_pin(self):
         self.monitoring = True
@@ -533,6 +459,9 @@ class NosePoke:
                               output_config_dict = self.config_dict['LED'],
                               box = self.box,
                               simulated = simulated)
+        self.current_latency_obj = None
+        self.current_target_pokes = None
+        self.current_on_poke_events = None
 
     
     @thread_it
@@ -583,7 +512,7 @@ class NosePoke:
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_active+self.name, 
                                                       modifiers = {'ID':self.name})
         
-        
+    
     def deactivate_LED(self, wait = False):
         '''inactivate a port and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
@@ -596,39 +525,41 @@ class NosePoke:
                                                         modifiers = {'ID':self.name})
 
     @thread_it
-    def watch_port(self):
-        self.monitoring = True
+    def _watch_port(self):
         
-        while self.monitoring:
-            if not self.pause_monitoring:
-                if self.switch.pressed:
-                    self.total_pokes +=1
-                    self.poke_queue.put(('poked'))
-                    if self.box.get_software_setting('checks', 
-                                                    'click_on',
-                                                    default = True): 
-                        self.speaker.click_on()
-                    while self.switch.pressed and self.monitoring:
-                        '''waiting for vole to get off lever. nothing necessary within loop'''
-                    
-                    if self.box.get_software_setting('checks', 
-                                                    'click_off',
-                                                    default = False): 
-                        self.speaker.click_off()
-                    
-                    
-                    #wait to loop until inter-press interval is passed
-                    ipt_timeout = self.box.timing.new_timeout(self.interpoke_timeout)
-                    ipt_timeout.wait()
-            time.sleep(0.015)
-        #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
+        if not self.monitoring:
+            self.monitoring = True
+            
+            while self.monitoring:
+                if not self.pause_monitoring:
+                    if self.switch.pressed:
+                        self.total_pokes +=1
+                        self.poke_queue.put(('poked'))
+                        if self.box.get_software_setting('checks', 
+                                                        'click_on',
+                                                        default = True): 
+                            self.speaker.click_on()
+                        while self.switch.pressed and self.monitoring:
+                            '''waiting for vole to get off lever. nothing necessary within loop'''
+                        
+                        if self.box.get_software_setting('checks', 
+                                                        'click_off',
+                                                        default = False): 
+                            self.speaker.click_off()
+                        
+                        
+                        #wait to loop until inter-press interval is passed
+                        ipt_timeout = self.box.timing.new_timeout(self.interpoke_timeout)
+                        ipt_timeout.wait()
+                time.sleep(0.015)
+            #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
     
     
     @thread_it
     def wait_for_n_pokes(self, n = 1, reset_with_new_phase = False, 
                            latency_obj = None, 
                            reset_with_new_round = True,
-                           on_poke_events = None, inter_poke_inactivation = False):
+                           on_poke_events = None, inter_poke_inactivation = False, end_monitoring_on_completion = True):
         'monitor lever and wait for n_presses before'
         if self.pokes_reached:
             print('trying to launch wait_for_n_pokes, but pokes already reached')
@@ -637,7 +568,9 @@ class NosePoke:
             print('port successfully reset, launching wait for n pokes')
         if latency_obj:
             latency_obj.add_modifier(key = 'pokes_required', value = n)
-        self.watch_port()
+        
+        
+        self._watch_port()
         if reset_with_new_phase:
             print('reset with new phase')
             #get the current phase object
@@ -645,27 +578,28 @@ class NosePoke:
 
             #query to see if phase is still active.
             #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
-            self.monitor_port(n, latency_obj, on_press_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
+            self._monitor_port_for_n_pokes(n, latency_obj, on_press_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
             while phase.active() and not self.box.finished():
                 '''wait'''
 
-            self.reset_lever()
+            self.reset_port()
             
         #reset with new rounds waits to exit until the round has changed
         elif reset_with_new_round:
             r = self.box.timing.round
-            self.monitor_port(n, latency_obj, on_poke_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
+            self._monitor_port_for_n_pokes(n, latency_obj, on_poke_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
             while r == self.box.timing.round and not self.box.finished():
                 '''wait'''
             self.reset_port()
             print('resetting')
             
         else:
-            self.monitor_port(n, latency_obj, on_poke_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
+            self._monitor_port_for_n_pokes(n, latency_obj, on_poke_events=on_poke_events, inter_poke_inactivation=inter_poke_inactivation)
             while self.monitoring and not self.box.finished():
                 '''wait'''
         
-        self.monitoring = False
+        if end_monitoring_on_completion:
+            self.monitoring = False
     
     @thread_it
     def inter_poke_inactivation_func(self):
@@ -678,7 +612,7 @@ class NosePoke:
         self.pause_monitoring = False
         
     @thread_it
-    def monitor_port(self, n, latency_obj, on_poke_events = None, inter_poke_inactivation = False):
+    def _monitor_port_for_n_pokes(self, n, latency_obj, on_poke_events = None, inter_poke_inactivation = False):
         if latency_obj:
             latency_obj.event_2 = oes.poke+self.name
             latency_obj.reformat_event_descriptor()
@@ -701,7 +635,7 @@ class NosePoke:
                                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
                                                                                             modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
                                 local_latency = copy.copy(latency_obj)
-                                local_latency.add_modifier(key = 'n_presses', value = self.lever_presses)
+                                local_latency.add_modifier(key = 'n_pokes', value = self.pokes)
                                 local_latency.submit()
                                 
                             else:
@@ -722,11 +656,151 @@ class NosePoke:
                             while not self.poke_queue.empty():
                                 _ = self.poke_queue.get()
             time.sleep(0.005)
+    
+    @thread_it
+    def set_poke_target(self, n = 1, reset_with_new_phase = False, 
+                           latency_object = None, 
+                           reset_with_new_round = True,
+                           on_poke_events = None):
+        'monitor lever and wait for n_presses before'
+        if self.pokes_reached:
+            print('trying to launch wait_for_n_pokes, but pokes already reached')
+            while self.pokes_reached and not self.box.finished():
+                '''wait for port to reset'''
+            print('port successfully reset, launching wait for n pokes')
+        if latency_object:
+            latency_object.add_modifier(key = 'pokes_required', value = n)
+            self.current_latency_obj = latency_object
+            
+        if on_poke_events:
+            self.current_on_poke_events = on_poke_events
         
+        self.current_target_pokes = n
+        
+        if reset_with_new_phase:
+            #get the current phase object
+            phase = self.box.timing.current_phase
+
+            #query to see if phase is still active.
+            #note: if you simply used 'while self.box.current_phase.active() you could miss shutdown, i think
+            
+            while phase.active() and not self.box.finished():
+                '''wait'''
+
+            self.reset_poke_count()
+            
+        #reset with new rounds waits to exit until the round has changed
+        elif reset_with_new_round:
+            r = self.box.timing.round
+            while r == self.box.timing.round and not self.box.finished():
+                '''wait'''
+            self.reset_poke_count()
+
+            
+        else:
+            while self.target_pokes > 0 and not self.pokes_reached and not self.box.finished():
+                '''wait'''
+
+    @thread_it
+    def begin_monitoring(self):
+        '''activating monitoring'''
+        self._watch_port()
+        time.sleep(0.25)
+        while self.monitoring and not self.box.finished():
+            
+            
+            if not self.poke_queue.empty():
+                _ = self.poke_queue.get()
+                self.pokes += 1
+                print(f'got a poke')
+                if self.current_latency_obj:
+                    #not ideal to keep reformating this event, but not costly
+                    self.current_latency_obj.event_2 = oes.poke+self.name
+                    self.current_latency_obj.reformat_event_descriptor()
+                    
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
+                                                                                modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
+                    #make a local latency object that is a copy for this particular nose poke. 
+                    local_latency = copy.copy(self.current_latency_obj)
+                    local_latency.add_modifier(key = 'n_pokes', value = self.pokes)
+                    local_latency.submit()
+                    
+                else:
+                    #if no latency object, just use a simply timestamp
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
+                                                                          modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
+                #check for current on_poke_events to run
+                if self.current_on_poke_events:
+                        for event in self.current_on_poke_events:
+                            event()
+                            
+                #check if we have reached the threshold
+                if self.current_target_pokes > 0 and self.pokes >= self.current_target_pokes:
+                    if self.current_latency_obj:
+                        #make a local latency object that is a copy for this particular nose poke. 
+                        local_latency = copy.copy(self.current_latency_obj)
+                        local_latency.event_descriptor = oes.pokes_reached+self.name
+                        local_latency.add_modifier(key = 'n_pokes', value = self.pokes)
+                        local_latency.submit()
+                    else:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.pokes_reached+self.name, 
+                                                                                    modifiers ={'n_pokes':self.pokes, 'ID':self.name})
+                    self.pokes_reached = True
+                    self.n_pokes_reached_reset()
+        print('exiting monitoring')
+    def wait_for_reset(self):
+        if self.pokes_reached:
+            timeout = self.box.timing.new_timeout(name = 'reset pokes', length = 2)
+            while self.pokes_reached and timeout.active:
+                ''''''
+            if self.pokes_reached:
+                print('uhoh! failed to reset pokes within 2 seconds')
+            
+    @thread_it
+    def _watch_port(self):
+        print(f'watching port {self.name}')
+        if not self.monitoring:
+            self.monitoring = True
+            
+            while self.monitoring:
+                if not self.pause_monitoring:
+                    if self.switch.pressed:
+                        print(f'{self.name} poked')
+                        self.total_pokes +=1
+                        self.poke_queue.put(('poked'))
+                        if self.box.get_software_setting('checks', 
+                                                        'click_on',
+                                                        default = True): 
+                            self.speaker.click_on()
+                        while self.switch.pressed and self.monitoring:
+                            '''waiting for vole to get off lever. nothing necessary within loop'''
+                        
+                        if self.box.get_software_setting('checks', 
+                                                        'click_off',
+                                                        default = False): 
+                            self.speaker.click_off()
+                        
+                        
+                        #wait to loop until inter-press interval is passed
+                        ipt_timeout = self.box.timing.new_timeout(self.interpoke_timeout)
+                        ipt_timeout.wait()
+                time.sleep(0.015)
+            print(f'\n:::::: done watching a pin for {self.name}:::::\n')
+            
+    def reset_poke_count(self):
+        self.pokes_reached = False
+        self.pokes = 0
+        self.current_target_pokes = 0
+    
+    def n_pokes_reached_reset(self):
+        
+        self.current_target_pokes = 0
+        #fall back to simple timestamps outside of latencies and targets
+        self.current_latency_obj = None
+        self.current_on_poke_events = None 
+          
     def reset_port(self):
 
-        while self.is_extended:
-            '''waiting for lever to be retracted before resetting'''
         self.monitoring = False
         self.pause_monitoring = False
         self.pokes_reached = False
