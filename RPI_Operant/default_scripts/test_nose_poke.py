@@ -54,6 +54,8 @@ box.setup(run_dict=RUNTIME_DICT,
             user_hardware_config_file_path=config_hardware_file,
             user_software_config_file_path=config_software_file,
             start_now=True)
+
+
 phase = box.timing.new_phase('testing', length = 1000)
 
 
@@ -80,6 +82,7 @@ try:
         if port.pokes_reached:
             print('wow! we poked our way to success! AGAIN')
             port.reset_port()
+            port.deactivate_LED()
 except KeyboardInterrupt:
     print('\n\ncleaning up')
     phase.finished()

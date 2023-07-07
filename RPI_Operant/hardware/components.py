@@ -519,8 +519,8 @@ class NosePoke:
         try:
             self.LED.deactivate()
         except:
-            print(f'{self.name} does not have an attached LED, but tried to activate one')
-        self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_active')
+            print(f'{self.name} does not have an attached LED, but tried to deactivate one')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_deactivate')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_inactive+self.name, 
                                                         modifiers = {'ID':self.name})
 
@@ -712,7 +712,6 @@ class NosePoke:
             if not self.poke_queue.empty():
                 _ = self.poke_queue.get()
                 self.pokes += 1
-                print(f'got a poke')
                 if self.current_latency_obj:
                     #not ideal to keep reformating this event, but not costly
                     self.current_latency_obj.event_2 = oes.poke+self.name
@@ -733,7 +732,7 @@ class NosePoke:
                 if self.current_on_poke_events:
                         for event in self.current_on_poke_events:
                             event()
-                            
+                print(f'{self.name} poked {self.pokes} of {self.current_target_pokes}')        
                 #check if we have reached the threshold
                 if self.current_target_pokes > 0 and self.pokes >= self.current_target_pokes:
                     if self.current_latency_obj:
@@ -750,7 +749,7 @@ class NosePoke:
         print('exiting monitoring')
     def wait_for_reset(self):
         if self.pokes_reached:
-            timeout = self.box.timing.new_timeout(name = 'reset pokes', length = 2)
+            timeout = self.box.timing.new_timeout(length = 2)
             while self.pokes_reached and timeout.active:
                 ''''''
             if self.pokes_reached:
@@ -765,7 +764,7 @@ class NosePoke:
             while self.monitoring:
                 if not self.pause_monitoring:
                     if self.switch.pressed:
-                        print(f'{self.name} poked')
+                        
                         self.total_pokes +=1
                         self.poke_queue.put(('poked'))
                         if self.box.get_software_setting('checks', 
