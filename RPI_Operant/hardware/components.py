@@ -279,6 +279,10 @@ class Lever:
         return self.box.timestamp_manager.new_latency(event_1 = oes.lever_retracted+self.name, 
                                                         modifiers = {'ID':self.name})
 
+    def disable(self):
+        self.servo._pwm_out.duty_cycle = 0
+        
+
     @thread_it
     def watch_lever_pin(self):
         self.monitoring = True
