@@ -537,14 +537,14 @@ class NosePoke:
                         self.poke_queue.put(('poked'))
                         if self.box.get_software_setting('checks', 
                                                         'click_on',
-                                                        default = True): 
+                                                        default = True) and self.is_active: 
                             self.speaker.click_on()
                         while self.switch.pressed and self.monitoring:
                             '''waiting for vole to get off lever. nothing necessary within loop'''
                         
                         if self.box.get_software_setting('checks', 
                                                         'click_off',
-                                                        default = False): 
+                                                        default = False) and self.is_active: 
                             self.speaker.click_off()
                         
                         
@@ -663,6 +663,7 @@ class NosePoke:
                            reset_with_new_round = True,
                            on_poke_events = None):
         'monitor lever and wait for n_presses before'
+        self.is_active = True
         if self.pokes_reached:
             print('trying to launch wait_for_n_pokes, but pokes already reached')
             while self.pokes_reached and not self.box.finished():
@@ -700,7 +701,8 @@ class NosePoke:
         else:
             while self.target_pokes > 0 and not self.pokes_reached and not self.box.finished():
                 '''wait'''
-
+        self.is_active = False
+    
     @thread_it
     def begin_monitoring(self):
         '''activating monitoring'''
@@ -790,7 +792,8 @@ class NosePoke:
         self.pokes_reached = False
         self.pokes = 0
         self.current_target_pokes = 0
-    
+        self.is_active = False
+        
     def n_pokes_reached_reset(self):
         
         self.current_target_pokes = 0
@@ -804,6 +807,7 @@ class NosePoke:
         self.pause_monitoring = False
         self.pokes_reached = False
         self.pokes = 0
+        self.is_active = False
 
 class Button:
     
