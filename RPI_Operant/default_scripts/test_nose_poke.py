@@ -63,7 +63,7 @@ phase = box.timing.new_phase('testing', length = 1000)
 port = box.nose_pokes.nose_port_2
 lat = port.activate_LED()
 port.begin_monitoring()
-port.set_poke_target(n = 5, latency_object = lat, on_poke_events = [a_test_event], reset_with_new_phase = True)
+port.set_poke_target(n = 2, latency_object = lat, on_poke_events = [a_test_event], reset_with_new_phase = True)
 
 
 while phase.active():

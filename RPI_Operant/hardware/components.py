@@ -528,36 +528,6 @@ class NosePoke:
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_inactive+self.name, 
                                                         modifiers = {'ID':self.name})
 
-    @thread_it
-    def _watch_port(self):
-        
-        if not self.monitoring:
-            self.monitoring = True
-            
-            while self.monitoring:
-                if not self.pause_monitoring:
-                    if self.switch.pressed:
-                        self.total_pokes +=1
-                        self.poke_queue.put(('poked'))
-                        if self.box.get_software_setting('checks', 
-                                                        'click_on',
-                                                        default = True) and self.is_active: 
-                            self.speaker.click_on()
-                        while self.switch.pressed and self.monitoring:
-                            '''waiting for vole to get off lever. nothing necessary within loop'''
-                        
-                        if self.box.get_software_setting('checks', 
-                                                        'click_off',
-                                                        default = False) and self.is_active: 
-                            self.speaker.click_off()
-                        
-                        
-                        #wait to loop until inter-press interval is passed
-                        ipt_timeout = self.box.timing.new_timeout(self.interpoke_timeout)
-                        ipt_timeout.wait()
-                time.sleep(0.015)
-            #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
-    
     
     @thread_it
     def wait_for_n_pokes(self, n = 1, reset_with_new_phase = False, 
@@ -705,6 +675,7 @@ class NosePoke:
         else:
             while self.target_pokes > 0 and not self.pokes_reached and not self.box.finished():
                 '''wait'''
+            self.reset_poke_count()
         self.is_active = False
     
     @thread_it
@@ -738,9 +709,10 @@ class NosePoke:
                 if self.current_on_poke_events:
                         for event in self.current_on_poke_events:
                             event()
-                print(f'{self.name} poked {self.pokes} of {self.current_target_pokes}')        
+                        
                 #check if we have reached the threshold
                 if self.current_target_pokes > 0 and self.pokes >= self.current_target_pokes:
+                    print(f'{self.name} poked {self.pokes} of {self.current_target_pokes}')
                     if self.current_latency_obj:
                         #make a local latency object that is a copy for this particular nose poke. 
                         local_latency = copy.copy(self.current_latency_obj)
@@ -764,6 +736,7 @@ class NosePoke:
     @thread_it
     def _watch_port(self):
         print(f'watching port {self.name}')
+        run_click_off = False
         if not self.monitoring:
             self.monitoring = True
             
@@ -775,15 +748,19 @@ class NosePoke:
                         self.poke_queue.put(('poked'))
                         if self.box.get_software_setting('checks', 
                                                         'click_on',
-                                                        default = True): 
+                                                        default = True) and self.is_active:
+                             
                             self.speaker.click_on()
+                            run_click_off = True
                         while self.switch.pressed and self.monitoring:
                             '''waiting for vole to get off lever. nothing necessary within loop'''
                         
                         if self.box.get_software_setting('checks', 
                                                         'click_off',
-                                                        default = False): 
-                            self.speaker.click_off()
+                                                        default = False) and self.is_active: 
+                            if run_click_off:
+                                self.speaker.click_off()
+                                run_click_off = False
                         
                         
                         #wait to loop until inter-press interval is passed
@@ -804,7 +781,8 @@ class NosePoke:
         #fall back to simple timestamps outside of latencies and targets
         self.current_latency_obj = None
         self.current_on_poke_events = None 
-          
+        self.is_active = False
+        
     def reset_port(self):
 
         self.monitoring = False
