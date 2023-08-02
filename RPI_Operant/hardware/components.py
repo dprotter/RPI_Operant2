@@ -634,7 +634,7 @@ class NosePoke:
     @thread_it
     def set_poke_target(self, n = 1, reset_with_new_phase = False, 
                            latency_object = None, 
-                           reset_with_new_round = True,
+                           reset_with_new_round = False,
                            on_poke_events = None):
         'monitor lever and wait for n_presses before'
         self.is_active = True
@@ -673,9 +673,8 @@ class NosePoke:
 
             
         else:
-            while self.target_pokes > 0 and not self.pokes_reached and not self.box.finished():
+            while self.current_target_pokes > 0 and not self.pokes_reached and not self.box.finished():
                 '''wait'''
-            self.reset_poke_count()
         self.is_active = False
     
     @thread_it
