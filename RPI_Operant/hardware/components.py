@@ -503,15 +503,17 @@ class NosePoke:
         self.switch.pressed = False
         
 
-    def activate_LED(self, wait = False):
+    def activate_LED(self, percent_brightness = 100, wait = False):
         '''activates a ports LED and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
        
         try:
-            self.LED.activate()
+            self.LED.activate
         except:
             print(f'{self.name} does not have an attached LED, but tried to activate one')
+        else:
+            self.LED.activate(percent_brightness)
         self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_active')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_active+self.name, 
                                                       modifiers = {'ID':self.name})
@@ -521,9 +523,11 @@ class NosePoke:
         '''inactivate a port and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         try:
-            self.LED.deactivate()
+            self.LED
         except:
             print(f'{self.name} does not have an attached LED, but tried to deactivate one')
+        else:
+            self.LED.deactivate()
         self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_deactivate')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_inactive+self.name, 
                                                         modifiers = {'ID':self.name})
@@ -1392,9 +1396,9 @@ class Output:
     
     ################################################
     ############## HAT ###############
-    def set_active_HAT(self):
+    def set_active_HAT(self, percent):
         self.active = True
-        self.channel.duty_cycle = 0xffff
+        self.channel.duty_cycle = self.hat_PWM_hex_from_percent(percent)
         
     def set_inactive_HAT(self):
         self.active = False
@@ -1402,23 +1406,30 @@ class Output:
                 
         
     ############## GPIO ###############    
-    def set_active_GPIO(self):
-        GPIO.output(self.pin, 1)
+    def set_active_GPIO(self, percent):
+        self.box.pi.set_PWM_dutycycle(self.pin, self.GPIO_PWM_8bit_from_percent(percent))
         self.active = True
         
     def set_inactive_GPIO(self):
-        GPIO.output(self.pin, 0)
+        self.box.pi.duty_cycle(self.pin, 0)
         self.active = False
     ################################################    
          
         
-    def activate(self):
-        
-        self.output_on()
+    def activate(self, percent_brightness = 100):
+        '''when activating take a percent brightness from 1 to 100'''
+
+        self.output_on(percent_brightness)
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', 
-                                                                    modifiers = {'ID':self.name}, 
+                                                                    modifiers = {'ID':self.name,'brightness':percent_brightness}, 
                                                                     print_to_screen = False)
-        
+    
+    def hat_PWM_hex_from_percent(self, percent = 100):
+        integer = int(percent * 65535 / 100)
+        return hex(integer)
+    
+    def GPIO_PWM_8bit_from_percent(self, percent = 100):
+        return int(255 * percent / 100)
          
     def deactivate(self):
         
