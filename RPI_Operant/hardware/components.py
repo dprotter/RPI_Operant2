@@ -464,7 +464,7 @@ class NosePoke:
                               box = self.box,
                               simulated = simulated)
         self.current_latency_obj = None
-        self.current_target_pokes = None
+        self.current_target_pokes = 0
         self.current_on_poke_events = None
 
     
