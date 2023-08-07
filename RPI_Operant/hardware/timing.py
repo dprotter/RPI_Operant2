@@ -369,7 +369,8 @@ class Timeout:
     def __init__(self, length):
         self.start_time = time.time()
         self.end_time = self.start_time + length
-
+        self.length = length
+        
     def active(self):
         '''when queried check if time has expired'''
         if time.time() >= self.end_time:
@@ -377,7 +378,10 @@ class Timeout:
         else:
             time.sleep(0.05)
             return True
-    
+    def reset(self):
+        self.start_time = time.time()
+        self.end_time = self.start_time + self.length
+        
     def wait(self):
         '''essentially a join function. Other things in other threads will still occur, but whatever thread called this will
         be blocked until the time is up, no matter what.'''
