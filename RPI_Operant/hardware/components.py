@@ -1411,22 +1411,30 @@ class Output:
         self.active = True
         
     def set_inactive_GPIO(self):
-        self.box.pi.duty_cycle(self.pin, 0)
+        self.box.pi.set_PWM_dutycycle(self.pin, 0)
         self.active = False
     ################################################    
          
         
-    def activate(self, percent_brightness = 100):
+    def activate(self, percent_duty_cycle = 100):
         '''when activating take a percent brightness from 1 to 100'''
 
-        self.output_on(percent_brightness)
+        self.output_on(percent_duty_cycle)
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', 
-                                                                    modifiers = {'ID':self.name,'brightness':percent_brightness}, 
+                                                                    modifiers = {'ID':self.name,'duty_cycle':percent_duty_cycle}, 
                                                                     print_to_screen = False)
     
-    def hat_PWM_hex_from_percent(self, percent = 100):
-        integer = int(percent * 65535 / 100)
-        return hex(integer)
+    def hat_PWM_hex_from_percent(self, percent = 100, int_bit = 16, max_value = None):
+        vals = {16:65535, 12: 4095, 8: 255}
+        if max_value:
+            max_value = max_value
+        else:
+            try:
+                max_val = vals[int(int_bit)]
+            except:
+                print(f'expected a int_bit value of 8, 12, or 16, but received: {int_bit}. you may also pass a max_value for your PWM generator directly as max_value')
+        integer = int(percent * max_val / 100)
+        return integer
     
     def GPIO_PWM_8bit_from_percent(self, percent = 100):
         return int(255 * percent / 100)
@@ -2053,7 +2061,8 @@ class Beam:
                 if self.switch.pressed:
                     local_latency.submit()
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
-                                                                                modifiers = {'ID':self.name})
+                                                                                modifiers = {'ID':self.name}, 
+                                                                                print_to_screen = False)
                     latency_submitted = True 
                     timeout = self.box.timing.new_timeout(0.1)
                     while self.switch.pressed or timeout.active():
@@ -2067,7 +2076,8 @@ class Beam:
         while self.monitor and phase.active():
             if self.switch.pressed:
                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
-                                                   modifiers = {'ID':self.name})
+                                                   modifiers = {'ID':self.name},
+                                                   print_to_screen = False)
                 
                 while self.switch.pressed:
                     ''''''
