@@ -121,18 +121,33 @@ class Phase:
             self.name = name 
             self.timeframe = length
             self.is_active = True
-            if countdown:
-                if box:
-                    box.timing.add_countdown(self)
+            self.countdown = countdown
+            self.in_countdown = False
+            self.box = box
+            if self.countdown:
+                if self.box:
+                    self.box.timing.add_countdown(self)
+                    self.in_countdown = True
     
     def get_time_remaining(self):
         
         return round(self.end_time - time.time(), 1)
-
+    
+    def reset(self):
+        print(f'resetting phase {self.name}')
+        self.is_active = True
+        self.start_time = time.time()
+        self.end_time = self.start_time + self.timeframe
+        if self.countdown and not self.in_countdown:
+                if self.box:
+                    self.box.timing.add_countdown(self)
+                    self.in_countdown = True
+    
     def active(self):
         if self.is_active:
             if time.time() >= self.end_time:
                 self.is_active = False
+                self.in_countdown = False
                 return False
             else:
                 time.sleep(0.0005)
