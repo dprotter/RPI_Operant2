@@ -23,8 +23,11 @@ def run():
     door_2 = box.doors.door_2
     poke_1 = box.nose_pokes.nose_port_1
     poke_2 = box.nose_pokes.nose_port_2
+    print(poke_1.LED.type)
+    print(poke_2.LED.type)
 
-    
+    print(poke_1.LED.channel)
+    print(poke_2.LED.channel)
     phase.wait()
     total_time = box.get_software_setting(location = 'values', setting_name = 'experiment_length', default = 30*60)
     
