@@ -444,9 +444,12 @@ class Box:
             if val>500:
                 print('waiting for shutdown')
                 val = 0
-        
-        for l in self.levers:
-            l.retract()
+        try:
+            for l in self.levers:
+                l.retract()
+        except:
+            pass
+            
         try:
             for speaker in self.speakers:
                 speaker.set_off()

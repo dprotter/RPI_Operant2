@@ -282,6 +282,10 @@ class Lever:
         return self.box.timestamp_manager.new_latency(event_1 = oes.lever_retracted+self.name, 
                                                         modifiers = {'ID':self.name})
 
+    def disable(self):
+        self.servo._pwm_out.duty_cycle = 0
+        
+
     @thread_it
     def watch_lever_pin(self):
         self.monitoring = True
@@ -463,7 +467,7 @@ class NosePoke:
                               box = self.box,
                               simulated = simulated)
         self.current_latency_obj = None
-        self.current_target_pokes = None
+        self.current_target_pokes = 0
         self.current_on_poke_events = None
 
     def shutdown_routine(self):
@@ -505,15 +509,17 @@ class NosePoke:
         self.switch.pressed = False
         
 
-    def activate_LED(self, wait = False):
+    def activate_LED(self, percent_brightness = 100, wait = False):
         '''activates a ports LED and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         
        
         try:
-            self.LED.activate()
+            self.LED.activate
         except:
             print(f'{self.name} does not have an attached LED, but tried to activate one')
+        else:
+            self.LED.activate(percent_brightness)
         self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_active')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_active+self.name, 
                                                       modifiers = {'ID':self.name})
@@ -523,43 +529,15 @@ class NosePoke:
         '''inactivate a port and timestamp it
         returns a latency object that may be used to get the latency from lever-out to a second event'''
         try:
-            self.LED.deactivate()
+            self.LED
         except:
             print(f'{self.name} does not have an attached LED, but tried to deactivate one')
+        else:
+            self.LED.deactivate()
         self.box.timestamp_manager.create_and_submit_new_timestamp(f'{self.name}_port_LED_deactivate')
         return self.box.timestamp_manager.new_latency(event_1 = oes.nose_poke_inactive+self.name, 
                                                         modifiers = {'ID':self.name})
 
-    @thread_it
-    def _watch_port(self):
-        
-        if not self.monitoring:
-            self.monitoring = True
-            
-            while self.monitoring:
-                if not self.pause_monitoring:
-                    if self.switch.pressed:
-                        self.total_pokes +=1
-                        self.poke_queue.put(('poked'))
-                        if self.box.get_software_setting('checks', 
-                                                        'click_on',
-                                                        default = True) and self.is_active: 
-                            self.speaker.click_on()
-                        while self.switch.pressed and self.monitoring:
-                            '''waiting for vole to get off lever. nothing necessary within loop'''
-                        
-                        if self.box.get_software_setting('checks', 
-                                                        'click_off',
-                                                        default = False) and self.is_active: 
-                            self.speaker.click_off()
-                        
-                        
-                        #wait to loop until inter-press interval is passed
-                        ipt_timeout = self.box.timing.new_timeout(self.interpoke_timeout)
-                        ipt_timeout.wait()
-                time.sleep(0.015)
-            #iprint(f'\n:::::: done watching a pin for {self.name}:::::\n')
-    
     
     @thread_it
     def wait_for_n_pokes(self, n = 1, reset_with_new_phase = False, 
@@ -666,7 +644,7 @@ class NosePoke:
     @thread_it
     def set_poke_target(self, n = 1, reset_with_new_phase = False, 
                            latency_object = None, 
-                           reset_with_new_round = True,
+                           reset_with_new_round = False,
                            on_poke_events = None):
         'monitor lever and wait for n_presses before'
         self.is_active = True
@@ -705,7 +683,7 @@ class NosePoke:
 
             
         else:
-            while self.target_pokes > 0 and not self.pokes_reached and not self.box.finished():
+            while self.current_target_pokes > 0 and not self.pokes_reached and not self.box.finished():
                 '''wait'''
         self.is_active = False
     
@@ -740,9 +718,10 @@ class NosePoke:
                 if self.current_on_poke_events:
                         for event in self.current_on_poke_events:
                             event()
-                print(f'{self.name} poked {self.pokes} of {self.current_target_pokes}')        
+                        
                 #check if we have reached the threshold
                 if self.current_target_pokes > 0 and self.pokes >= self.current_target_pokes:
+                    print(f'{self.name} poked {self.pokes} of {self.current_target_pokes}')
                     if self.current_latency_obj:
                         #make a local latency object that is a copy for this particular nose poke. 
                         local_latency = copy.copy(self.current_latency_obj)
@@ -766,6 +745,7 @@ class NosePoke:
     @thread_it
     def _watch_port(self):
         print(f'watching port {self.name}')
+        run_click_off = False
         if not self.monitoring:
             self.monitoring = True
             
@@ -777,15 +757,19 @@ class NosePoke:
                         self.poke_queue.put(('poked'))
                         if self.box.get_software_setting('checks', 
                                                         'click_on',
-                                                        default = True): 
+                                                        default = True) and self.is_active:
+                             
                             self.speaker.click_on()
+                            run_click_off = True
                         while self.switch.pressed and self.monitoring:
                             '''waiting for vole to get off lever. nothing necessary within loop'''
                         
                         if self.box.get_software_setting('checks', 
                                                         'click_off',
-                                                        default = False): 
-                            self.speaker.click_off()
+                                                        default = False) and self.is_active: 
+                            if run_click_off:
+                                self.speaker.click_off()
+                                run_click_off = False
                         
                         
                         #wait to loop until inter-press interval is passed
@@ -806,7 +790,8 @@ class NosePoke:
         #fall back to simple timestamps outside of latencies and targets
         self.current_latency_obj = None
         self.current_on_poke_events = None 
-          
+        self.is_active = False
+        
     def reset_port(self):
 
         self.monitoring = False
@@ -1409,6 +1394,7 @@ class Output:
             GPIO.setup(self.pin, GPIO.OUT)
             self.output_on = self.set_active_GPIO
             self.output_off = self.set_inactive_GPIO
+            self.type = 'GPIO'
                 
 
         elif self.config_dict['type'] == 'HAT':
@@ -1416,15 +1402,16 @@ class Output:
             self.channel = SERVO_KIT._pca.channels[self.config_dict['channel']]
             self.output_on = self.set_active_HAT
             self.output_off = self.set_inactive_HAT
+            self.type = 'HAT'
             
         else:
             raise Exception(f'incorrect output type passed: {self.config_dict["type"]}\n must be "HAT" or "GPIO"')
     
     ################################################
     ############## HAT ###############
-    def set_active_HAT(self):
+    def set_active_HAT(self, percent):
         self.active = True
-        self.channel.duty_cycle = 0xffff
+        self.channel.duty_cycle = self.hat_PWM_hex_from_percent(percent)
         
     def set_inactive_HAT(self):
         self.active = False
@@ -1432,23 +1419,38 @@ class Output:
                 
         
     ############## GPIO ###############    
-    def set_active_GPIO(self):
-        GPIO.output(self.pin, 1)
+    def set_active_GPIO(self, percent):
+        self.box.pi.set_PWM_dutycycle(self.pin, self.GPIO_PWM_8bit_from_percent(percent))
         self.active = True
         
     def set_inactive_GPIO(self):
-        GPIO.output(self.pin, 0)
+        self.box.pi.set_PWM_dutycycle(self.pin, 0)
         self.active = False
     ################################################    
          
         
-    def activate(self):
-        
-        self.output_on()
+    def activate(self, percent_duty_cycle = 100):
+        '''when activating take a percent brightness from 1 to 100'''
+
+        self.output_on(percent_duty_cycle)
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'output_activated', 
-                                                                    modifiers = {'ID':self.name}, 
+                                                                    modifiers = {'ID':self.name,'duty_cycle':percent_duty_cycle}, 
                                                                     print_to_screen = False)
-        
+    
+    def hat_PWM_hex_from_percent(self, percent = 100, int_bit = 16, max_value = None):
+        vals = {16:65535, 12: 4095, 8: 255}
+        if max_value:
+            max_value = max_value
+        else:
+            try:
+                max_val = vals[int(int_bit)]
+            except:
+                print(f'expected a int_bit value of 8, 12, or 16, but received: {int_bit}. you may also pass a max_value for your PWM generator directly as max_value')
+        integer = int(percent * max_val / 100)
+        return integer
+    
+    def GPIO_PWM_8bit_from_percent(self, percent = 100):
+        return int(255 * percent / 100)
          
     def deactivate(self):
         
@@ -2077,7 +2079,8 @@ class Beam:
                 if self.switch.pressed:
                     local_latency.submit()
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
-                                                                                modifiers = {'ID':self.name})
+                                                                                modifiers = {'ID':self.name}, 
+                                                                                print_to_screen = False)
                     latency_submitted = True 
                     timeout = self.box.timing.new_timeout(0.1)
                     while self.switch.pressed or timeout.active():
@@ -2091,7 +2094,8 @@ class Beam:
         while self.monitor and phase.active():
             if self.switch.pressed:
                 self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
-                                                   modifiers = {'ID':self.name})
+                                                   modifiers = {'ID':self.name},
+                                                   print_to_screen = False)
                 
                 while self.switch.pressed:
                     ''''''
