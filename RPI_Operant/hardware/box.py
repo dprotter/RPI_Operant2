@@ -114,6 +114,7 @@ class Box:
                 #this is where we instantiate our component (IE a new Door)
                 component = component_class(name, comp_dict, self, simulated = simulated)
                 comp_container.add_component(name, component)
+                self.shutdown_objects += [component]
             
             #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
@@ -157,6 +158,7 @@ class Box:
             return self.serial_sender.up
         else:
             return False
+    
     def start_and_trigger(self, obj_list):
         '''start timing and subsequently call any functions passed within obj list.
            be cautious with things that must be triggered very close to initiation, as functions that 
@@ -380,13 +382,9 @@ class Box:
                 val = 0
         
         for obj in self.shutdown_objects:
-            obj.shutdown()
-        if hasattr(self, 'levers'):
-            for l in self.levers:
-                l.retract()
-        if hasattr(self, 'outputs'):
-            for output in self.outputs:
-                output.deactivate()
+            if hasattr(obj, 'shutdown_routine'):
+                obj.shutdown_routine()
+        
         try:
             for speaker in self.speakers:
                 speaker.set_off()
@@ -397,7 +395,7 @@ class Box:
                 laser.turn_off()
 
 
-        print('monitor_workers complete')
+        print('force exit complete')
     
     def get_delay(self):
         #delay in run_dict takes priority

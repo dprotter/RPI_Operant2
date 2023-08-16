@@ -133,6 +133,9 @@ class Lever:
         self.wiggle = 5
         self.step_size = 10
     
+    def shutdown_routine(self):
+        self.retract()
+    
     @thread_it
     def _raise_test_error(self, wait = True):
         '''use this to test errors are recorded properly'''
@@ -463,7 +466,10 @@ class NosePoke:
         self.current_target_pokes = None
         self.current_on_poke_events = None
 
-    
+    def shutdown_routine(self):
+        if hasattr(self, 'LED'):
+            self.deactivate_LED()
+            
     @thread_it
     def _raise_test_error(self, wait = True):
         '''use this to test errors are recorded properly'''
@@ -955,7 +961,9 @@ class Door:
         return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
 
             
-    
+    def shutdown_routine(self):
+        self.disable()
+        
     @thread_it
     def _open(self, wait):
         self.servo.throttle = self.open_speed
@@ -1304,7 +1312,10 @@ class PositionalDispenser:
     def stop(self): 
         print(f'STOPPING {self.name}')
         self.disable()
-
+    
+    def shutdown_routine(self):
+        self.stop()
+        
     @thread_it
     def monitor_pellet(self, pellet_latency):
         '''track when a pellet is retrieved'''
@@ -1472,7 +1483,7 @@ class Output:
         self.switch_inactive()
         return None
     
-    def shutdown(self):
+    def shutdown_routine(self):
         if self.active:
             self.deactivate()
             print(f'deactivating {self.name}')
@@ -1574,6 +1585,9 @@ class Laser:
             latency_obj.submit() # sets time of the latency from when we turned the laser on until right when we turn the laser off 
         return 
     
+    def shutdown_routine(self):
+        self.turn_off()
+    
     
 class Speaker:
     class FakeSpeaker:
@@ -1607,6 +1621,8 @@ class Speaker:
         self.on = False
         self.handler_running = False
     
+    def shutdown_routine(self):
+        self.turn_off()
     
     @thread_it
     def speaker_queue_handler(self):
@@ -1894,7 +1910,7 @@ class Beam:
         self.get_durations = False # set to True when we want to be creating duration objects to represent if vole is in or out of the Interaction Zone
 
 
-    def shutdown_protocol(self):
+    def shutdown_routine(self):
         '''how to get this object to shutdown when the box is finished'''
         self.monitor = False
         self.get_durations = False 
