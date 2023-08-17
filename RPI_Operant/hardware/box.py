@@ -432,7 +432,8 @@ class Box:
         #go through any objects that are currently on and
         #turn them off
         for obj in self.shutdown_objects:
-            obj.shutdown_routine()
+            if hasattr(obj, 'shutdown_routine'):
+                bj.shutdown_routine()
             
         time.sleep(0.25)
         self.done = True
