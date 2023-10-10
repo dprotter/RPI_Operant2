@@ -114,6 +114,7 @@ class Box:
                 #this is where we instantiate our component (IE a new Door)
                 component = component_class(name, comp_dict, self, simulated = simulated)
                 comp_container.add_component(name, component)
+                self.shutdown_objects += [component]
             
             #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
@@ -157,6 +158,7 @@ class Box:
             return self.serial_sender.up
         else:
             return False
+    
     def start_and_trigger(self, obj_list):
         '''start timing and subsequently call any functions passed within obj list.
            be cautious with things that must be triggered very close to initiation, as functions that 
@@ -380,10 +382,8 @@ class Box:
                 val = 0
         
         for obj in self.shutdown_objects:
-            obj.shutdown()
-            
-        for l in self.levers:
-            l.retract()
+            if hasattr(obj, 'shutdown_routine'):
+                obj.shutdown_routine()
         
         try:
             for speaker in self.speakers:
@@ -395,7 +395,7 @@ class Box:
                 laser.turn_off()
 
 
-        print('monitor_workers complete')
+        print('force exit complete')
     
     def get_delay(self):
         #delay in run_dict takes priority
@@ -432,7 +432,8 @@ class Box:
         #go through any objects that are currently on and
         #turn them off
         for obj in self.shutdown_objects:
-            obj.shutdown()
+            if hasattr(obj, 'shutdown_routine'):
+                bj.shutdown_routine()
             
         time.sleep(0.25)
         self.done = True
@@ -444,9 +445,12 @@ class Box:
             if val>500:
                 print('waiting for shutdown')
                 val = 0
-        
-        for l in self.levers:
-            l.retract()
+        try:
+            for l in self.levers:
+                l.retract()
+        except:
+            pass
+            
         try:
             for speaker in self.speakers:
                 speaker.set_off()
