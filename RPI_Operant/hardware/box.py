@@ -26,7 +26,12 @@ import datetime
 from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
 try:
     if os.system('sudo lsof -i TCP:8888'):
-        os.system('sudo pigpiod')
+        os.system('sudo pigpiod -s 2') #not sure what to set -s (sample rate) to. 
+                                    #https://abyz.me.uk/rpi/pigpio/python.html#set_PWM_frequency
+                                    #looks like you only get 18 PWM settings, but what they are 
+                                    #changes depending on -s. and the tradeoff is memory required
+                                    #there is more info here
+                                    #https://github.com/fivdi/pigpio/blob/master/doc/configuration.md#configureclockmicroseconds-peripheral
     import pigpio
 except:
     print('pigpio not found, using Fake_pigio. FOR TESTING PURPOSES')
