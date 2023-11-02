@@ -2264,6 +2264,45 @@ def precise_sleeper(duration, get_now=time.perf_counter):
     while now < end:
         now = get_now()
 
+class PWM_Pin:
+        def __init__(self, pin_num, pigpio_instance):
+            self.pi = pigpio_instance
+            self.pin = pin_num
+
+
+        def set_duty_cycle(self, percent):
+            '''take a percent (0 <-> 100) and set equivalent duty cycle. IE pcnt/100 * 255'''
+            self.pi.set_PWM_dutycycle(self.pin, percent * 255 / 100)
+
+        def set_hz(self, hz):
+            ''''''
+            self.pi.set_PWM_frequency(self.pin, int(hz))
+            
+class HouseLight:
+    def __init__(self, name, house_light_config_dict, box, simulated = False):
+        
+        
+        self.config_dict = house_light_config_dict
+        
+        self.box = box
+        self.pin = self.config_dict['pin'] #int
+
+        self.name = name #str
+        self.pin = PWM_Pin(self.pin, self.box.pi)
+        self.pin.set_hz(10000) #i dont know what i should have here. what can voles see?
+                                # mouse critical flicker fusion ~35 Hz 
+                                #https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0117570
+                                #so we are very safe here.  
+
+    def activate(self, pct = 100):
+        self.pin.set_duty_cycle(pct)
+
+    def deactivate(self):
+        self.pin.set_duty_cycle(0)
+
+    
+
+
 #i bet I can generate this dynamically from the classes, if they have certain attrs,
 #like "plural_name" and "component_type"
 COMPONENT_LOOKUP = {
@@ -2277,5 +2316,6 @@ COMPONENT_LOOKUP = {
                     'speakers':{'component_class':Speaker, 'label':'speaker'}, 
                     'lasers':{'component_class':Laser, 'label':'laser'}, 
                     'beams': {'component_class':Beam, 'label':'beam'},
-                    'nose_pokes': {'component_class':NosePoke, 'label':'nose_poke'}
+                    'nose_pokes': {'component_class':NosePoke, 'label':'nose_poke'},
+                    'house_lighyt': {'component_class':HouseLight, 'label':'house_light'}
                     }
