@@ -113,6 +113,7 @@ class Box:
             #iterate across all components in this class and use their dicts to instantiate a new 
             #component object
             component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
+            print(f'adding component class {component_group_name}')
             for name, comp_dict in group_dict.items():
                 #print(f'adding {name} to {component_class}')
                 

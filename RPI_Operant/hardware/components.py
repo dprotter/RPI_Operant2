@@ -2295,9 +2295,11 @@ class HouseLight:
                                 #so we are very safe here.  
 
     def activate(self, pct = 100):
+        print('activating house_lights')
         self.pin.set_duty_cycle(pct)
 
     def deactivate(self):
+        print('deactivating house_lights')
         self.pin.set_duty_cycle(0)
 
     
@@ -2317,5 +2319,5 @@ COMPONENT_LOOKUP = {
                     'lasers':{'component_class':Laser, 'label':'laser'}, 
                     'beams': {'component_class':Beam, 'label':'beam'},
                     'nose_pokes': {'component_class':NosePoke, 'label':'nose_poke'},
-                    'house_lighyt': {'component_class':HouseLight, 'label':'house_light'}
+                    'house_light': {'component_class':HouseLight, 'label':'house_light'}
                     }

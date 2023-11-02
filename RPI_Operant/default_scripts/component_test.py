@@ -4,7 +4,7 @@ from pathlib import Path
 experiment_name = Path(__file__).stem
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':experiment_name, 'port_side':'same'}
 # # For Running on the Raspberry Pi: 
-USER_HARDWARE_CONFIG_PATH = '/home/pi/makenzie_experiment/makenzie_operant/setup_files/nose_poke_hardware.yaml'
+USER_HARDWARE_CONFIG_PATH = '/home/pi/makenzie_experiment/local_nosepoke_hardware_house_lights.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/makenzie_experiment/makenzie_operant/setup_files/nose_poke.yaml'
  
 box = Box()
@@ -65,6 +65,7 @@ def run():
 
 
     poke_d1.set_poke_target(FR)
+    pokes_active_phase = box.timing.new_phase('pokes_active', length = 1000)
     poke_d2.activate_LED(percent_brightness = 50)
     house_light.activate(pct = 25)
 
@@ -72,7 +73,7 @@ def run():
         
         if door_1_reward:
             if not d1_reward_phase.active():
-                d1_reward_phase = False
+                d1_reward = False
                 door_1.close(wait = True)
                 house_light.activate()
                 pokes_active_phase = box.timing.new_phase('pokes_active', length = 1000)
@@ -83,7 +84,7 @@ def run():
         
         if door_2_reward:
             if not d2_reward_phase.active():
-                d2_reward_phase = False
+                d2_reward = False
                 door_1.close(wait = True)
                 house_light.activate()
                 pokes_active_phase = box.timing.new_phase('pokes_active', length = 1000)
