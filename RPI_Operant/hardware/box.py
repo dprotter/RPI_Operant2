@@ -26,7 +26,12 @@ import datetime
 from RPI_Operant.hardware.software_functions import merge_config_files, load_config_file
 try:
     if os.system('sudo lsof -i TCP:8888'):
-        os.system('sudo pigpiod')
+        os.system('sudo pigpiod -s 2') #not sure what to set -s (sample rate) to. 
+                                    #https://abyz.me.uk/rpi/pigpio/python.html#set_PWM_frequency
+                                    #looks like you only get 18 PWM settings, but what they are 
+                                    #changes depending on -s. and the tradeoff is memory required
+                                    #there is more info here
+                                    #https://github.com/fivdi/pigpio/blob/master/doc/configuration.md#configureclockmicroseconds-peripheral
     import pigpio
 except:
     print('pigpio not found, using Fake_pigio. FOR TESTING PURPOSES')
@@ -108,12 +113,14 @@ class Box:
             #iterate across all components in this class and use their dicts to instantiate a new 
             #component object
             component_class = COMPONENT_LOOKUP[component_group_name]['component_class']
+            print(f'adding component class {component_group_name}')
             for name, comp_dict in group_dict.items():
                 #print(f'adding {name} to {component_class}')
                 
                 #this is where we instantiate our component (IE a new Door)
                 component = component_class(name, comp_dict, self, simulated = simulated)
                 comp_container.add_component(name, component)
+                self.shutdown_objects += [component]
             
             #add completed components (within component container) to the box
             setattr(self, component_group_name, comp_container)
@@ -157,6 +164,7 @@ class Box:
             return self.serial_sender.up
         else:
             return False
+    
     def start_and_trigger(self, obj_list):
         '''start timing and subsequently call any functions passed within obj list.
            be cautious with things that must be triggered very close to initiation, as functions that 
@@ -380,10 +388,8 @@ class Box:
                 val = 0
         
         for obj in self.shutdown_objects:
-            obj.shutdown()
-            
-        for l in self.levers:
-            l.retract()
+            if hasattr(obj, 'shutdown_routine'):
+                obj.shutdown_routine()
         
         try:
             for speaker in self.speakers:
@@ -395,7 +401,7 @@ class Box:
                 laser.turn_off()
 
 
-        print('monitor_workers complete')
+        print('force exit complete')
     
     def get_delay(self):
         #delay in run_dict takes priority
@@ -432,7 +438,8 @@ class Box:
         #go through any objects that are currently on and
         #turn them off
         for obj in self.shutdown_objects:
-            obj.shutdown()
+            if hasattr(obj, 'shutdown_routine'):
+                bj.shutdown_routine()
             
         time.sleep(0.25)
         self.done = True
@@ -444,9 +451,12 @@ class Box:
             if val>500:
                 print('waiting for shutdown')
                 val = 0
-        
-        for l in self.levers:
-            l.retract()
+        try:
+            for l in self.levers:
+                l.retract()
+        except:
+            pass
+            
         try:
             for speaker in self.speakers:
                 speaker.set_off()

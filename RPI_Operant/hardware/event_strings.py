@@ -37,3 +37,8 @@ class OperantEventStrings:
     beam_unbroken = 'beam_unbroken_'
     bb_monitor_ended_bb = 'monitor_ending_while_beam_broken_'
     inside_interaction_zone = 'inside_interaction_zone_'
+
+    nose_poke_active = 'nose_poke_active_'
+    nose_poke_inactive = 'nose_poke_active_'
+    poke = 'nose_poke_triggered_'
+    pokes_reached = 'pokes_reached_'
