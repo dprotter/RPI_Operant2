@@ -30,11 +30,14 @@ class PWM_Pin:
             self.pi.set_PWM_frequency(self.pin, int(hz))
 
 pin = PWM_Pin(14, pi)
-start = 100
-for i in range(10):
-    print(f'setting duty cycle to {100 - i*10}')
-    pin.set_duty_cycle(100 - i*10)
 
-    time.sleep(0.5)
+try:
+    while True:
+        pin.set_duty_cycle(100)
 
-pin.set_duty_cycle(0)
+        input()
+        pin.set_duty_cycle(5)
+
+        input()
+except:
+    pin.set_duty_cycle(0)

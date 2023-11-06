@@ -2290,17 +2290,23 @@ class HouseLight:
         self.name = name #str
         self.pin = PWM_Pin(self.pin, self.box.pi)
         self.pin.set_hz(10000) #i dont know what i should have here. what can voles see?
-                                # mouse critical flicker fusion ~35 Hz 
+                                # mouse critical flicker freq ~35 Hz 
                                 #https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0117570
                                 #so we are very safe here.  
 
     def activate(self, pct = 100):
-        print('activating house_lights')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(f'house_light set to {pct}', 
+                                                        modifiers = {'ID':self.name})
         self.pin.set_duty_cycle(pct)
+        
 
     def deactivate(self):
-        print('deactivating house_lights')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(f'house_light deacivated', 
+                                                        modifiers = {'ID':self.name})
         self.pin.set_duty_cycle(0)
+
+    def shutdown(self):
+        self.deactivate()
 
     
 

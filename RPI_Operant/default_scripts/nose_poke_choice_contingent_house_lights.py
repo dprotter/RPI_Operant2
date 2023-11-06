@@ -98,7 +98,7 @@ def run():
             
             
         if poke_d1.pokes_reached and not door_1_reward:
-            house_light.activate(pct = 25)
+            house_light.activate(pct = 1)
             pokes_active_phase.end_phase()
             poke_d1.deactivate_LED()
             poke_d2.deactivate_LED()
@@ -112,7 +112,7 @@ def run():
             poke_d2.reset_poke_count()
         
         if poke_d2.pokes_reached and not door_2_reward:
-            house_light.activate(pct = 25)
+            house_light.activate(pct = 1)
             pokes_active_phase.end_phase()
             poke_d1.deactivate_LED()
             poke_d2.deactivate_LED()
