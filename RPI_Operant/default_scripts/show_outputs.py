@@ -8,11 +8,7 @@ import argparse
 import os
 
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'show_outputs', 'side':1}
-<<<<<<< HEAD
 USER_HARDWARE_CONFIG_PATH = '/home/pi/makenzie_experiment/local_hardware.yaml'
-=======
-USER_HARDWARE_CONFIG_PATH ='/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/local_hardware.yaml'
->>>>>>> fe68a56ad7624b497edf39bf65d1b4bf3d427af9
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 parser = argparse.ArgumentParser(description='input io info')
