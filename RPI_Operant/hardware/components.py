@@ -2305,7 +2305,7 @@ class HouseLight:
                                                         modifiers = {'ID':self.name})
         self.pin.set_duty_cycle(0)
 
-    def shutdown(self):
+    def shutdown_routine(self):
         self.deactivate()
 
     
