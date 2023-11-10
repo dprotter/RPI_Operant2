@@ -1914,7 +1914,7 @@ class Beam:
 
     def shutdown_routine(self):
         '''how to get this object to shutdown when the box is finished'''
-        self.monitor = False
+        self.end_monitoring()
         self.get_durations = False 
         self.counting = False 
 
