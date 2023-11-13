@@ -1914,7 +1914,7 @@ class Beam:
 
     def shutdown_routine(self):
         '''how to get this object to shutdown when the box is finished'''
-        self.monitor = False
+        self.end_monitoring()
         self.get_durations = False 
         self.counting = False 
 
@@ -2305,7 +2305,7 @@ class HouseLight:
                                                         modifiers = {'ID':self.name})
         self.pin.set_duty_cycle(0)
 
-    def shutdown(self):
+    def shutdown_routine(self):
         self.deactivate()
 
     
