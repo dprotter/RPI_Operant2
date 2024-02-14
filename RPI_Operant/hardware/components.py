@@ -1744,6 +1744,50 @@ class Speaker:
         #perhaps, integrate a .done() into Tone objs so that it can be queried. 
         time.sleep(length)
 
+    def play_tone_from_dictionary(self, tone_dictionary, wait = False):
+        '''use pigpio to play a tone, called by name from the dict imported from software config file'''
+        tone_name = tone_dictionary["tone_name"]
+        if 'type' in tone_dictionary:
+            if tone_dictionary['type'] == 'structured':
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
+                Structured_Tone(tone_dictionary, self).play()
+                
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
+                length = 0
+            elif tone_dictionary['type'] == 'tone_train':
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_start + tone_name, modifiers = {'ID':self.name})
+                if 'serial_send' in self.box.software_config['checks'].keys():
+                    if self.box.software_config['checks']['serial_send'][self.name]:
+                        self.box.serial_sender.send_data(f'{self.name} {tone_name} start')
+                ToneTrain(tone_dictionary, self).play()
+                
+                self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.tone_stop + tone_name, modifiers = {'ID':self.name})
+                length = 0
+            elif tone_dictionary['type'] == 'continuous':
+                hz = tone_dictionary['hz']
+                length = tone_dictionary['length']
+                self.tone_queue.put(Tone(hz, length, tone_name))
+                if not self.handler_running:
+                    self.speaker_queue_handler()
+            else:
+                hz = tone_dictionary['hz']
+                length = tone_dictionary['length']
+                self.tone_queue.put(Tone(hz, length, tone_name))
+                if not self.handler_running:
+                    self.speaker_queue_handler()
+        else:
+            hz = tone_dictionary['hz']
+            length = tone_dictionary['length']
+            self.tone_queue.put(Tone(hz, length, tone_name))
+            if not self.handler_running:
+                    self.speaker_queue_handler()
+        
+        #not my favorite way to handle this as it is not directly tied to the behavior of the speaker, but it is close
+        #perhaps, integrate a .done() into Tone objs so that it can be queried. 
+        time.sleep(length)
 
     @thread_it
     def click_on(self):
@@ -2147,6 +2191,45 @@ class Beam:
                                                    modifiers = {'ID':self.name})
         
                 
+    def monitor_and_do_events(self, events, latency = None):
+        self._begin_monitoring()
+        if latency:
+            local_latency = copy.copy(latency)
+            local_latency.event_2 = oes.beam_broken+self.name
+            local_latency.add_modifier(key = 'beam_ID', value = self.name)
+    
+            while self.monitor:
+                if self.switch.pressed:
+                    local_latency.submit()
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
+                                                                                modifiers = {'ID':self.name})
+                    for event in events:
+                        event()
+                    while self.switch.pressed and self.monitor:
+                        ''''''
+                        time.sleep(0.05)
+                    if self.monitor:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+                    else:
+                        self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+      
+                    
+        while self.monitor:
+            if self.switch.pressed:
+                self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_broken+self.name, 
+                                                   modifiers = {'ID':self.name})
+                for event in events:
+                        event()
+                while self.switch.pressed and self.monitor:
+                    ''''''
+                if self.monitor:
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.beam_unbroken+self.name, 
+                                                        modifiers = {'ID':self.name})
+                else:
+                    self.box.timestamp_manager.create_and_submit_new_timestamp(oes.bb_monitor_ended_bb+self.name, 
+                                                   modifiers = {'ID':self.name})
         
     def _begin_monitoring(self):
         self.monitor = True
