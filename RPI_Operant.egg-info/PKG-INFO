@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: RPI-Operant
+Version: 2.0
+Summary: Testing installation of package
+Home-page: https://github.com/dprotter/RPI_Operant2
+Author: Donaldson Lab
+Author-email: david.protter@colorado.edu
+License: MIT
+Requires-Dist: numpy==1.25.2
+Requires-Dist: pandas==1.5.3
+Requires-Dist: pyyaml
+Requires-Dist: RPi-GPIO
+Requires-Dist: himl
+Requires-Dist: serial
+Requires-Dist: adafruit-circuitpython-servokit
