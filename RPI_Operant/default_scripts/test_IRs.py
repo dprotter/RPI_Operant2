@@ -66,8 +66,9 @@ beams = []
 
 if hasattr(box, 'nose_pokes'):
     for nosepoke in box.nose_pokes:
-        nosepoke.on_poke_events = [speaker.click_on, speaker.click_off]
-        nosepoke.beg
+        nosepoke.set_current_on_poke_events([speaker.click_on])
+        nosepoke.begin_monitoring()
+
 if hasattr(box, 'beams'):
     for beam in box.beams:
         tone_dict = {'type':'continuous', 

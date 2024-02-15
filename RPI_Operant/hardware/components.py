@@ -469,6 +469,8 @@ class NosePoke:
         self.current_latency_obj = None
         self.current_target_pokes = 0
         self.current_on_poke_events = None
+    def set_current_on_poke_events(self, list_of_events):
+        self.current_on_poke_events = list_of_events
 
     def shutdown_routine(self):
         if hasattr(self, 'LED'):
@@ -1788,7 +1790,23 @@ class Speaker:
         #not my favorite way to handle this as it is not directly tied to the behavior of the speaker, but it is close
         #perhaps, integrate a .done() into Tone objs so that it can be queried. 
         time.sleep(length)
-
+    
+    @thread_it
+    def click_on_off_train(self):
+        start = time.time()
+        print('starting click train')
+        for hz, length in self.click_on_train:
+            self.set_hz(int(hz))
+            self.set_on()
+            precise_sleeper(length)
+        self.set_off()
+        for hz, length in self.click_off_train:
+            self.set_hz(int(hz))
+            self.set_on()
+            precise_sleeper(length)
+        
+        self.set_off()
+        print(f'ending click train, duration: {time.time() - start}')
     @thread_it
     def click_on(self):
         '''play through a designated train of tones.'''
@@ -2190,7 +2208,7 @@ class Beam:
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.bb_monitor_ended_bb+self.name, 
                                                    modifiers = {'ID':self.name})
         
-                
+    @thread_it           
     def monitor_and_do_events(self, events, latency = None):
         self._begin_monitoring()
         if latency:
