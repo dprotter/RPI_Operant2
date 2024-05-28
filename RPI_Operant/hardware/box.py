@@ -354,6 +354,9 @@ class Box:
         if 'doors' in self.__dict__.keys():
             for door in self.doors:
                 door.close(wait = True)
+        if 'outputs' in self.__dict__.keys():
+            for output in self.outputs:
+                output.deactivate()
         time.sleep(1)
         
         
@@ -500,7 +503,9 @@ class Box:
             else:
                 print(f'adding arg {k}:{v} from runtime_dict (or CSV args column) to software config')
                 self.software_config[k] = v
-        
+
+
+
 class ComponentContainer:
     
     def __init__(self, component_type):
