@@ -1482,9 +1482,9 @@ class Output:
         else:
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
                                                                    modifiers = {'ID':self.name})
-        self.switch_active()
+        self.activate()
         time.sleep(length)
-        self.switch_inactive()
+        self.deactivate()
         return None
     
     def shutdown_routine(self):
@@ -1499,7 +1499,7 @@ class Output:
         else:
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = f'trigger', 
                                                                    modifiers = {'ID':self.name})
-        self.switch_active()
+        self.activate()
         return self
     
     def prepare_pulse(self, length, pulse_string = None):
