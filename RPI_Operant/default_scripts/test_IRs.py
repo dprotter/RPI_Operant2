@@ -8,7 +8,7 @@ import argparse
 import os
 
 RUNTIME_DICT = {'vole':000, 'day':1, 'experiment':'show_outputs', 'side':1}
-USER_HARDWARE_CONFIG_PATH = '/home/pi/makenzie_experiment/local_hardware.yaml'
+USER_HARDWARE_CONFIG_PATH ='/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/local_hardware.yaml'
 USER_SOFTWARE_CONFIG_PATH = '/home/pi/RPI_Operant2/RPI_Operant/default_setup_files/default_software.yaml'
 
 parser = argparse.ArgumentParser(description='input io info')
@@ -58,32 +58,36 @@ try:
 except:
     pass
 print(f'{len(box.button_manager.buttons)} buttons')
-time.sleep(1)
-def print_pin_status(bm):
-    num_buttons = len(bm.buttons)
 
-    print("\033c", end="")
-    
-    status = []
-    for i in range(0,num_buttons,2):
+speaker = box.speakers.speaker
+
+
+beams = []
+
+if hasattr(box, 'nose_pokes'):
+    for nosepoke in box.nose_pokes:
+        nosepoke.set_current_on_poke_events([speaker.click_on])
+        nosepoke.begin_monitoring()
+
+if hasattr(box, 'beams'):
+    for beam in box.beams:
+        tone_dict = {'type':'continuous', 
+                     'tone_name':'test_ir', 
+                     'hz':2000,
+                     'length':0.5}
         
-        if i+1<num_buttons:
-            b1 = bm.buttons[i]
-            b2 = bm.buttons[i+1]
-            status += [[b1.name, b1.pressed, b2.name, b2.pressed]]
-        else:
-            b1 = bm.buttons[i]
-            status += [[b1.name, b1.pressed, '', '']]
-    print(tabulate(status, headers = ['button', 'status', 'button', 'status']))
-    time.sleep(0.05)
+        #use lambda here to prep a tone to play so that arguments can be used
+        beam.monitor_and_do_events(events = [lambda: speaker.play_tone_from_dictionary(tone_dict)])
+time.sleep(1)
+
 
 try:
     while True:
-        print_pin_status(box.button_manager)
-        time.sleep(0.05) 
+       '''''' 
 
 except KeyboardInterrupt:
     print('\n\ncleaning up')
 for lever in box.levers():
     lever.retract(wait = True)
 box.shutdown()
+time.sleep(1)
