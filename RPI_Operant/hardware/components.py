@@ -704,7 +704,9 @@ class NosePoke:
                     #not ideal to keep reformating this event, but not costly
                     self.current_latency_obj.event_2 = oes.poke+self.name
                     self.current_latency_obj.reformat_event_descriptor()
-                    
+                    if 'serial_send' in self.box.software_config['checks'].keys():
+                        if self.box.software_config['checks']['serial_send'][self.name]:
+                            self.box.serial_sender.send_data(f'{oes.poke+self.name}_poked')
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
                                                                                 modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
                     #make a local latency object that is a copy for this particular nose poke. 
@@ -1430,7 +1432,7 @@ class Output:
         self.active = False
     ################################################    
          
-        
+    
     def activate(self, percent_duty_cycle = 100):
         '''when activating take a percent brightness from 1 to 100'''
 
