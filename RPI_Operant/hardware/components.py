@@ -657,6 +657,7 @@ class NosePoke:
             print('port successfully reset, launching wait for n pokes')
         if latency_object:
             latency_object.add_modifier(key = 'pokes_required', value = n)
+           
             self.current_latency_obj = latency_object
             
         if on_poke_events:
@@ -716,6 +717,9 @@ class NosePoke:
                     
                 else:
                     #if no latency object, just use a simply timestamp
+                    if 'serial_send' in self.box.software_config['checks'].keys():
+                        if self.box.software_config['checks']['serial_send'][self.name]:
+                            self.box.serial_sender.send_data(f'{oes.poke+self.name}')
                     self.box.timestamp_manager.create_and_submit_new_timestamp(oes.poke+self.name, 
                                                                           modifiers = {'total_pokes':self.total_pokes, 'ID':self.name})
                 #check for current on_poke_events to run
@@ -731,8 +735,14 @@ class NosePoke:
                         local_latency = copy.copy(self.current_latency_obj)
                         local_latency.event_descriptor = oes.pokes_reached+self.name
                         local_latency.add_modifier(key = 'n_pokes', value = self.pokes)
+                        if 'serial_send' in self.box.software_config['checks'].keys():
+                            if self.box.software_config['checks']['serial_send'][self.name]:
+                                self.box.serial_sender.send_data(f'{oes.pokes_reached+self.name}')
                         local_latency.submit()
                     else:
+                        if 'serial_send' in self.box.software_config['checks'].keys():
+                            if self.box.software_config['checks']['serial_send'][self.name]:
+                                self.box.serial_sender.send_data(f'{oes.pokes_reached+self.name}')
                         self.box.timestamp_manager.create_and_submit_new_timestamp(oes.pokes_reached+self.name, 
                                                                                     modifiers ={'n_pokes':self.pokes, 'ID':self.name})
                     self.pokes_reached = True
@@ -1465,7 +1475,7 @@ class Output:
     
     @thread_it
     def pulse_output(self, length = 1, pulse_string = None):
-        '''pulse an output pin. relies on time.sleep, so not super accurate for short pulses.
+        '''pulse an output pin.
         length = time in s to pulse (float, int)
         pulse_string = string to be timestamped in the output file'''
         timestamp_str = pulse_string if pulse_string else f'output_puslse_start_len_{length}'
@@ -1473,8 +1483,24 @@ class Output:
                                                                    modifiers = {'ID':self.name})
         
         self.activate()
-        time.sleep(length)
+        precise_sleeper(length)
         self.deactivate()
+
+    @thread_it
+    def pulse_output_serial_send(self, length = 1, pulse_string = None):
+        '''pulse an output pin.
+        length = time in s to pulse (float, int)
+        pulse_string = string to be timestamped in the output file'''
+        timestamp_str = pulse_string if pulse_string else f'output_puslse_start_len_{length}'
+
+        self.box.serial_sender.send_data(f'{self.name}_activate')
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = timestamp_str, 
+                                                                   modifiers = {'ID':self.name})
+        
+        self.activate()
+        precise_sleeper(length)
+        self.deactivate()
+        self.box.serial_sender.send_data(f'{self.name}_deactivate')
     
     @thread_it
     def trigger(self, length = 0.1, pulse_string = None):
