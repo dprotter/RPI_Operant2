@@ -15,15 +15,28 @@ from .event_strings import OperantEventStrings as oes
 import inspect
 import copy
 import serial as ser
-
+import digitalio
+from tmc_driver.tmc_2209 import *
 try: 
     from adafruit_servokit import ServoKit
     SERVO_KIT = ServoKit(channels=16)
 except Exception as e:
     print(e)
-    print('servokit not found')
+    print('servokit not found\n-----------------\n')
     SERVO_KIT = None
 
+try:
+    import Adafruit_GPIO.MCP230xx as MCP230XX # Import Adafruit MCP23017 Library
+    gpio_expander = MCP230XX.MCP23017()       # Instantiate mcp object
+    
+except Exception as e:
+    print(e)
+    print('gpio expander not found\n-----------------\n')
+    gpio_expander = None
+
+# map of expander pin silkscreens to 
+expander_pin_lookup = {f"A{i}":i for i in range(8)}
+expander_pin_lookup.update({f"B{i}":i+8 for i in range(8)})
 
 
 def get_servo(ID, servo_type):
@@ -821,29 +834,67 @@ class Button:
         #may not need this, but brings it into line with other inits
         self.box = box
 
-        self.pin = button_dict['pin']
+        
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
         
-        if pullup_pulldown == 'pullup':
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            self.pressed_val = 0
-            
-        elif pullup_pulldown == 'pulldown':
-            GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            self.pressed_val = 1
-            
+        on_expander = button_dict.get('expander', False)
+        
+        if on_expander == True:
+            # if on the expander, convert pin str to pin# to be used
+            # eg A0 --> 0, B1 --> 9
+            self.pin = expander_pin_lookup[button_dict['pin']]
+            self._update_status_func = self._update_status_expander
         else:
-            raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pullup" or "pulldown", but was passed {pullup_pulldown}')
+            self.pin = button_dict['pin']
+            self._update_status_func = self._update_status_gpio
+            
+        if on_expander:
+            if pullup_pulldown == 'pullup':
+                self.pin_obj = gpio_expander.get_pin(self.pin)
+                self.pin_obj.direction = digitalio.Direction.INPUT
+                self.pin_obj.pull = digitalio.Pull.UP
+                self.pressed_val = False
+                
+            elif pullup_pulldown == 'pulldown':
+                raise KeyError(f'Configuration file error when instantiating Button {self.name}, MCP23017 expander only has pull-up resistors, but was passed {pullup_pulldown}')
+                
+            else:
+                raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pullup" or "pulldown", but was passed {pullup_pulldown}')
+        else:
+            if pullup_pulldown == 'pullup':
+                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                self.pressed_val = 0
+                
+            elif pullup_pulldown == 'pulldown':
+                GPIO.setup(self.pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+                self.pressed_val = 1
+                
+            else:
+                raise KeyError(f'Configuration file error when instantiating Button {self.name}, must be "pullup" or "pulldown", but was passed {pullup_pulldown}')
          
         self.pressed = False
 
+    def _update_status_gpio(self):
+        if GPIO.input(self.pin) == self.pressed_val:
+            self.pressed = True
+        else:
+            self.pressed = False
+            
+    def _update_status_expander(self):
+        if self.pin_obj.value == self.pressed_val:
+            self.pressed = True
+        else:
+            self.pressed = False
+    
+    def _update_status(self):
+        self._update_status_func()
+    
     def simulate_pressed(self):
         self.pressed = True
     
     def simulate_unpressed(self):
-        self.pressed = False
-        
+        self.pressed = False        
 
         
 class ButtonManager:
@@ -862,10 +913,7 @@ class ButtonManager:
     def watch_buttons(self):
         while not self.box.done:
             for button in self.buttons:
-                if GPIO.input(button.pin) == button.pressed_val:
-                    button.pressed = True
-                else:
-                    button.pressed = False
+                button._check_status()
             time.sleep(0.005)
     
     @thread_it
@@ -1056,7 +1104,187 @@ class Door:
                 self.overridden = False
 
             time.sleep(0.025)
+class LinearRailDoor:
+    
+    def __init__(self, name, door_config_dict, box, simulated = False):
+        
+        self.box = box 
 
+        self.config_dict = door_config_dict
+        
+        # if simulated:
+        #     self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
+        # else:
+        #     self.servo = get_servo(self.config_dict['servo'], self.config_dict['servo_type'])
+
+        self.stepper_addr = self.config_dict['stepper_address']
+        
+        self.stepper_driver = Tmc2209(TmcEnableControlPin(21), 
+                                      TmcMotionControlStepDir(16, 20), 
+                                      TmcComUart("/dev/serial0"), 
+                                      driver_address=0)
+        
+        self.close_speed = self.config_dict['close']
+        self.open_speed = self.config_dict['open']
+        self.open_time = self.config_dict['open_time']
+        self.close_timeout = self.config_dict['close_timeout']
+        self.name = name
+
+        #real time response attributes
+        
+        ss_button_dict = { 
+            'pin':self.config_dict['state_switch'],
+            'pullup_pulldown':'pullup'
+        }
+        self.state_switch = self.box.button_manager.new_button(f'{self.name}_state_switch', 
+                                                               ss_button_dict)
+        self.overridden = False
+
+
+        #override buttons
+        oo_button_dict = { 
+            'pin':self.config_dict['override_open_pin'],
+            'pullup_pulldown':'pullup'
+        }
+        self.override_open_button = self.box.button_manager.new_button(f'{self.name}_override_open', 
+                                                                        oo_button_dict, self.box)
+
+
+        oc_button_dict = { 
+            'pin':self.config_dict['override_close_pin'],
+            'pullup_pulldown':'pullup'
+        }
+        self.override_close_button  = self.box.button_manager.new_button(f'{self.name}_override_close', 
+                                                                        oc_button_dict, self.box)
+
+        
+        #start the override function
+        self.override(self)
+    
+    def disable(self):
+        self.servo._pwm_out.duty_cycle = 0
+    
+    def is_closed(self):
+        return self.state_switch.pressed
+    
+    def is_open(self):
+        return not self.state_switch.pressed
+    
+    def simulate_open(self):
+        '''use to simulate the door entering the open state'''
+        self.state_switch.pressed = False
+        
+    def simulate_closed(self):
+        '''use to simulate the door entering the closed state'''
+        self.state_switch.pressed = True
+    
+
+    def open(self, wait = False):
+        '''open this door. 
+        wait = boolean --> should the box wait to move on to the next line of code until this event is complete?
+        
+        returns latency object'''
+        self._open(wait = wait)       
+        return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
+
+            
+    def shutdown_routine(self):
+        self.disable()
+        
+    @thread_it
+    def _open(self, wait):
+        self.servo.throttle = self.open_speed
+        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
+                                                                   modifiers = {'ID':self.name})
+        if 'serial_send' in self.box.software_config['checks'].keys():
+            if self.box.software_config['checks']['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} open start')
+            
+        start_time = time.time()
+        while time.time() < (start_time + self.open_time) and not self.overridden:
+            time.sleep(0.05)
+        
+        self.disable()
+
+        if self.state_switch.pressed:
+            print(f'{self.name} door failed to open!!!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_failure+self.name, 
+                                                                        modifiers = {'ID':self.name})
+        else:
+            print(f'{self.name} opened!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name, 
+                                                                        modifiers = {'ID':self.name})
+
+    @thread_it
+    def close(self, wait = True):
+        '''open this door'''
+        
+        self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name,
+                                                                     modifiers = {'ID':self.name})
+        if 'serial_send' in self.box.software_config['checks'].keys():
+            if self.box.software_config['checks']['serial_send'][self.name]:
+                self.box.serial_sender.send_data(f'{self.name} close start')
+            
+        self.servo.throttle = self.close_speed
+
+        start_time = time.time()
+        
+        #keep trying to close
+        while time.time() < (start_time + self.close_timeout) and not self.state_switch.pressed:
+            #once the override has been triggered, keep trying to close. 
+            if self.overridden:
+                while time.time() < (start_time + self.close_timeout) and self.overridden:
+                    time.sleep(0.05)
+                time.sleep(0.75)
+                self.servo.throttle = self.close_speed
+            else:
+                time.sleep(0.05)
+                
+            
+            
+        #self.servo.throttle = self.stop_speed
+        self.disable()
+        if self.state_switch.pressed:
+            print(f'{self.name} closed!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_finish+self.name, 
+                                                                        modifiers = {'ID':self.name})
+            if 'serial_send' in self.box.software_config['checks'].keys():
+                if self.box.software_config['checks']['serial_send'][self.name]:
+                    self.box.serial_sender.send_data(f'{self.name} close finish')
+            
+        else:
+            print(f'{self.name} door failed to close!!!')
+            self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_failure+self.name, 
+                                                                        modifiers = {'ID':self.name})
+
+    @thread_it
+    def override(self, wait = False):
+        while not self.box.done:
+            
+            if self.override_open_button.pressed:
+                
+                self.servo.throttle = self.open_speed
+                self.overridden = True
+                #print(f'{self.name} overriden open -> speed to {self.servo.throttle} -> aiming for {self.open_speed}')
+                while self.override_open_button.pressed:
+                    time.sleep(0.01)
+                #print(f'{self.name} overriden open over')
+                self.disable()
+                self.overridden = False
+                
+            if self.override_close_button.pressed:
+                self.servo.throttle = self.close_speed
+                self.overridden = True
+                #print(f'{self.name} overriden close')
+                while self.override_close_button.pressed:
+                    time.sleep(0.01)
+                #print(f'{self.name} overriden close over')
+                self.disable()
+                self.overridden = False
+
+            time.sleep(0.025)
+            
 class Dispenser:
 
     def __init__(self, name, dispenser_config_dict, box, simulated = False):
@@ -1417,6 +1645,15 @@ class Output:
             self.output_on = self.set_active_HAT
             self.output_off = self.set_inactive_HAT
             self.type = 'HAT'
+        
+        elif self.config_dict['type'] == 'expander':
+            self.pin = expander_pin_lookup[config_dict['pin']]
+            self._original_pin_str = config_dict['pin']
+            self.pin_obj = gpio_expander.get_pin(self.pin)
+            self.pin_obj.direction = digitalio.Direction.OUTPUT
+            self.output_on = self.set_active_expander
+            self.output_off = self.set_inactive_expander
+            self.type = 'expander'
             
         else:
             raise Exception(f'incorrect output type passed: {self.config_dict["type"]}\n must be "HAT" or "GPIO"')
@@ -1440,8 +1677,18 @@ class Output:
     def set_inactive_GPIO(self):
         self.box.pi.set_PWM_dutycycle(self.pin, 0)
         self.active = False
-    ################################################    
-         
+    ################################################
+        
+    ############## expander ###############
+    def set_active_expander(self, percent):
+        if percent != 100:
+            print(f"warning! expander pins, like {self.name} on {self._original_pin_str}, does not support pwm pcnt.\nbut {percent} was passed")
+        self.active = True
+        self.pin_obj.value = True
+        
+    def set_inactive_expander(self):
+        self.active = False
+        self.pin_obj.value = False
     
     def activate(self, percent_duty_cycle = 100):
         '''when activating take a percent brightness from 1 to 100'''
