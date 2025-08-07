@@ -24,7 +24,7 @@ setuptools.setup(
     # list of packages that need to be built; if not using find_packages(), must match package folder name
     packages = ['RPI_Operant'], # for multi-file packages replace: packages = ['PhAT'] with packages = find_packages()
     # list of packages that your package relies upon
-    install_requires = ['pandas','numpy', 'pyyaml','RPi-GPIO','himl', 'pyserial', 'adafruit-circuitpython-servokit','himl','adafruit-circuitpython-mcp230xx','install PyTmcStepper']
+    install_requires = ['pandas','numpy', 'pyyaml','RPi-GPIO','gpiozero','himl', 'pyserial', 'adafruit-circuitpython-servokit','himl','adafruit-circuitpython-mcp230xx','install PyTmcStepper']
     
 )
 
