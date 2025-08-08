@@ -1,9 +1,0 @@
-RPi-GPIO
-adafruit-circuitpython-mcp230xx
-adafruit-circuitpython-servokit
-himl
-himl
-numpy
-pandas
-pyserial
-pyyaml
