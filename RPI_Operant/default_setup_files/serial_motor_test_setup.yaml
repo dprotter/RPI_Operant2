@@ -1,0 +1,51 @@
+speakers:
+  speaker:
+    pin: 21
+
+linear_rail_doors:
+  door_1:
+    stepper_address: 0
+    enable_control_pin: 21
+    serial_address: "/dev/serial0"
+    step_pin: 16
+    direction_pin: 20
+    open_speed: 250
+    close_speed: 250
+    override_open_pin: 24
+    override_close_pin: 25
+    close_endstop: 4
+    open_endstop: 4
+    safety_switch: 4
+    close_timeout: 30
+    # stepper_settings_changes:
+    
+ 
+  door_2:
+    stepper_address: 1
+    enable_control_pin: 26
+    serial_address: "/dev/serial0"
+    step_pin: 13
+    direction_pin: 19
+    open_speed: 250
+    close_speed: 250
+    override_open_pin: 24
+    override_close_pin: 25
+    close_endstop: 4
+    open_endstop: 4
+    safety_switch: 4
+    close_timeout: 30
+    # stepper_settings_changes:
+
+inputs:
+  test_input_expander:
+    pullup_pulldown: pullup
+    expander: True
+    pin: "B0"
+  test_GPIO:
+    pullup_pulldown: pullup
+    pin: 10
+
+outputs:
+  test_1:
+    type: expander
+    pin: "A0"

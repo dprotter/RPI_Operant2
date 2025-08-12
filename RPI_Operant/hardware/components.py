@@ -16,6 +16,14 @@ import inspect
 import copy
 import serial as ser
 import digitalio
+
+import board
+import busio
+
+from adafruit_mcp230xx.mcp23017 import MCP23017
+
+
+
 from tmc_driver.tmc_2209 import *
 try: 
     from adafruit_servokit import ServoKit
@@ -26,8 +34,11 @@ except Exception as e:
     SERVO_KIT = None
 
 try:
-    import Adafruit_GPIO.MCP230xx as MCP230XX # Import Adafruit MCP23017 Library
-    gpio_expander = MCP230XX.MCP23017()       # Instantiate mcp object
+        # Initialize the I2C bus:
+    i2c = busio.I2C(board.SCL, board.SDA)
+
+    # Initialize the MCP23017 chip on the bonnet
+    gpio_expander = MCP23017(i2c)
     
 except Exception as e:
     print(e)
@@ -838,6 +849,7 @@ class Button:
         self.name = name
         pullup_pulldown = button_dict['pullup_pulldown']
         
+        print(button_dict)
         on_expander = button_dict.get('expander', False)
         
         if on_expander == True:
@@ -913,7 +925,7 @@ class ButtonManager:
     def watch_buttons(self):
         while not self.box.done:
             for button in self.buttons:
-                button._check_status()
+                button._update_status()
             time.sleep(0.005)
     
     @thread_it
@@ -1108,9 +1120,13 @@ class LinearRailDoor:
     
     def __init__(self, name, door_config_dict, box, simulated = False):
         
+        
+        
         self.box = box 
 
         self.config_dict = door_config_dict
+        
+        # print(self.config_dict)
         
         # if simulated:
         #     self.servo = SERVO_SIM.new_fake_servo(self.config_dict)
@@ -1119,12 +1135,18 @@ class LinearRailDoor:
 
         self.stepper_addr = self.config_dict['stepper_address']
         
+        # self.stepper_driver = Tmc2209(TmcEnableControlPin(self.config_dict['enable_control_pin']), 
+        #                               TmcMotionControlStepDir(self.config_dict['step_pin'], self.config_dict['direction_pin']), 
+        #                               TmcComUart(self.config_dict['serial_address']), 
+        #                               driver_address=self.stepper_addr)
+        
+        
         self.stepper_driver = Tmc2209(TmcEnableControlPin(self.config_dict['enable_control_pin']), 
-                                      TmcMotionControlStepDir(self.config_dict['step_pin'], self.config_dict['direction_pin']), 
+                                      TmcMotionControlVActual(), 
                                       TmcComUart(self.config_dict['serial_address']), 
                                       driver_address=self.stepper_addr)
         
-        self.setup_driver(config_dict.get('stepper_settings_changes',{}))
+        self.setup_driver(self.config_dict.get('stepper_settings_changes',{}))
         
         self.close_speed = self.config_dict['close_speed']
         self.open_speed = self.config_dict['open_speed']
@@ -1139,8 +1161,8 @@ class LinearRailDoor:
             'pin':self.config_dict['close_endstop'],
             'pullup_pulldown':'pullup'
         }
-        self.state_switch = self.box.button_manager.new_button(f'{self.name}_close_endstop', 
-                                                               ss_button_dict) 
+        self.close_endstop = self.box.button_manager.new_button(f'{self.name}_close_endstop', 
+                                                               close_endstop_button_dict) 
         ss_button_dict = { 
             'pin':self.config_dict['safety_switch'],
             'pullup_pulldown':'pullup'
@@ -1151,7 +1173,7 @@ class LinearRailDoor:
         
         
         self.overridden = False
-
+        self.safety_overridden = False
 
         #override buttons
         oo_button_dict = { 
@@ -1184,50 +1206,46 @@ class LinearRailDoor:
     
     def setup_driver(self, settings):
         
-        default  = {'set_direction_reg':False,
+        self._driver_settings  = {'set_direction_reg':False,
                     'set_current':300,
                     'set_interpolation':True,
-                    'set_spreadcycle':False
+                    'set_spreadcycle':False,
                     'set_microstepping_resolution':8,
                     'set_internal_rsense':False,
-                    'set_spreadcycle':False
+                    'set_spreadcycle':False,
                     'acceleration_fullstep':1000,
                     'open_speed':250,
                     'close_speed':250,
                     }
         
-        default.update(settings)
+        self._driver_settings.update(settings)
         
-        self.stepper_driver.set_direction_reg(default['set_direction_reg'])
-        self.stepper_driver.set_current(default['set_current'])
-        self.stepper_driver.set_interpolation(default['set_interpolation'])
-        self.stepper_driver.set_spreadcycle(default['set_spreadcycle'])
-        self.stepper_driver.set_microstepping_resolution(default['set_microstepping_resolution'])  # Set both motors to 1/8 microstepping
-        self.stepper_driver.set_internal_rsense(default['set_internal_rsense'])
+        self.stepper_driver.set_direction_reg(self._driver_settings['set_direction_reg'])
+        self.stepper_driver.set_current(self._driver_settings['set_current'])
+        self.stepper_driver.set_interpolation(self._driver_settings['set_interpolation'])
+        self.stepper_driver.set_spreadcycle(self._driver_settings['set_spreadcycle'])
+        self.stepper_driver.set_microstepping_resolution(self._driver_settings['set_microstepping_resolution'])  # Set both motors to 1/8 microstepping
+        self.stepper_driver.set_internal_rsense(self._driver_settings['set_internal_rsense'])
         self.stepper_driver.set_motor_enabled(True)
-        self.stepper_driver.acceleration_fullstep = default['acceleration_fullstep']
-        self.acceleration = default['acceleration_fullstep']
+        self.stepper_driver.acceleration_fullstep = self._driver_settings['acceleration_fullstep']
+        self.acceleration = self._driver_settings['acceleration_fullstep']
         
-        # these will be the default speeds
-        self.default_open_speed = default['open_speed']
-        self.default_close_speed = default['close_speed']
+        self.cur_open_speed = self._driver_settings['open_speed']
+        self.cur_close_speed = self._driver_settings['close_speed']
         
-        self.cur_open_speed = default['open_speed']
-        self.cur_close_speed = default['close_speed']
-        
-        self.stepper_driver.set_max_speed_fullstep(max([self.default_open_speed, self.default_close_speed]))
+        self.stepper_driver.max_speed_fullstep = max([self.cur_open_speed, self.cur_close_speed])
         self.stepper_driver.movement_abs_rel = MovementAbsRel.ABSOLUTE
         
         
     def _reset_speed(self):
-        '''allow for temporary updates to max speed settings'''
-        self.cur_open_speed = self.default_open_speed
-        self.cur_close_speed = self.default_close_speed
-        self.stepper_driver.set_max_speed_fullstep(max([self.default_open_speed, self.default_close_speed]))
+        ''' max speed settings'''
+        self.cur_open_speed = self._driver_settings['open_speed']
+        self.cur_close_speed = self._driver_settings['close_speed']
+        self.stepper_driver.max_speed_fullstep = max([self.cur_open_speed, self.cur_close_speed])
         
     def _update_temp_speed(self):
         '''update the driver to current speed settings (ie in the event of overriding default speeds)'''
-        self.stepper_driver.set_max_speed_fullstep(max([self.cur_open_speed, self.cur_close_speed]))
+        self.stepper_driver.max_speed_fullstep = max([self.cur_open_speed, self.cur_close_speed])
     
     def _disable(self):
         self.stepper_driver.set_motor_enabled(False)
@@ -1249,19 +1267,67 @@ class LinearRailDoor:
         '''use to simulate the door entering the closed state'''
         self.state_switch.pressed = True
     
-    def _move_open(self, speed_override):
-        # the actual open # of steps
-        self.stepper_driver.run_to_position_steps_threaded(-4000, MovementAbsRel.RELATIVE)
+    def _move_open(self, velocity):  
+       self.stepper_driver.tmc_mc.set_vactual_rpm(velocity)
 
-    def _open_dir_at_speed(self, speed):
-        '''primarily for testing speeds. will continue until an override button or endstop is pressed'''
-        self.cur_open_speed = speed
-        self._update_temp_speed()
-        self.stepper_driver.tmc_mc.set_vactual_dur(self.cur_open_speed)
-        while not self.overridden:
-            time.sleep(0.05)
-        self.stepper_driver.tmc_mc.set_vactual_dur(0)
-    
+    # def _open_dir_at_speed(self, speed = 250, override_button = None, duration = None):
+    #     '''primarily for testing speeds. only works with step/dir pin motion control. does not work with uart vactual
+    #     control. 
+        
+    #     will continue until an override button or endstop is pressed'''
+
+        
+    #     self._move_open(speed)
+    #     if duration:
+    #         start = time.time()
+    #         if override_button:
+                
+    #             while not override_button.pressed and (time.time()-start) < duration:
+    #                 time.sleep(0.05)
+    #             self.stepper_driver.set_motor_enabled(False)
+
+        
+    #         else:
+    #             while (time.time()-start) < duration:
+    #                 time.sleep(0.05)
+
+    @thread_it
+    def _open_dir_at_velocity(self, velocity, override_button = None, duration = 0, wait = False):
+        '''primarily for testing velocities. will continue until an override button or endstop is pressed.
+        not to be used for actual experiments'''
+        
+        if duration:
+            self.stepper_driver.tmc_mc.set_vactual_rpm(velocity)
+            start = time.time()
+            if override_button:
+                
+                while not override_button.pressed and (time.time()-start) < duration:
+                    time.sleep(0.05)
+                self.stepper_driver.tmc_mc.set_vactual_rpm(0)
+                self.stepper_driver.set_motor_enabled(False)
+
+        
+            else:
+                while (time.time()-start) < duration:
+                    time.sleep(0.05)
+                self.stepper_driver.tmc_mc.set_vactual_rpm(0)
+                self.stepper_driver.set_motor_enabled(False)
+                
+        else:
+            self.stepper_driver.tmc_mc.set_vactual_rpm(velocity)
+            
+        if override_button:
+
+            while not override_button.pressed:
+                    time.sleep(0.05)
+                    
+            self.stepper_driver.tmc_mc.set_vactual_dur(0)
+            self.stepper_driver.set_motor_enabled(False)
+        else:
+            # if no override button or duration is passed, the motor will run until explicitly disabled
+            pass
+        
+   
     def open(self, speed = 0, wait = False):
         '''open this door. 
         wait = boolean --> should the box wait to move on to the next line of code until this event is complete?
@@ -1269,24 +1335,23 @@ class LinearRailDoor:
         optional speed override, must in "speed fullstep"
         
         returns latency object'''
-        if speed != 0:
-            self.stepper_driver.max_speed_fullstep = speed
+        velocity = speed if speed != 0 else self.cur_open_speed
         
         self._open(wait = wait)       
         return self.box.timestamp_manager.new_latency(event_1 = f'{self.name}_open', modifiers = {'ID':self.name})
 
             
     def shutdown_routine(self):
-        self.disable()
+        self._disable()
         # this is in all their demo scripts, not sure the point. maybe to allow 
         # for the serial to close?
         del self.stepper_driver
         
     @thread_it
-    def _open(self, wait):
+    def _open(self, velocity, wait):
         
         self._enable()
-        self._move_open()
+        self._move_open(velocity)
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_start+self.name, 
                                                                    modifiers = {'ID':self.name})
@@ -1296,7 +1361,7 @@ class LinearRailDoor:
                 self.box.serial_sender.send_data(f'{self.name} open start')
             
         start_time = time.time()
-        while time.time() < (start_time + self.open_time) and not self.overridden:
+        while time.time() < (start_time + self.open_time) and not self.endstop_open.pressed:
             time.sleep(0.05)
         
         self._disable()
@@ -1309,12 +1374,23 @@ class LinearRailDoor:
             print(f'{self.name} opened!')
             self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.open_door_finish+self.name, 
                                                                         modifiers = {'ID':self.name})
-            
-        self.stepper_driver.max_speed_fullstep = default['max_speed_fullstep']
+        
+        # reset to default speed, unless overriden   
+        self._reset_speed()
 
+    def _stop(self):
+        self.stepper_driver.tc_mc.set_vactual_rpm(0)
+    
+    
+    def _orient(self):
+        '''util during setup to test orientation'''
+    
+    def _move_close(self, velocity):
+        
+        
     @thread_it
-    def close(self, wait = True):
-        '''open this door'''
+    def close(self, speed, wait = True):
+        '''close this door'''
         
         self.box.timestamp_manager.create_and_submit_new_timestamp(description = oes.close_door_start+self.name,
                                                                      modifiers = {'ID':self.name})
@@ -1322,18 +1398,28 @@ class LinearRailDoor:
             if self.box.software_config['checks']['serial_send'][self.name]:
                 self.box.serial_sender.send_data(f'{self.name} close start')
             
-        self.servo.throttle = self.close_speed
+
 
         start_time = time.time()
         
         #keep trying to close
-        while time.time() < (start_time + self.close_timeout) and not self.state_switch.pressed:
+        while time.time() < (start_time + self.close_timeout) and not self.close_endstop.pressed:
             #once the override has been triggered, keep trying to close. 
             if self.overridden:
-                while time.time() < (start_time + self.close_timeout) and self.overridden:
-                    time.sleep(0.05)
-                time.sleep(0.75)
-                self.servo.throttle = self.close_speed
+                
+                #in the case of tripping the safety switch, re-initialize closing after switch released
+                if self.safety_overridden:
+                    while time.time() < (start_time + self.close_timeout) and self.safety_overridden:
+                        time.sleep(0.05)
+                    time.sleep(0.75)
+                    self._stop()
+                
+                #if overridden by buttons, do not re-initialize closing. allow user to do so with buttons
+                else:
+                    while time.time() < (start_time + self.close_timeout) and self.safety_overridden:
+                        time.sleep(0.05)
+                    time.sleep(0.75)
+                    
             else:
                 time.sleep(0.05)
                 
@@ -1358,16 +1444,26 @@ class LinearRailDoor:
     def override(self, wait = False):
         while not self.box.done:
             
-            if self.override_open_button.pressed:
-                self._enable()
-                self.servo.throttle = self.open_speed
-                self.overridden = True
-                #print(f'{self.name} overriden open -> speed to {self.servo.throttle} -> aiming for {self.open_speed}')
+            if self.safety_switch.pressed:
+                self.safety_overridden = True
+                self._move_open()
+                
                 while self.override_open_button.pressed:
                     time.sleep(0.01)
                 #print(f'{self.name} overriden open over')
                 self._disable()
+                self.safety_overridden = False
+                
+            if self.override_open_button.pressed:
+                self._move_open()
+                self.overridden = True
+                #print(f'{self.name} overriden close')
+                while self.override_close_button.pressed:
+                    time.sleep(0.01)
+                #print(f'{self.name} overriden close over')
+                self._disable()
                 self.overridden = False
+                
                 
             if self.override_close_button.pressed:
                 self.servo.throttle = self.close_speed
@@ -1743,8 +1839,8 @@ class Output:
             self.type = 'HAT'
         
         elif self.config_dict['type'] == 'expander':
-            self.pin = expander_pin_lookup[config_dict['pin']]
-            self._original_pin_str = config_dict['pin']
+            self.pin = expander_pin_lookup[self.config_dict['pin']]
+            self._original_pin_str = self.config_dict['pin']
             self.pin_obj = gpio_expander.get_pin(self.pin)
             self.pin_obj.direction = digitalio.Direction.OUTPUT
             self.output_on = self.set_active_expander
@@ -2307,6 +2403,7 @@ class Input:
         switch_dict = {
                         'pin':self.pin,
                         'pullup_pulldown':self.config_dict['pullup_pulldown'],
+                        'expander':self.config_dict.get('expander', False)
                     }
 
         self.switch = self.box.button_manager.new_button(self.name, switch_dict, self.box)
@@ -2811,5 +2908,6 @@ COMPONENT_LOOKUP = {
                     'lasers':{'component_class':Laser, 'label':'laser'}, 
                     'beams': {'component_class':Beam, 'label':'beam'},
                     'nose_pokes': {'component_class':NosePoke, 'label':'nose_poke'},
-                    'house_lights': {'component_class':HouseLight, 'label':'house_lights'}
+                    'house_lights': {'component_class':HouseLight, 'label':'house_lights'},
+                    'linear_rail_doors':{'component_class':LinearRailDoor, 'label':'door'},
                     }
