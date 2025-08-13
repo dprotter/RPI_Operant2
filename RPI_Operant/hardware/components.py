@@ -1217,8 +1217,13 @@ class LinearRailDoor:
                     'open_speed':250,
                     'close_speed':250,
                     }
+        diffs = [k for k in self._driver_settings.keys() if self._driver_settings[k]!=settings.get(k,self._driver_settings[k]) ]
+        for k in diffs:
+            print(f'{k} default: {self._driver_settings[k]} | incoming: {settings[k]}')
         
         self._driver_settings.update(settings)
+        
+        
         
         self.stepper_driver.set_direction_reg(self._driver_settings['set_direction_reg'])
         self.stepper_driver.set_current(self._driver_settings['set_current'])
@@ -1259,6 +1264,7 @@ class LinearRailDoor:
     def is_open(self):
         return not self.close_endstop.pressed
     
+    
     def simulate_open(self):
         '''use to simulate the door entering the open state'''
         self.state_switch.pressed = False
@@ -1295,7 +1301,7 @@ class LinearRailDoor:
     def _open_dir_at_velocity(self, velocity, override_button = None, duration = 0, wait = False):
         '''primarily for testing velocities. will continue until an override button or endstop is pressed.
         not to be used for actual experiments'''
-        
+        self.stepper_driver.set_motor_enabled(True)
         if duration:
             self.stepper_driver.tmc_mc.set_vactual_rpm(velocity)
             start = time.time()
@@ -1385,8 +1391,6 @@ class LinearRailDoor:
     def _orient(self):
         '''util during setup to test orientation'''
     
-    def _move_close(self, velocity):
-        
         
     @thread_it
     def close(self, speed, wait = True):
