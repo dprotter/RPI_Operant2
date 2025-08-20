@@ -4,13 +4,12 @@ speakers:
 
 linear_rail_doors:
   door_1:
-    stepper_address: 0
-    enable_control_pin: 21
+    stepper_address: 1
+    enable_control_pin: 26
     serial_address: "/dev/serial0"
     # step_pin: 16
     # direction_pin: 20
-    open_speed: 250
-    close_speed: 250
+    
     override_open_pin: "A5"
     override_close_pin: "A6"
     close_endstop: 27
@@ -18,6 +17,8 @@ linear_rail_doors:
     safety_switch: 17
     close_timeout: 10
     stepper_settings_changes:
+      open_speed: 250
+      close_speed: -250
       set_direction_reg: False
       set_current: 300
       set_interpolation: True
@@ -30,21 +31,21 @@ linear_rail_doors:
     
  
   door_2:
-    stepper_address: 1
-    enable_control_pin: 26
+    stepper_address: 0
+    enable_control_pin: 21
     serial_address: "/dev/serial0"
     # step_pin: 13
     direction_pin: 19
-    open_speed: 250
-    close_speed: 250
+
     override_open_pin: 24
     override_close_pin: 25
     close_endstop: 4
     open_endstop: 4
     safety_switch: 4
     close_timeout: 30
-    # stepper_settings_changes:
-
+    stepper_settings_changes:
+      open_speed: 250
+      close_speed: -250
 nose_pokes:
   #same pin as food lever
   nose_port_1:
@@ -53,7 +54,7 @@ nose_pokes:
     interpoke_interval: 0.1
     LED:
       type: expander
-      channel: 7
+      pin: "A7"
 
 
 

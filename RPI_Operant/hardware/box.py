@@ -374,6 +374,7 @@ class Box:
         ''' catches interrupt, notifies threads, attempts a clean exit '''
         print(f'(box.py, _interrupt_handler) Shutting Down')
         self.force_shutdown() # shuts off all of the hardware 
+        print('_interrupt_handler attempting a shutdown')
         sys.exit(0)
 
     def force_shutdown(self):
@@ -384,6 +385,7 @@ class Box:
         val = 0
 
         while not self.monitor_worker_future.done():
+            
             time.sleep(0.05)
             val +=1
             if val>500:

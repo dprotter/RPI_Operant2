@@ -9,7 +9,9 @@ class OperantEventStrings:
     close_door_start = 'close_start_'
     close_door_finish = 'close_finished_'
     close_door_failure = 'close_failure_'
-    
+    close_door_override = 'close_interrupted_'
+    close_door_safety_override = 'close_safety_interrupt_'
+    close_door_safety_finished = 'close_safety_interrupt_cleared_'
     
     lever_extended = 'lever_extended_'
     lever_retracted = 'lever_retracted_'
