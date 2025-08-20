@@ -1199,7 +1199,7 @@ class LinearRailDoor:
             'pin':self.config_dict['open_endstop'],
             'pullup_pulldown':'pullup'
         }
-        self.endstop_open = self.box.button_manager.new_button(f'{self.name}_open_endstop', 
+        self.open_endstop = self.box.button_manager.new_button(f'{self.name}_open_endstop', 
                                                                         oo_button_dict, self.box)
 
         
@@ -1326,7 +1326,7 @@ class LinearRailDoor:
 
         
             else:
-                while (time.time()-start) < duration and not self.endstop_open.pressed and not self.close_endstop.pressed:
+                while (time.time()-start) < duration and not self.open_endstop.pressed and not self.close_endstop.pressed:
                     time.sleep(0.05)
                 self.stepper_driver.tmc_mc.set_vactual_rpm(0)
                 self.stepper_driver.set_motor_enabled(False)
@@ -1377,7 +1377,7 @@ class LinearRailDoor:
                 self.box.serial_sender.send_data(f'{self.name} open start')
             
         start_time = time.time()
-        while time.time() < (start_time + self.open_time) and not self.endstop_open.pressed:
+        while time.time() < (start_time + self.open_time) and not self.open_endstop.pressed:
             time.sleep(0.05)
         
         self._stop()
@@ -1488,11 +1488,11 @@ class LinearRailDoor:
                 self.overridden = False
                 
                 
-            if self.override_close_button.pressed:
+            if self.override_close_button.pressed and not self.safety_switch.pressed:
                 self._move_close()
                 print(f'{self.name} overriden close')
                 self.overridden = True
-                while self.override_close_button.pressed:
+                while self.override_close_button.pressed and not self.safety_switch.pressed:
                     time.sleep(0.01)
                 print(f'{self.name} overriden close over')
                 self._stop()

@@ -64,7 +64,7 @@ def run():
             pokes_active_phase.end_phase()
             poke_d1.deactivate_LED()
             
-            speaker.play_tone(tone_name = f'door_1_open', wait = True)
+            # speaker.play_tone(tone_name = f'door_1_open', wait = True)
             door_1.open()
             door_1_reward = True
             d1_reward_phase = box.timing.new_phase(f'reward_phase_door_1',length = box.software_config['values']['reward_length'])
