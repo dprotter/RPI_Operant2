@@ -46,9 +46,15 @@ except Exception as e:
     gpio_expander = None
 
 # map of expander pin silkscreens to 
-expander_pin_lookup = {f"A{i}":i for i in range(8)}
-expander_pin_lookup.update({f"B{i}":i+8 for i in range(8)})
+# expander_pin_lookup = {f"A{i}":i for i in range(8)}
 
+def parse_expander_pin(pin_str):
+    if "a" in pin_str.lower():
+        return int(pin_str.lower().replace("a",""))
+    elif "b" in pin_str.lower():
+        return int(pin_str.lower().replace("b","")) + 8
+    else:
+        raise Exception(f"trying to parse expander pin ID, but {pin_str} was passed\nexpected 'ax' or 'bx' (eg 'a1')")
 
 def get_servo(ID, servo_type):
     '''take a servo positional ID on the adafruit board, and the servo type, and return a servo_kit obj'''
@@ -855,7 +861,7 @@ class Button:
         if on_expander == True:
             # if on the expander, convert pin str to pin# to be used
             # eg A0 --> 0, B1 --> 9
-            self.pin = expander_pin_lookup[button_dict['pin']]
+            self.pin = int(button_dict['pin'].replace("e",""))
             self._update_status_func = self._update_status_expander
         else:
             self.pin = button_dict['pin']
@@ -1843,7 +1849,7 @@ class Output:
             self.type = 'HAT'
         
         elif self.config_dict['type'] == 'expander':
-            self.pin = expander_pin_lookup[self.config_dict['pin']]
+            self.pin = parse_expander_pin(self.config_dict['pin'])
             self._original_pin_str = self.config_dict['pin']
             self.pin_obj = gpio_expander.get_pin(self.pin)
             self.pin_obj.direction = digitalio.Direction.OUTPUT
