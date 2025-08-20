@@ -149,7 +149,7 @@ class Box:
         #startup queue monitoring
         fut2 = self.thread_executor.submit(self.timestamp_manager.monitor_queue)
         self.worker_queue.put((fut2,'timestamp monitor_queue'))
-        if not self.monitor_worker_future.running:
+        if not self.monitor_worker_future.running():
             if self.monitor_worker_future.exception():
                 print(self.monitor_worker_future.exception())
         
@@ -324,7 +324,7 @@ class Box:
                         workers.remove(element)
                     elif worker.done():
                         if verbose:
-                            '''print(f'worker done {element}')'''
+                            print(f'worker done {element}')
                         workers.remove(element)
                     else:
                         pass
@@ -334,19 +334,29 @@ class Box:
             time.sleep(0.025)
         
         time.sleep(1)
-        print('done and exiting')
+        print('monitor workers attempting to exit\n\n')
         print(f'currently {len(workers)} threads running via pool executor')
         print(workers)
-        while len(workers) > 0:
-            for element in workers:
-                worker, _, _ = element
-                if not worker.done():
-                    print(f'{element} still not done... you may need to force exit')
-                else:
-                    print(f'shutting down, removing {element}')
-                    workers.remove(element)
-            time.sleep(0.25)
-        print('worker queue empty')
+        print()
+
+
+        
+            
+        for element in workers:
+            worker, _ = element
+            time.sleep(0.15)
+            if worker.done():
+                print(f'shutting down, removing {element}')
+                workers.remove(element)
+                time.sleep(0.15)
+                
+        for element in workers:         
+            worker, _ = element
+            print(f'{element} still not done, you may need to force an exit') 
+               
+                        
+            
+        print('\n~~~~~~~~~~~~~~~ worker queue empty ~~~~~~~~~~~~~~~~~\n')
 
     def check_error_log(self):
         if not os.path.getsize(self.output_error_file_path) > 0:
@@ -374,6 +384,7 @@ class Box:
         ''' catches interrupt, notifies threads, attempts a clean exit '''
         print(f'(box.py, _interrupt_handler) Shutting Down')
         self.force_shutdown() # shuts off all of the hardware 
+        
         print('_interrupt_handler attempting a shutdown')
         sys.exit(0)
 
@@ -391,7 +402,11 @@ class Box:
             if val>500:
                 print('waiting for shutdown')
                 val = 0
-        
+                
+        if self.monitor_worker_future.exception():
+            print('\n\nexception in monitor workers thread:')
+            print(self.monitor_worker_future.exception())
+            
         for obj in self.shutdown_objects:
             if hasattr(obj, 'shutdown_routine'):
                 obj.shutdown_routine()

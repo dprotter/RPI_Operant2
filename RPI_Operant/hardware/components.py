@@ -503,6 +503,7 @@ class NosePoke:
         self.current_on_poke_events = list_of_events
 
     def shutdown_routine(self):
+        self.monitoring = False
         if hasattr(self, 'LED'):
             self.deactivate_LED()
             
